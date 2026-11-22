@@ -20,7 +20,7 @@ Controlled by `web/js/sections.js` (`ENABLED_SECTIONS`).
 |---------|--------------------------------|---------|
 | `trends_country_v2.json`, `trends_monthly_v2.json` | `data/trends_timeseries.csv`, `config/trends_batches.csv` | `scripts/build_web_data.py` |
 | `insomnia_vs_asmr.json` | Trends + `data/indicators_country.csv` (+ Taiwan official) | `scripts/build_web_data.py` |
-| `wiki_lang.json` | `data/wiki_pageviews_monthly.csv` (then restrict to ASMR) | `scripts/build_web_data.py` + manual/scope filter |
+| `wiki_lang.json` | `data/wiki_pageviews_monthly.csv` filtered by `config/wiki_concepts.yaml` | `scripts/build_web_data.py` |
 | `countries-50m.json` | world-atlas TopoJSON copy | checked into `web/data/` |
 | Class flags | `data/yt_master.csv` + `config/yt_classes.yaml` | `scripts/classify_yt_classes.py` → `data/yt_classes.csv` |
 | Unpublished (creators, duration, comments, Douyin, TikTok) | respective masters / samples | `scripts/build_web_data.py` (outputs parked under `data/unpublished/`) |
@@ -34,16 +34,18 @@ From `trends_country_v2.json` `meta.flag_counts` and rows:
 - Rising beyond noise: **19**; within noise: **10**; falling beyond noise: **2** (n countries = 31)
 - Median `change_in_window`: **6.80**; median `recent_vs_peak`: **84.52**
 
-Holm family (`insomnia_vs_asmr.json` `correlations`):
+Holm family (`insomnia_vs_asmr.json` `correlations`, **includes TWN**, n=31):
 
 | pair | rho | n | p | p_holm |
 |------|-----|---|---|--------|
-| change_vs_internet | -0.002 | 30 | 0.9916 | 1.0 |
-| change_vs_youth | 0.0376 | 30 | 0.8436 | 1.0 |
-| recent_vs_internet | 0.0291 | 30 | 0.8785 | 1.0 |
-| recent_vs_youth | -0.2294 | 30 | 0.2228 | 0.8912 |
+| change_vs_internet | 0.0048 | 31 | 0.9794 | 1.0 |
+| change_vs_youth | 0.0335 | 31 | 0.8581 | 1.0 |
+| recent_vs_internet | 0.0702 | 31 | 0.7076 | 1.0 |
+| recent_vs_youth | -0.2085 | 31 | 0.2604 | 1.0 |
 
-Wikipedia `meta.low_traffic_languages_asmr`: **hi, id, ms, th, uk, vi**. Published concepts: **ASMR only**.
+`correlations_excluding_twn` uses the same four pairs with **n=30**. Earlier handoff copy accidentally pasted the excluding-TWN table as `correlations` (that made it look like Taiwan was missing). Spearman drops incomplete indicator rows; before official Taiwan stats filled `IT.NET.USER.ZS` / youth share, TWN had `indicators_status=missing` and was excluded from the n=30 pairs.
+
+Wikipedia `meta.low_traffic_languages_asmr`: **hi, id, ms, th, uk, vi**. Published concepts: **ASMR only** (`config/wiki_concepts.yaml`).
 
 ## (v) Verification state
 
@@ -60,10 +62,7 @@ Wikipedia `meta.low_traffic_languages_asmr`: **hi, id, ms, th, uk, vi**. Publish
 
 ## (vii) Privacy incident log
 
-- The **old** repository history contained raw comment/channel/trial scrapes.
-- A **clean** allowlisted repo was created; this working tree now uses that history on `main`.
-- The old GitHub repo was renamed / made private; a local backup of the old `.git` exists in a sibling folder named `_old_git_backup_DO_NOT_PUSH` (outside this repo).
-- **Still do:** delete the old private GitHub repo when ready; delete the old `.git` backup; optionally rotate the YouTube Data API key (even though `AIza` was not found as a committed secret).
+Moved to local-only `data/HANDOFF_PRIVATE.md` (gitignored via `/data/`).
 
 ## (viii) Open items (order)
 

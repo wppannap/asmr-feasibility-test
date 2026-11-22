@@ -1,0 +1,4 @@
+# Concepts published in web/data/wiki_lang.json (human-ASMR site scope).
+# Raw wiki_pageviews_monthly.csv may contain more concepts; the builder filters to this list.
+published_concepts:
+  - ASMR

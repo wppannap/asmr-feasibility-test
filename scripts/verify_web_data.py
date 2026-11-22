@@ -28,7 +28,8 @@ EXPECTED_FILES = [
 TOPO_FILE = "countries-50m.json"
 
 FORBIDDEN_NOISE_PHRASE_RE = re.compile(
-    r"white\s*noise|whitenoise|白噪音|brown\s*noise|ambient\s*noise",
+    r"white\s*noise|whitenoise|白噪音|brown\s*noise|pink\s*noise|"
+    r"binaural|ambient\s*noise",
     re.I,
 )
 
@@ -232,7 +233,7 @@ def check_no_noise_phrases_in_web() -> list[tuple[str, bool, str]]:
         if len(hits) >= 20:
             break
     rows.append((
-        "no white/brown/ambient-noise phrases in web/",
+        "no white/brown/pink/binaural/ambient-noise phrases in web/",
         len(hits) == 0,
         "ok" if not hits else f"hits={hits[:8]}",
     ))
@@ -306,6 +307,18 @@ def totals_checks(loaded: dict[str, dict]) -> list[tuple[str, bool, str]]:
         "Holm family has exactly 4 ASMR pairs",
         set(corr.keys()) == need,
         f"keys={sorted(corr.keys())}",
+    ))
+    corr_ns = {k: (corr.get(k) or {}).get("n") for k in need}
+    excl_ns = {k: (excl.get(k) or {}).get("n") for k in need}
+    rows.append((
+        "Holm correlations include TWN (n=31)",
+        all(n == 31 for n in corr_ns.values()) and bool(tw),
+        f"corr_n={corr_ns}",
+    ))
+    rows.append((
+        "Holm correlations_excluding_twn n=30",
+        all(n == 30 for n in excl_ns.values()),
+        f"excl_n={excl_ns}",
     ))
     desc = inv.get("correlations_descriptive") or {}
     rows.append((

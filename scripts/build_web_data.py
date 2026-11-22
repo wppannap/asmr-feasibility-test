@@ -14,7 +14,24 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 OUT = ROOT / "web" / "data"
+UNPUB = DATA / "unpublished"
+CONFIG = ROOT / "config"
 MAX_BYTES = 2 * 1024 * 1024
+WIKI_CONCEPTS_CFG = CONFIG / "wiki_concepts.yaml"
+
+
+def load_wiki_published_concepts() -> list[str]:
+    """Concept allowlist for published wiki_lang.json (default: ASMR only)."""
+    try:
+        import yaml  # local; avoid hard dep at module import for unrelated paths
+    except ImportError as e:  # pragma: no cover
+        raise SystemExit("PyYAML required to load config/wiki_concepts.yaml") from e
+    if not WIKI_CONCEPTS_CFG.exists():
+        return ["ASMR"]
+    raw = yaml.safe_load(WIKI_CONCEPTS_CFG.read_text(encoding="utf-8")) or {}
+    concepts = raw.get("published_concepts") or ["ASMR"]
+    out = [str(c).strip() for c in concepts if str(c).strip()]
+    return out or ["ASMR"]
 
 ISO2_TO_ISO3 = {
     "AE": "ARE", "AF": "AFG", "AI": "AIA", "AM": "ARM", "AR": "ARG",
@@ -1367,6 +1384,9 @@ def build_wiki_lang() -> dict:
     # Use agent=user rollup stored as access=="all" (avoid double-counting desktop+mobile+all).
     w = w[w["access"].astype(str) == "all"].copy()
     w = w[w["status"].astype(str).str.lower() == "ok"].copy()
+    published_concepts = load_wiki_published_concepts()
+    allow = set(published_concepts)
+    w = w[w["concept"].astype(str).isin(allow)].copy()
     w["views"] = pd.to_numeric(w["views"], errors="coerce").fillna(0)
     w["lang"] = w["project"].astype(str).str.split(".").str[0]
     agg = (
@@ -1376,7 +1396,8 @@ def build_wiki_lang() -> dict:
     )
     months = sorted(agg["month"].unique().tolist())
     month_i = {m: i for i, m in enumerate(months)}
-    concepts = sorted(agg["concept"].unique().tolist())
+    # Keep config order for published list; drop any allowlisted concept with no rows.
+    concepts = [c for c in published_concepts if c in set(agg["concept"].unique().tolist())]
     langs = sorted(agg["lang"].unique().tolist())
 
     series: dict[str, dict[str, list]] = {}
@@ -1437,9 +1458,16 @@ def build_wiki_lang() -> dict:
                 if tot is not None and float(tot) < p25
             )
 
+    n_language_months = 0
+    for concept in concepts:
+        for lang in (series.get(concept) or {}):
+            n_language_months += sum(
+                1 for v in series[concept][lang] if v is not None
+            )
+
     return {
         "meta": {
-            "source_files": ["wiki_pageviews_monthly.csv"],
+            "source_files": ["wiki_pageviews_monthly.csv", "config/wiki_concepts.yaml"],
             "generated_at": now_iso(),
             "n": int(len(agg)),
             "n_concepts": len(concepts),
@@ -1449,12 +1477,19 @@ def build_wiki_lang() -> dict:
             "low_traffic_percentile": 25,
             "low_traffic_total_views_p25": clean_num(p25) if p25 is not None else None,
             "low_traffic_languages_asmr": low_traffic_langs,
+            "concepts_published": list(concepts),
+            "scope_note": (
+                "Published concept list restricted to config/wiki_concepts.yaml "
+                f"(default ASMR only; currently {concepts})."
+            ),
+            "n_language_months_nonnull": n_language_months,
             "caveats": [
                 "Views use access=all (Pageviews API agent=user rollup); desktop/mobile-web/mobile-app are not re-summed.",
                 "Each language series is indexed to that language's own max = 100 for the concept — not comparable across languages as absolute traffic.",
                 "Wikipedia language ≠ country; do not map these directly onto choropleths.",
                 "Language edition is not country. The Chinese edition is not accessible from mainland China, so its counts do not measure Chinese-language interest. Each series is indexed to its own maximum, so small editions and single-month spikes can distort the shape. Article pageviews also depend on search-engine features.",
                 "low_traffic: language editions below the 25th percentile of total ASMR views; index may exaggerate small changes.",
+                "Only concepts listed in config/wiki_concepts.yaml are published (human-ASMR site scope).",
             ],
         },
         "months": months,
@@ -1641,12 +1676,26 @@ def main() -> None:
             print(f"  removed stale web/data/{legacy}")
 
     dump_json(OUT / "insomnia_vs_asmr.json", build_insomnia_vs_asmr(country_v2))
-    dump_json(OUT / "creator_country.json", build_creator_country())
-    dump_json(OUT / "tiktok_origin.json", build_tiktok_origin())
-    dump_json(OUT / "youtube_yearly.json", build_youtube_yearly())
     dump_json(OUT / "wiki_lang.json", build_wiki_lang())
-    dump_json(OUT / "douyin_keywords.json", build_douyin_keywords())
-    dump_json(OUT / "comment_themes.json", build_comment_themes())
+
+    # YouTube / Douyin / TikTok / comment payloads stay unpublished until class_check review.
+    UNPUB.mkdir(parents=True, exist_ok=True)
+    dump_json(UNPUB / "creator_country.json", build_creator_country())
+    dump_json(UNPUB / "tiktok_origin.json", build_tiktok_origin())
+    dump_json(UNPUB / "youtube_yearly.json", build_youtube_yearly())
+    dump_json(UNPUB / "douyin_keywords.json", build_douyin_keywords())
+    dump_json(UNPUB / "comment_themes.json", build_comment_themes())
+    for stale in (
+        "creator_country.json",
+        "tiktok_origin.json",
+        "youtube_yearly.json",
+        "douyin_keywords.json",
+        "comment_themes.json",
+    ):
+        p = OUT / stale
+        if p.exists():
+            p.unlink()
+            print(f"  removed stale web/data/{stale}")
     print("Done.")
 
 

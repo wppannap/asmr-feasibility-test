@@ -1,0 +1,61 @@
+note: PROPOSAL only — do not apply to live config/yt_classes.yaml without manual review.
+generated_from: data/yt_classes.csv class==other leakage check (titles/tags/description
+  only; no channel ids).
+other_n: 168888
+other_has_human_trigger_n: 16097
+top_human_trigger_words_in_other_ht:
+- term: role-play
+  n: 5209
+- term: mukbang
+  n: 2282
+- term: mic
+  n: 1694
+- term: 按摩
+  n: 1608
+- term: 開箱
+  n: 1462
+- term: slime
+  n: 891
+- term: unboxing
+  n: 779
+- term: 吃播
+  n: 702
+- term: massage
+  n: 515
+- term: whisper
+  n: 407
+- term: keyboard
+  n: 296
+- term: brush
+  n: 269
+- term: 揉
+  n: 147
+- term: scratch
+  n: 144
+- term: 咀嚼
+  n: 135
+proposed_asmr_equivalent_labels:
+  description: Counts of other-class videos whose title/tags/description contain these
+    ASMR-adjacent labels.
+  counts:
+    音フェチ: 83
+    囁き: 68
+    ささやき: 7
+    声控: 138
+    聲控: 38
+    耳かき: 0
+    속삭: 2
+    귀 청소: 0
+    エーエスエムアール: 0
+    에이에스엠알: 0
+    triggers: 97
+  candidate_additions_to_asmr_label:
+  - 音フェチ
+  - 囁き
+  - ささやき
+  - 声控
+  - 聲控
+  - 속삭
+  - triggers
+class_check_other_csv: data/class_check_other.csv (20 with has_human_trigger or proposed
+  label + 10 with neither; titles only; no judgement)
