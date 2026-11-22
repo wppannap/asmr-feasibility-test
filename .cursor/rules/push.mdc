@@ -1,0 +1,16 @@
+---
+description: Mandatory push block for the clean publish repo (main branch, safety scan, no force)
+alwaysApply: true
+---
+
+# PUSH BLOCK (run at the end of every task)
+
+A. Preconditions: if this task changed any file under `web/` or any script that builds/feeds it (`scripts/build_web_data.py`, `scripts/verify_web_data.py`, related payload builders), run `python3 scripts/verify_web_data.py` (0 failed) and the `web/` leak scan. Otherwise skip. If either fails, do NOT push; report why.
+
+B. Identity: `git config user.name` and `git config user.email` must match the author of the last commit on `main`; do not change them. Never add "Co-authored-by", "Generated with", or any Cursor/AI attribution to commit messages or trailers.
+
+C. Hooks: ensure `.git/hooks/commit-msg` exists, is executable, and strips Co-authored-by lines; ensure `.git/hooks/pre-push` exists, is executable, and aborts on blocked paths / oversized files / `AIza` patterns.
+
+D. Safety scan before staging: list tracked files and files about to be added. Abort (do not stage) if any of these appear among tracked or staged paths: `data/`; `_archive/`; `trial_scrapers/`; `.env*`; `browser_data/`; any `*.csv` outside `config/`; files > 5 MB; strings matching `AIza` or other API-key patterns. Print repo visibility if `gh` is available. Do not rewrite history.
+
+E. Commit with a short imperative message of your own (no trailers). Run `git log -1 --format=full` and show that `git log -1 --format=%B | grep -ic co-authored` prints 0. Push with a normal `git push origin main` only (no `--force`). Print commit hash, branch, remote URL, and the Pages URL.

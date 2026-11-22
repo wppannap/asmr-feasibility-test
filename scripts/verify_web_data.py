@@ -17,17 +17,20 @@ DATA = ROOT / "data"
 WEB = ROOT / "web" / "data"
 MAX_BYTES = 2 * 1024 * 1024
 
+# Published payloads only (human-ASMR scope lockdown). Older YouTube/Douyin/TikTok/
+# comment/creator JSONs live under data/unpublished/ until class_check review.
 EXPECTED_FILES = [
     "trends_country_v2.json",
     "trends_monthly_v2.json",
     "insomnia_vs_asmr.json",
-    "creator_country.json",
-    "tiktok_origin.json",
-    "youtube_yearly.json",
     "wiki_lang.json",
-    "douyin_keywords.json",
-    "comment_themes.json",
 ]
+TOPO_FILE = "countries-50m.json"
+
+FORBIDDEN_NOISE_PHRASE_RE = re.compile(
+    r"white\s*noise|whitenoise|白噪音|brown\s*noise|ambient\s*noise",
+    re.I,
+)
 
 # Forbidden content patterns (authors / ids / urls / free text fields)
 FORBIDDEN_KEY_RE = re.compile(
@@ -208,68 +211,37 @@ def check_privacy(obj, name: str) -> list[str]:
     return errs
 
 
-def totals_checks(loaded: dict[str, dict]) -> list[tuple[str, bool, str]]:
+def check_no_noise_phrases_in_web() -> list[tuple[str, bool, str]]:
+    """Fail if any published file under web/ contains ambient/white-noise phrases."""
     rows = []
-    yt = loaded["youtube_yearly.json"]
-    ok = yt["meta"].get("n") == 342423
-    rows.append(("YouTube n=342423", ok, f"meta.n={yt['meta'].get('n')}"))
-    year_sum = sum(r["count"] for r in yt["years"])
-    rows.append(("YouTube year counts sum", year_sum == 342423, f"sum={year_sum}"))
-    null_year = next((r for r in yt["years"] if r.get("year") is None), None)
+    hits = []
+    for path in sorted((ROOT / "web").rglob("*")):
+        if not path.is_file():
+            continue
+        if path.suffix.lower() not in {".html", ".js", ".css", ".json", ".md", ".txt"}:
+            continue
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            continue
+        for i, line in enumerate(text.splitlines(), 1):
+            if FORBIDDEN_NOISE_PHRASE_RE.search(line):
+                hits.append(f"{path.relative_to(ROOT)}:{i}")
+                if len(hits) >= 20:
+                    break
+        if len(hits) >= 20:
+            break
     rows.append((
-        "YouTube unknown-year bucket if needed",
-        year_sum == 342423,
-        f"unknown_year_count={null_year['count'] if null_year else 0}",
+        "no white/brown/ambient-noise phrases in web/",
+        len(hits) == 0,
+        "ok" if not hits else f"hits={hits[:8]}",
     ))
+    return rows
 
-    tt = loaded["tiktok_origin.json"]
-    ok = tt["meta"].get("n") == 168
-    rows.append(("TikTok n=168", ok, f"meta.n={tt['meta'].get('n')}"))
-    csum = sum(r["count"] for r in tt["countries"])
-    rows.append(("TikTok country counts sum", csum == 168, f"sum={csum}"))
 
-    dy = loaded["douyin_keywords.json"]
-    ok = dy["meta"].get("n") == 528
-    rows.append(("Douyin n=528", ok, f"meta.n={dy['meta'].get('n')}"))
-    ksum = sum(r["count"] for r in dy["keywords"])
-    rows.append(("Douyin keyword counts sum", ksum == 528, f"sum={ksum}"))
-
-    cm = loaded["comment_themes.json"]
-    n_comments_csv = int(
-        pd.read_csv(DATA / "yt_comments_sample.csv", usecols=["commentId"], encoding="utf-8-sig")[
-            "commentId"
-        ].nunique()
-    )
-    ok = cm["meta"].get("n_comments") == n_comments_csv
-    rows.append((
-        f"Comments n={n_comments_csv}",
-        ok,
-        f"meta.n_comments={cm['meta'].get('n_comments')}",
-    ))
-    # totals per language should match theme totals (same total_comments per lang)
-    by = cm["by_language"]
-    # pick one theme per lang and sum unique language totals
-    seen = {}
-    for r in by:
-        seen[r["language_group"]] = r["total_comments"]
-    lang_sum = sum(seen.values())
-    rows.append((
-        "Comment language totals sum",
-        lang_sum == n_comments_csv,
-        f"sum={lang_sum}",
-    ))
-    # ALL must not appear in by_language
-    has_all = any(r["language_group"] == "ALL" for r in by)
-    rows.append(("No ALL in by_language", not has_all, f"has_ALL={has_all}"))
-    rows.append(("pooled present", bool(cm.get("pooled", {}).get("rows")), "pooled.rows"))
-
-    cr = loaded["creator_country.json"]
-    ok = cr["meta"].get("n_channels") == 5205
-    rows.append(("Channels n=5205", ok, f"n_channels={cr['meta'].get('n_channels')}"))
-    ok = cr["meta"].get("n_videos") == 342423
-    rows.append(("Creator-country videos n=342423", ok, f"n_videos={cr['meta'].get('n_videos')}"))
-    vsum = sum(r["video_count"] for r in cr["countries"])
-    rows.append(("Creator-country video sum", vsum == 342423, f"sum={vsum}"))
+def totals_checks(loaded: dict[str, dict]) -> list[tuple[str, bool, str]]:
+    """Checks for currently published payloads only."""
+    rows = []
 
     # Taiwan filled from official Taiwan stats (not World Bank)
     inv = loaded["insomnia_vs_asmr.json"]
@@ -281,45 +253,8 @@ def totals_checks(loaded: dict[str, dict]) -> list[tuple[str, bool, str]]:
         and tw[0].get("youth_share_pct") == 11.796
     )
     rows.append(("Taiwan indicators from official TW stats", tw_ok, tw[0] if tw else "TWN absent"))
-    # no silent drop: TWN present
     rows.append(("Taiwan kept in insomnia_vs_asmr", bool(tw), f"n_TWN={len(tw)}"))
 
-    # precision_note
-    prec = cm["meta"].get("precision_note") or ""
-    rows.append((
-        "comment precision_note set",
-        "keyword matching" in prec,
-        repr(prec),
-    ))
-    themes_web = {r["theme"] for r in cm.get("by_language") or []}
-    rows.append((
-        "loneliness/companionship excluded from web comment_themes",
-        "loneliness" not in themes_web and "companionship_care" not in themes_web,
-        f"themes={sorted(themes_web)}",
-    ))
-    vt = (cm.get("meta") or {}).get("verified_themes")
-    need = {"insomnia", "gratitude", "anxiety_stress", "sleep_aid_effectiveness"}
-    vt_ok = isinstance(vt, dict) and need <= set(vt.keys())
-    rows.append((
-        "verified_themes object includes insomnia+gratitude+anxiety+sleep_aid",
-        vt_ok,
-        repr(sorted(vt.keys()) if isinstance(vt, dict) else vt),
-    ))
-    rows.append((
-        "web comment_themes only verified themes",
-        themes_web <= set(vt.keys()) if isinstance(vt, dict) else False,
-        f"themes={sorted(themes_web)}",
-    ))
-    sample_caveat = any(
-        "highest-viewed sleep-related ASMR" in str(c)
-        for c in ((cm.get("meta") or {}).get("caveats") or [])
-    )
-    rows.append((
-        "comment sample caveat present",
-        sample_caveat,
-        "ok" if sample_caveat else "missing sample caveat",
-    ))
-    inv = loaded["insomnia_vs_asmr.json"]
     excl = inv.get("correlations_excluding_twn") or {}
     corr = inv.get("correlations") or {}
     rows.append((
@@ -361,7 +296,6 @@ def totals_checks(loaded: dict[str, dict]) -> list[tuple[str, bool, str]]:
         ),
         "ok" if v2_rows else "no rows",
     ))
-    corr = (loaded.get("insomnia_vs_asmr.json") or {}).get("correlations") or {}
     need = {
         "change_vs_internet",
         "change_vs_youth",
@@ -373,7 +307,7 @@ def totals_checks(loaded: dict[str, dict]) -> list[tuple[str, bool, str]]:
         set(corr.keys()) == need,
         f"keys={sorted(corr.keys())}",
     ))
-    desc = (loaded.get("insomnia_vs_asmr.json") or {}).get("correlations_descriptive") or {}
+    desc = inv.get("correlations_descriptive") or {}
     rows.append((
         "descriptive internet_vs_youth outside Holm",
         "internet_vs_youth" in desc
@@ -381,7 +315,7 @@ def totals_checks(loaded: dict[str, dict]) -> list[tuple[str, bool, str]]:
         and (desc.get("internet_vs_youth") or {}).get("label") == "not about ASMR",
         list(desc.keys()),
     ))
-    inv_row0 = ((loaded.get("insomnia_vs_asmr.json") or {}).get("countries") or [{}])[0]
+    inv_row0 = (inv.get("countries") or [{}])[0]
     rows.append((
         "published countries lack share/insomnia fields",
         "asmr_share_of_batch" not in inv_row0 and "insomnia_index" not in inv_row0,
@@ -393,126 +327,59 @@ def totals_checks(loaded: dict[str, dict]) -> list[tuple[str, bool, str]]:
         isinstance((wiki.get("low_traffic") or {}).get("ASMR"), list),
         (wiki.get("meta") or {}).get("low_traffic_languages_asmr"),
     ))
+    rows.append((
+        "wiki_lang concepts ASMR-only",
+        wiki.get("concepts") == ["ASMR"],
+        repr(wiki.get("concepts")),
+    ))
+    # Unpublished payload files must not remain under web/data/
+    for stale in (
+        "youtube_yearly.json",
+        "creator_country.json",
+        "comment_themes.json",
+        "douyin_keywords.json",
+        "tiktok_origin.json",
+    ):
+        rows.append((
+            f"unpublished not in web/data: {stale}",
+            not (WEB / stale).exists(),
+            "absent" if not (WEB / stale).exists() else "STILL PRESENT",
+        ))
+    rows.extend(check_no_noise_phrases_in_web())
     return rows
 
 
 def spot_checks(rng: random.Random) -> None:
-    print("\n=== Spot checks (3 random web rows ↔ source) ===\n")
+    print("\n=== Spot checks (published payloads only) ===\n")
 
-    # 1) trends_country_v2
     web, _ = load_json("trends_country_v2.json")
-    ts = pd.read_csv(DATA / "trends_timeseries.csv", encoding="utf-8-sig")
-    ts = ts[ts["geo"].fillna("").astype(str).str.strip() != ""]
     samples = rng.sample(web["rows"], min(3, len(web["rows"])))
     print("— trends_country_v2.json —")
     for row in samples:
-        iso3 = row["iso3"]
-        iso2 = ISO3_TO_ISO2.get(iso3)
-        print(f"  WEB: { {k: row.get(k) for k in ('iso3','change_in_window','recent_vs_peak','flag_low_volume')} }")
-        if iso2:
-            src = ts[ts["geo"] == iso2].head(2)
-            print(f"  SRC sample geo={iso2}:\n{src[['keyword','geo','date','interest']].to_string(index=False)}")
-        print()
-
-    # 2) tiktok
-    web, _ = load_json("tiktok_origin.json")
-    tk = pd.read_csv(DATA / "tiktok_trial/tiktok_asmr_master.csv", encoding="utf-8-sig")
-    samples = rng.sample(web["countries"], min(3, len(web["countries"])))
-    print("— tiktok_origin.json —")
-    for row in samples:
-        print(f"  WEB: {row}")
-        iso2 = ISO3_TO_ISO2.get(row["iso3"])
-        loc = tk["location_created"].fillna("").astype(str).str.strip().str.upper()
-        if row["iso3"] == "UNKNOWN":
-            src = tk[loc.isin(["", "UNKNOWN", "NAN"])].head(2)
-        else:
-            src = tk[loc == (iso2 or "")].head(2)
-        cols = [c for c in ("location_created", "plays", "saves") if c in src.columns]
-        print(f"  SRC (no authors/urls):\n{src[cols].to_string(index=False)}")
-        print()
-
-    # 3) douyin
-    web, _ = load_json("douyin_keywords.json")
-    dy = pd.read_csv(DATA / "douyin_trial/douyin_asmr_master.csv", encoding="utf-8-sig")
-    samples = rng.sample(web["keywords"], min(3, len(web["keywords"])))
-    print("— douyin_keywords.json —")
-    for row in samples:
-        print(f"  WEB: {row}")
-        src = dy[dy["source_keyword"].astype(str) == row["keyword"]]
-        print(
-            f"  SRC n={len(src)} median liked={src['liked_count'].median()} "
-            f"median collected={src['collected_count'].median()}"
-        )
-        print()
-
-    # 4) youtube yearly
-    web, _ = load_json("youtube_yearly.json")
-    samples = rng.sample(web["years"], min(3, len(web["years"])))
-    print("— youtube_yearly.json —")
-    yt = pd.read_csv(
-        DATA / "yt_master.csv",
-        encoding="utf-8-sig",
-        usecols=["publishedAt", "is_asmr_related", "viewCount"],
-    )
-    yt["year"] = pd.to_datetime(yt["publishedAt"], errors="coerce", utc=True).dt.year
-    for row in samples:
-        src = yt[yt["year"] == row["year"]]
-        print(f"  WEB: {row}")
-        print(f"  SRC count={len(src)} median views={src['viewCount'].median()}")
-        print()
-
-    # 5) comment themes
-    web, _ = load_json("comment_themes.json")
-    ct = pd.read_csv(DATA / "comment_theme_counts.csv", encoding="utf-8-sig")
-    samples = rng.sample(web["by_language"], min(3, len(web["by_language"])))
-    print("— comment_themes.json —")
-    for row in samples:
-        print(f"  WEB: {row}")
-        src = ct[(ct.language_group == row["language_group"]) & (ct.theme == row["theme"])]
-        print(f"  SRC:\n{src.to_string(index=False)}")
-        print()
-
-    # 6) insomnia_vs_asmr
-    web, _ = load_json("insomnia_vs_asmr.json")
-    samples = rng.sample(web["countries"], min(3, len(web["countries"])))
-    ind = pd.read_csv(DATA / "indicators_country.csv", encoding="utf-8-sig")
-    print("— insomnia_vs_asmr.json —")
-    for row in samples:
-        print(f"  WEB: {row}")
-        iso2 = ISO3_TO_ISO2.get(row["iso3"])
-        src = ind[ind["iso2"].astype(str).str.upper() == (iso2 or "")]
-        print(f"  SRC indicators:\n{src[['iso2','iso3','indicator_code','value','year']].to_string(index=False)}")
-        print()
-
-    # 7) creator_country
-    web, _ = load_json("creator_country.json")
-    samples = rng.sample(web["countries"], min(3, len(web["countries"])))
-    print("— creator_country.json —")
-    for row in samples:
-        print(f"  WEB: {row}")
-    print(f"  META coverage channels%={web['meta'].get('coverage_channels_pct')} "
-          f"videos%={web['meta'].get('coverage_videos_pct')} "
-          f"chinese_query_share={web['meta'].get('chinese_query_share')}")
+        print(f"  WEB: { {k: row.get(k) for k in ('iso3','change_in_window','recent_vs_peak','within_noise','flag_low_volume')} }")
     print()
 
-    # 8) wiki + trends_monthly (structure only + 1 cell)
+    web, _ = load_json("insomnia_vs_asmr.json")
+    samples = rng.sample(web["countries"], min(3, len(web["countries"])))
+    print("— insomnia_vs_asmr.json —")
+    for row in samples:
+        print(f"  WEB iso3={row.get('iso3')} change={row.get('change_in_window')} recent={row.get('recent_vs_peak')}")
+    print()
+
     web, _ = load_json("wiki_lang.json")
-    concept = rng.choice(web["concepts"])
-    lang = rng.choice(list(web["series"][concept].keys()))
-    series = web["series"][concept][lang]
-    nonempty = [(i, v) for i, v in enumerate(series) if v is not None]
-    pick = rng.choice(nonempty) if nonempty else (0, None)
+    concept = (web.get("concepts") or ["ASMR"])[0]
+    langs = list((web.get("series") or {}).get(concept, {}).keys())
+    lang = rng.choice(langs) if langs else None
     print("— wiki_lang.json —")
-    print(f"  WEB sample: concept={concept} lang={lang} month={web['months'][pick[0]]} index={pick[1]}")
+    print(f"  concepts={web.get('concepts')} sample_lang={lang}")
     print()
 
     web, _ = load_json("trends_monthly_v2.json")
     country = rng.choice(web["countries"])
-    series = web["series"]["own_peak_asmr"][country]
-    nonempty = [(i, v) for i, v in enumerate(series) if v is not None]
-    pick = rng.choice(nonempty) if nonempty else (0, None)
     print("— trends_monthly_v2.json —")
-    print(f"  WEB sample: iso3={country} month={web['months'][pick[0]]} own_peak={pick[1]}")
+    print(f"  sample iso3={country} months={len(web.get('months') or [])}")
+    print()
+    print("SKIPPED spot checks for unpublished: youtube_yearly, creator_country, comment_themes, douyin_keywords, tiktok_origin")
     print()
 
 
@@ -540,6 +407,13 @@ def main() -> int:
         results.append((f"finite {name}", len(fin) == 0, "; ".join(fin) or "ok"))
         priv = check_privacy(obj, name)
         results.append((f"privacy {name}", len(priv) == 0, "; ".join(priv) or "ok"))
+
+    topo_path = WEB / TOPO_FILE
+    results.append((
+        f"exists {TOPO_FILE}",
+        topo_path.exists(),
+        f"{topo_path.stat().st_size:,} bytes" if topo_path.exists() else "missing",
+    ))
 
     if len(loaded) == len(EXPECTED_FILES):
         results.extend(totals_checks(loaded))

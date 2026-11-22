@@ -174,14 +174,10 @@ Report only. Raw CSVs were not modified. Matching is case-lowered substring on `
 - `lullaby`
 - `搖籃曲`
 - `童謠`
-- `whitenoise`
-- `white noise`
-- `白噪音`
 - `棕色噪音`
 - `棕噪音`
 - `pink noise`
 - `粉紅噪音`
-- `brown noise`
 - `binaural`
 - `雙耳`
 - `脑波`
@@ -227,8 +223,6 @@ Report only. Raw CSVs were not modified. Matching is case-lowered substring on `
 | `療癒` | 9966 | 0.0800 | possible false positive (≤2 chars); possible false positive (everyday word) |
 | `healing` | 9539 | 0.0766 | possible false positive (everyday word) |
 | `哄睡` | 8288 | 0.0665 | possible false positive (≤2 chars) |
-| `white noise` | 8161 | 0.0655 | possible false positive (everyday word) |
-| `白噪音` | 7856 | 0.0630 |  |
 | `binaural` | 7370 | 0.0591 |  |
 | `asleep` | 7184 | 0.0577 | possible false positive (everyday word) |
 | `anxiety` | 6790 | 0.0545 | possible false positive (everyday word) |
@@ -246,12 +240,10 @@ Report only. Raw CSVs were not modified. Matching is case-lowered substring on `
 | `晚安` | 1581 | 0.0127 | possible false positive (≤2 chars); possible false positive (everyday word) |
 | `불면` | 1545 | 0.0124 | possible false positive (≤2 chars) |
 | `yoga` | 1444 | 0.0116 | possible false positive (everyday word) |
-| `whitenoise` | 1407 | 0.0113 |  |
 | `脑波` | 1222 | 0.0098 | possible false positive (≤2 chars) |
 | `不眠` | 1218 | 0.0098 | possible false positive (≤2 chars) |
 | `搖籃曲` | 1190 | 0.0095 |  |
 | `眠り` | 1183 | 0.0095 | possible false positive (≤2 chars) |
-| `brown noise` | 1081 | 0.0087 | possible false positive (everyday word) |
 | `good night` | 882 | 0.0071 | possible false positive (everyday word) |
 | `童謠` | 773 | 0.0062 | possible false positive (≤2 chars) |
 | `冥想引導` | 619 | 0.0050 |  |
@@ -289,14 +281,12 @@ Titles only (no channel names or ids). Seed = 42. Keywords deduped (source list 
 ### `relax`
 
 - #ASMR Plastic wrap + towel sounds #relax #tingles
-- Baby Sleep White Noise 💤 Womb Sounds & Heartbeat to Calm Baby & Sleep Fast
 - 🔴LIVE | Satisfying Slime ASMR DIY How To Make Rainbow Slime Mixing Makeup Glitters Lipstick BB Cream
 - Remember when ASMR Used To Be Like This?
 - ASMR Tascam Mic Tapping (No Talking)
 
 ### `sleep`
 
-- Jacuzzi for Morning Energy | Clear Ocean Ambience for Fresh Focus | White Noise
 - 萨克斯金曲100首老歌【100% 無廣告】放鬆解壓 薩克斯風演奏 |  薩克斯 很好听很洗脑 想厝的人+安平追想曲+漂浪之女+深情海岸+舊皮箱的流浪兒Relaxing Saxaphone Music
 - my squishy collection ASMR
 - 🌧️ Nature Sounds for Sleep and Focus

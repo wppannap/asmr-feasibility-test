@@ -44,7 +44,7 @@ Proxy: nonempty `searchKeywords` **or** `searchTerms` ⇒ found by search; both 
 n = **400** query rows.
 
 - Duration words (`hour`, `hr`, `小時`, `8h`, `8小時`): **0 / 400** hits.  
-- Sleep-related words (regex covering sleep/助眠/失眠/수면/眠/insomni/白噪音/white noise/relax/放鬆/冥想/meditation, etc.): **90 / 400**.
+- Sleep-related words (regex covering sleep/助眠/失眠/수면/眠/insomni/relax/放鬆/冥想/meditation, etc.): **90 / 400**.
 
 ## `is_sleep_related` rates
 

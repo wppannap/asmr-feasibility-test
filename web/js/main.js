@@ -1,5 +1,6 @@
 /* global d3, topojson, scrollama, gsap, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
 import { attachTableToggle, prefersReducedMotion } from "./charts/util.js";
+import { ENABLED_DATA, ENABLED_SECTIONS, applySectionVisibility } from "./sections.js";
 
 /** Populated by loadChartModules() — sequential imports avoid dropped parallel ESM fetches on single-threaded static servers. */
 const ChartModules = {
@@ -11,13 +12,28 @@ const ChartModules = {
   comments: null,
 };
 
+const sectionOn = (id) => ENABLED_SECTIONS.includes(id);
+
 async function loadChartModules() {
-  ChartModules.creatorSymbols = await import("./charts/creator_symbols.js");
-  ChartModules.scatter = await import("./charts/scatter.js");
-  ChartModules.duration = await import("./charts/duration.js");
-  ChartModules.wiki = await import("./charts/wiki.js");
-  ChartModules.douyin = await import("./charts/douyin.js");
-  ChartModules.comments = await import("./charts/comments.js");
+  // Only import modules for enabled sections (absent payloads must not be fetched).
+  if (sectionOn("scrolly-3")) {
+    ChartModules.creatorSymbols = await import("./charts/creator_symbols.js");
+  }
+  if (sectionOn("scrolly-4")) {
+    ChartModules.scatter = await import("./charts/scatter.js");
+  }
+  if (sectionOn("scrolly-5")) {
+    ChartModules.duration = await import("./charts/duration.js");
+  }
+  if (sectionOn("scrolly-6")) {
+    ChartModules.wiki = await import("./charts/wiki.js");
+  }
+  if (sectionOn("scrolly-7")) {
+    ChartModules.douyin = await import("./charts/douyin.js");
+  }
+  if (sectionOn("scrolly-8")) {
+    ChartModules.comments = await import("./charts/comments.js");
+  }
 }
 
 const METRIC_LABEL = {
@@ -64,29 +80,19 @@ function formatNum(v, digits) {
 }
 
 async function loadAll() {
-    const [
-      topo,
-      trends,
-      creators,
-      monthly,
-      tiktok,
-      scatterData,
-      youtube,
-      wikiData,
-      douyinData,
-      commentsData,
-    ] = await Promise.all([
-      d3.json("data/countries-50m.json"),
-      d3.json("data/trends_country_v2.json"),
-      d3.json("data/creator_country.json"),
-      d3.json("data/trends_monthly_v2.json"),
-      d3.json("data/tiktok_origin.json"),
-      d3.json("data/insomnia_vs_asmr.json"),
-      d3.json("data/youtube_yearly.json"),
-      d3.json("data/wiki_lang.json"),
-      d3.json("data/douyin_keywords.json"),
-      d3.json("data/comment_themes.json"),
-    ]);
+    const topo = await d3.json(ENABLED_DATA.topo);
+    const trends = await d3.json(ENABLED_DATA.trends);
+    const monthly = await d3.json(ENABLED_DATA.monthly);
+    const scatterData = sectionOn("scrolly-4") ? await d3.json(ENABLED_DATA.scatter) : null;
+    const wikiData = sectionOn("scrolly-6") ? await d3.json(ENABLED_DATA.wiki) : null;
+
+    // Unpublished / disabled payloads — never fetch while sections are off.
+    const creators = null;
+    const tiktok = null;
+    const youtube = null;
+    const douyinData = null;
+    const commentsData = null;
+
     state.extra = { tiktok, scatterData, youtube, wikiData, douyinData, commentsData };
 
     const countries = topojson.feature(topo, topo.objects.countries);
@@ -103,22 +109,22 @@ async function loadAll() {
       if (r.iso3) state.countryV2ByIso.set(r.iso3, r);
     });
 
-    state.creatorMeta = creators.meta;
-    state.creatorRows = creators.countries || [];
-    creators.countries.forEach((r) => {
-      if (r.iso3 && r.iso3 !== "unknown") state.creatorsByIso.set(r.iso3, r);
-    });
+    state.creatorMeta = null;
+    state.creatorRows = [];
+    state.creatorsByIso = new Map();
 
     state.monthly = monthly;
     state.monthlyMeta = monthly.meta;
     state.monthIndex = 0;
 
-    document.getElementById("caveat-1").textContent = [
-      ...(trends.meta.caveats || []).slice(0, 1),
-      ...(creators.meta.caveats || []).slice(0, 1),
-    ].join(" ");
-
-    document.getElementById("caveat-2").textContent = (monthly.meta.caveats || []).join(" ");
+    const c1 = document.getElementById("caveat-1");
+    if (c1) {
+      c1.textContent = [...(trends.meta.caveats || []).slice(0, 2)].join(" ");
+    }
+    const c2 = document.getElementById("caveat-2");
+    if (c2) {
+      c2.textContent = (monthly.meta.caveats || []).join(" ");
+    }
   }
 
   function makeScale(values, { log, diverging } = {}) {
@@ -439,62 +445,45 @@ async function loadAll() {
   }
 
   function updateStage1() {
+    // Creator-country payload is unpublished until human_asmr classes are verified.
+    state.layerMode = "trends";
     const panels = document.getElementById("map-panels-1");
+    if (!panels) return;
     const trendsPanel = panels.querySelector('[data-panel="trends"]');
     const creatorsPanel = panels.querySelector('[data-panel="creators"]');
     const titleEl = document.getElementById("trends-panel-title");
 
-    panels.classList.toggle("is-compare", state.layerMode === "compare");
-
-    if (state.layerMode === "trends") {
-      trendsPanel.classList.remove("is-hidden");
-      creatorsPanel.classList.add("is-hidden");
-    } else if (state.layerMode === "creators") {
-      trendsPanel.classList.add("is-hidden");
-      creatorsPanel.classList.remove("is-hidden");
-    } else {
-      trendsPanel.classList.remove("is-hidden");
-      creatorsPanel.classList.remove("is-hidden");
-    }
+    panels.classList.toggle("is-compare", false);
+    if (trendsPanel) trendsPanel.classList.remove("is-hidden");
+    if (creatorsPanel) creatorsPanel.classList.add("is-hidden");
 
     if (titleEl) {
       titleEl.textContent = METRIC_LABEL[state.choroplethMetric] || METRIC_LABEL.change_in_window;
     }
 
     state.displayValues.trends = collectTrendsValues();
-    state.displayValues.creators = collectCreatorValues();
+    state.displayValues.creators = {};
 
     const isChange = state.choroplethMetric === "change_in_window";
     const tScale = makeScale(Object.values(state.displayValues.trends), {
       log: false,
       diverging: isChange,
     });
-    const cScale = makeScale(Object.values(state.displayValues.creators), { log: true });
 
-    if (state.layerMode !== "creators") {
-      paintMap("trends", state.displayValues.trends, tScale);
-      const legendLabel = METRIC_LABEL[state.choroplethMetric] || METRIC_LABEL.change_in_window;
-      let hatchNote = null;
-      if (state.choroplethMetric === "change_in_window" && anyWithinNoiseFlag()) {
-        hatchNote =
-          "Change is within noise (smaller than about 2 standard errors of monthly values; Google Trends is a sample)";
-      } else if (anyLowVolumeFlag()) {
-        hatchNote = "hatched = low_volume";
-      }
-      drawLegend(document.getElementById("legend-trends"), tScale, legendLabel, {
-        hatchNote,
-      });
-      updateNoiseCaption();
-    } else {
-      const noiseEl = document.getElementById("trends-noise-caption");
-      if (noiseEl) {
-        noiseEl.hidden = true;
-      }
+    if (!state.maps.trends) return;
+    paintMap("trends", state.displayValues.trends, tScale);
+    const legendLabel = METRIC_LABEL[state.choroplethMetric] || METRIC_LABEL.change_in_window;
+    let hatchNote = null;
+    if (state.choroplethMetric === "change_in_window" && anyWithinNoiseFlag()) {
+      hatchNote =
+        "Change is within noise (smaller than about 2 standard errors of monthly values; Google Trends is a sample)";
+    } else if (anyLowVolumeFlag()) {
+      hatchNote = "hatched = low_volume";
     }
-    if (state.layerMode !== "trends") {
-      paintMap("creators", state.displayValues.creators, cScale);
-      drawLegend(document.getElementById("legend-creators"), cScale, "Channel count");
-    }
+    drawLegend(document.getElementById("legend-trends"), tScale, legendLabel, {
+      hatchNote,
+    });
+    updateNoiseCaption();
   }
 
   function updateStage2(immediate) {
@@ -627,44 +616,59 @@ function initExtraCharts() {
   const { tiktok, scatterData, youtube, wikiData, douyinData, commentsData } = state.extra;
   const { creatorSymbols, scatter, duration, wiki, douyin, comments } = ChartModules;
 
-  chartApi.creatorSymbols = creatorSymbols.render(
-    document.getElementById("chart-creator-symbols"),
-    {
-      creators: { meta: state.creatorMeta, countries: state.creatorRows },
-      lands: state.lands,
-      tiktok,
-      caveatEl: document.getElementById("caveat-3"),
-    }
-  );
-  chartApi.scatter = scatter.render(document.getElementById("chart-scatter"), {
-    scatter: scatterData,
-    caveatEl: document.getElementById("caveat-4"),
-  });
-  chartApi.duration = duration.render(document.getElementById("chart-duration"), {
-    youtube,
-    caveatEl: document.getElementById("caveat-5"),
-  });
-  chartApi.wiki = wiki.render(document.getElementById("chart-wiki"), {
-    wiki: wikiData,
-    caveatEl: document.getElementById("caveat-6"),
-  });
-  chartApi.douyin = douyin.render(document.getElementById("chart-douyin"), {
-    douyin: douyinData,
-    caveatEl: document.getElementById("caveat-7"),
-  });
-  chartApi.comments = comments.render(document.getElementById("chart-comments"), {
-    comments: commentsData,
-    caveatEl: document.getElementById("caveat-8"),
-  });
+  if (sectionOn("scrolly-3") && creatorSymbols && state.creatorMeta) {
+    chartApi.creatorSymbols = creatorSymbols.render(
+      document.getElementById("chart-creator-symbols"),
+      {
+        creators: { meta: state.creatorMeta, countries: state.creatorRows },
+        lands: state.lands,
+        tiktok,
+        caveatEl: document.getElementById("caveat-3"),
+      }
+    );
+  }
+  if (sectionOn("scrolly-4") && scatter && scatterData) {
+    chartApi.scatter = scatter.render(document.getElementById("chart-scatter"), {
+      scatter: scatterData,
+      caveatEl: document.getElementById("caveat-4"),
+    });
+  }
+  if (sectionOn("scrolly-5") && duration && youtube) {
+    chartApi.duration = duration.render(document.getElementById("chart-duration"), {
+      youtube,
+      caveatEl: document.getElementById("caveat-5"),
+    });
+  }
+  if (sectionOn("scrolly-6") && wiki && wikiData) {
+    chartApi.wiki = wiki.render(document.getElementById("chart-wiki"), {
+      wiki: wikiData,
+      caveatEl: document.getElementById("caveat-6"),
+    });
+  }
+  if (sectionOn("scrolly-7") && douyin && douyinData) {
+    chartApi.douyin = douyin.render(document.getElementById("chart-douyin"), {
+      douyin: douyinData,
+      caveatEl: document.getElementById("caveat-7"),
+    });
+  }
+  if (sectionOn("scrolly-8") && comments && commentsData) {
+    chartApi.comments = comments.render(document.getElementById("chart-comments"), {
+      comments: commentsData,
+      caveatEl: document.getElementById("caveat-8"),
+    });
+  }
 }
 
   function initScrollama() {
     document.querySelectorAll(".scrolly").forEach((section) => {
+      if (section.hidden || section.style.display === "none") return;
       const scroller = scrollama();
       const chartKey = section.dataset.chart;
+      const steps = section.querySelectorAll(".step");
+      if (!steps.length) return;
       scroller
         .setup({
-          step: section.querySelectorAll(".step"),
+          step: steps,
           offset: 0.55,
           progress: false,
         })
@@ -690,23 +694,31 @@ function initExtraCharts() {
   }
 
   async function main() {
+    applySectionVisibility(document);
     try {
       await loadChartModules();
       await loadAll();
     } catch (err) {
       console.error(err);
-      document.getElementById("caveat-1").textContent =
-        "Failed to load data. Serve this folder over HTTP (e.g. python3 -m http.server).";
+      const c1 = document.getElementById("caveat-1");
+      if (c1) {
+        c1.textContent =
+          "Failed to load data. Serve this folder over HTTP (e.g. python3 -m http.server).";
+      }
       return;
     }
 
-    wrapMapWithTable("#map-trends", "trends");
-    wrapMapWithTable("#map-creators", "creators");
-    wrapMapWithTable("#map-monthly", "monthly");
+    if (sectionOn("scrolly-1")) {
+      wrapMapWithTable("#map-trends", "trends");
+      // Creator map host stays in DOM but is unused while creators payload is unpublished.
+    }
+    if (sectionOn("scrolly-2")) {
+      wrapMapWithTable("#map-monthly", "monthly");
+    }
 
     wireControls();
-    updateStage1();
-    updateStage2(true);
+    if (sectionOn("scrolly-1")) updateStage1();
+    if (sectionOn("scrolly-2")) updateStage2(true);
     initExtraCharts();
     initScrollama();
   }
