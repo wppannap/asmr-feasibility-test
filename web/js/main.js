@@ -1,6 +1,11 @@
 /* global d3, topojson, scrollama, gsap, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
 import { attachTableToggle, prefersReducedMotion } from "./charts/util.js";
-import { ENABLED_DATA, ENABLED_SECTIONS, applySectionVisibility } from "./sections.js";
+import {
+  ENABLED_DATA,
+  ENABLED_SECTIONS,
+  MAP_CAPTION_NOTES,
+  applySectionVisibility,
+} from "./sections.js";
 
 /** Populated by loadChartModules() — sequential imports avoid dropped parallel ESM fetches on single-threaded static servers. */
 const ChartModules = {
@@ -115,15 +120,44 @@ async function loadAll() {
 
     state.monthly = monthly;
     state.monthlyMeta = monthly.meta;
-    state.monthIndex = 0;
+    // Start scrubber at first complete window month (2021-11); 2021-10 is partial.
+    const startIdx = (monthly.months || []).indexOf("2021-11");
+    state.monthIndex = startIdx >= 0 ? startIdx : 0;
+
+    applyMapCaptions(trends.meta, monthly.meta);
+  }
+
+  function applyMapCaptions(trendsMeta, monthlyMeta) {
+    const noteBits = [
+      MAP_CAPTION_NOTES.latinAsmrOnly,
+      MAP_CAPTION_NOTES.mainlandChina,
+    ];
+    const win = MAP_CAPTION_NOTES.window;
+
+    const sub1 = document.getElementById("trends-window-subtitle");
+    if (sub1) sub1.textContent = win;
+    const sub2 = document.getElementById("monthly-window-subtitle");
+    if (sub2) sub2.textContent = win;
+
+    const monthCap = document.getElementById("month-caption");
+    if (monthCap) {
+      monthCap.textContent = `Relative to each country's own peak · ${win}`;
+    }
 
     const c1 = document.getElementById("caveat-1");
     if (c1) {
-      c1.textContent = [...(trends.meta.caveats || []).slice(0, 2)].join(" ");
+      const base = [...(trendsMeta?.caveats || []).slice(0, 2)].join(" ");
+      c1.textContent = [base, ...noteBits].filter(Boolean).join(" ");
     }
     const c2 = document.getElementById("caveat-2");
     if (c2) {
-      c2.textContent = (monthly.meta.caveats || []).join(" ");
+      // Window sentence lives in subtitle / month-caption only once; caveats omit it.
+      const raw = (monthlyMeta?.caveats || []).join(" ");
+      const stripped = raw
+        .replace(/window is Nov 2021 to Oct 2026[^.]*(?:\.|$)/gi, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+      c2.textContent = [stripped, ...noteBits].filter(Boolean).join(" ");
     }
   }
 
@@ -179,13 +213,14 @@ async function loadAll() {
     return false;
   }
 
-  function drawLegend(el, scaleInfo, label, { hatchNote } = {}) {
+  function drawLegend(el, scaleInfo, label, { hatchNote, showMiss, showLowVolume } = {}) {
     const root = d3.select(el);
     root.selectAll("*").remove();
-    root.append("span").text(label);
-    const w = 140;
+    root.append("span").attr("class", "legend-title").text(label);
+    const w = 160;
     const h = 10;
-    const svg = root.append("svg").attr("width", w).attr("height", h);
+    const block = root.append("div").attr("class", "legend-scale");
+    const svg = block.append("svg").attr("width", w).attr("height", h + 16);
     const defs = svg.append("defs");
     const id = `lg-${Math.random().toString(36).slice(2, 8)}`;
     const grad = defs.append("linearGradient").attr("id", id);
@@ -197,13 +232,33 @@ async function loadAll() {
     });
     svg.append("rect").attr("width", w).attr("height", h).attr("fill", `url(#${id})`).attr("rx", 2);
     const digits = scaleInfo.diverging ? 1 : scaleInfo.log ? 0 : 1;
-    root
-      .append("span")
-      .text(
-        scaleInfo.log
-          ? `${formatNum(scaleInfo.domain[0], 0)} – ${formatNum(scaleInfo.domain[1], 0)} (log)`
-          : `${formatNum(scaleInfo.domain[0], digits)} – ${formatNum(scaleInfo.domain[1], digits)}`
-      );
+    if (scaleInfo.diverging) {
+      const lo = formatNum(scaleInfo.domain[0], digits);
+      const hi = formatNum(scaleInfo.domain[1], digits);
+      const tickY = h + 11;
+      svg.append("text").attr("x", 0).attr("y", tickY).attr("class", "legend-tick").attr("text-anchor", "start").text(lo);
+      svg.append("text").attr("x", w / 2).attr("y", tickY).attr("class", "legend-tick").attr("text-anchor", "middle").text("0");
+      svg.append("text").attr("x", w).attr("y", tickY).attr("class", "legend-tick").attr("text-anchor", "end").text(hi);
+    } else {
+      block
+        .append("span")
+        .attr("class", "legend-range")
+        .text(
+          scaleInfo.log
+            ? `${formatNum(scaleInfo.domain[0], 0)} – ${formatNum(scaleInfo.domain[1], 0)} (log)`
+            : `${formatNum(scaleInfo.domain[0], digits)} – ${formatNum(scaleInfo.domain[1], digits)}`
+        );
+    }
+    if (showMiss) {
+      const row = root.append("div").attr("class", "legend-swatch-row");
+      row.append("span").attr("class", "legend-swatch legend-swatch-miss");
+      row.append("span").text("No data (not measured)");
+    }
+    if (showLowVolume) {
+      const row = root.append("div").attr("class", "legend-swatch-row");
+      row.append("span").attr("class", "legend-swatch legend-swatch-lowvol");
+      row.append("span").text("Low volume");
+    }
     if (hatchNote) {
       root.append("span").attr("class", "legend-hatch-note").text(hatchNote);
     }
@@ -482,6 +537,8 @@ async function loadAll() {
     }
     drawLegend(document.getElementById("legend-trends"), tScale, legendLabel, {
       hatchNote,
+      showMiss: true,
+      showLowVolume: anyLowVolumeFlag(),
     });
     updateNoiseCaption();
   }
@@ -511,7 +568,8 @@ async function loadAll() {
       drawLegend(
         document.getElementById("legend-monthly"),
         fixed,
-        "Relative to each country's own peak"
+        "Relative to each country's own peak",
+        { showMiss: true }
       );
       return;
     }
@@ -545,7 +603,8 @@ async function loadAll() {
     drawLegend(
       document.getElementById("legend-monthly"),
       fixed,
-      "Relative to each country's own peak"
+      "Relative to each country's own peak",
+      { showMiss: true }
     );
   }
 
@@ -570,6 +629,7 @@ async function loadAll() {
 
     const scrubber = document.getElementById("month-scrubber");
     scrubber.max = String(state.monthly.months.length - 1);
+    scrubber.value = String(state.monthIndex);
     scrubber.removeAttribute("readonly");
     scrubber.readOnly = false;
     scrubber.setAttribute("aria-readonly", "false");

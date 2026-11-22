@@ -20,6 +20,14 @@ export const ENABLED_DATA = {
   wiki: "data/wiki_lang.json",
 };
 
+/** Map caption notes (not hardcoded in HTML). */
+export const MAP_CAPTION_NOTES = {
+  mainlandChina:
+    "Mainland China is not shown: Google is not accessible there, so Google Trends does not measure it.",
+  latinAsmrOnly: "Only the Latin-script term ASMR is measured.",
+  window: "Window: Nov 2021 to Oct 2026",
+};
+
 export function applySectionVisibility(doc = document) {
   const enabled = new Set(ENABLED_SECTIONS);
   doc.querySelectorAll("section.scrolly[id]").forEach((el) => {
