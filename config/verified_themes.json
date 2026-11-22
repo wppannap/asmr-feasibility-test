@@ -1,0 +1,29 @@
+{
+  "insomnia": {
+    "verified_langs": ["zh", "ko", "en", "ja", "fr", "es"],
+    "check": {
+      "zh": "n=20, 19 judged relevant",
+      "ko": "n=20, 19",
+      "en": "n=10, 9",
+      "ja": "n=10, 10",
+      "fr": "n=10, 8",
+      "es": "n=10, 10"
+    },
+    "caveat": "keyword hits; includes a few sarcastic or joking uses (e.g. 'so good I can't sleep')"
+  },
+  "gratitude": {
+    "verified_langs": ["pooled"],
+    "check": "n=20, 20/20 judged relevant",
+    "caveat": "keyword hits"
+  },
+  "anxiety_stress": {
+    "verified_langs": ["pooled"],
+    "check": "n=20 pooled, 17/20 judged relevant",
+    "caveat": "keyword hits; includes some product names (anti-stress toys) and timestamp noise"
+  },
+  "sleep_aid_effectiveness": {
+    "verified_langs": ["pooled"],
+    "check": "n=20 pooled, 19/20 judged relevant",
+    "caveat": "keyword hits of self-reported falling asleep; includes a few unrelated uses"
+  }
+}

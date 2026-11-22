@@ -1,0 +1,9 @@
+/data/
+/_archive/
+/trial_scrapers/
+.env*
+*.csv
+*.log
+browser_data/
+.DS_Store
+HISTORY_AUDIT.md
