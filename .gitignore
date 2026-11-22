@@ -1,3 +1,5 @@
+# Clean publish repo gitignore (merged with retained old rules)
+# Anchored raw dirs so web/data/ stays trackable.
 /data/
 /_archive/
 /trial_scrapers/
@@ -7,3 +9,19 @@
 browser_data/
 .DS_Store
 HISTORY_AUDIT.md
+
+# --- retained from old repo (not already covered) ---
+output/
+__pycache__/
+*.pyc
+.env
+data/.yt_comment_salt
+cache/
+**/.venv/
+trial_scrapers/MediaCrawler/
+trial_scrapers/chocodata-tiktok/
+trial_scrapers/guaikei-tiktok/
+trial_scrapers/omkar-tiktok/
+data/backup/
+data/yt_master.csv
+docs/HISTORY_AUDIT.md
