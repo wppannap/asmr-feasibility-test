@@ -336,7 +336,22 @@ def main() -> int:
         ].copy()
         keep_ids = set(keep["videoId"].astype(str))
         per_group = keep["script_group"].value_counts().to_dict()
+        # stratum from plan (top_view / random); fall back if missing
+        strat_col = "stratum" if "stratum" in keep.columns else None
         print(f"  comments {rule}: keep {len(keep)}/900; by script {per_group}", flush=True)
+        if strat_col:
+            ct = (
+                keep.groupby(["script_group", strat_col])
+                .size()
+                .reset_index(name="n")
+                .sort_values(["script_group", strat_col])
+            )
+            for _, row in ct.iterrows():
+                print(
+                    f"    {row['script_group']} × {row[strat_col]}: {int(row['n'])}",
+                    flush=True,
+                )
+            print(f"    TOTAL: {len(keep)}", flush=True)
 
         video_meta = {}
         with COMMENTS.open("rb") as fb:

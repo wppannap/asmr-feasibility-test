@@ -1,74 +1,142 @@
-# Handoff — ASMR feasibility site (clean publish repo)
+# Handoff — ASMR · sleep (public-safe)
 
-## (i) Scope and story (as implemented)
+Paste this into a new chat to resume. No privacy incident log; no raw rows or credentials.
 
-The published site covers **human-performed / recorded ASMR** demand and context: Google Trends ASMR interest by country (change in window / recent vs peak, Map 1; monthly own-peak series, Map 2), ASMR–indicator scatter (Holm-adjusted Spearman pairs), and Wikipedia **ASMR** pageview indices by language edition. Ambient / continuous noise content is out of scope for publication until class lists are manually verified.
+## Scope
 
-## (ii) Published vs hidden sections
+Public site is **aggregated Google Trends + indicators + Wikipedia ASMR pageviews** for human-performed ASMR interest. YouTube / Douyin / TikTok / comment charts stay **unpublished** until review gates clear. Keep every `TODO: my text` untouched; do not invent story copy.
 
-| Section | Status | Why |
-|---------|--------|-----|
-| `top`, `scrolly-1` (Trends map), `scrolly-2` (monthly), `scrolly-4` (scatter), `scrolly-6` (Wiki ASMR) | **Published** | Aggregated Trends / indicators / wiki ASMR only |
-| `scrolly-3` Creators, `scrolly-5` Duration, `scrolly-7` Douyin, `scrolly-8` Comments | **Hidden** | Payloads built from the old wider YouTube/Douyin/TikTok/comment scope; moved to `data/unpublished/` until `human_asmr` rules are judged |
-| Stage-1 creator / compare layers | **Hidden** | Need `creator_country.json` (unpublished) |
+## Published sections
 
-Controlled by `web/js/sections.js` (`ENABLED_SECTIONS`).
+Controlled by `ENABLED_SECTIONS` in `web/js/sections.js`:
 
-## (iii) Data pipeline
+| id | Content | Status |
+|----|---------|--------|
+| `top` | Hero | published |
+| `scrolly-1` | Map 1 — ASMR search growth (v3c) | published |
+| `scrolly-2` | Map 2 — monthly own-peak time-lapse | published |
+| `scrolly-4` | Association table + scatter | published |
+| `scrolly-6` | Wiki ASMR language small multiples | published |
+| `scrolly-3/5/7/8`, creator layer | Duration / comments / Douyin / extras | **hidden** — HTML in `src_hidden/sections_hidden/` (not under `web/`) |
 
-| Payload | Raw source (local, not in git) | Builder |
-|---------|--------------------------------|---------|
-| `trends_country_v2.json`, `trends_monthly_v2.json` | `data/trends_timeseries.csv`, `config/trends_batches.csv` | `scripts/build_web_data.py` |
-| `insomnia_vs_asmr.json` | Trends + `data/indicators_country.csv` (+ Taiwan official) | `scripts/build_web_data.py` |
-| `wiki_lang.json` | `data/wiki_pageviews_monthly.csv` filtered by `config/wiki_concepts.yaml` | `scripts/build_web_data.py` |
-| `countries-50m.json` | world-atlas TopoJSON copy | checked into `web/data/` |
-| Class flags | `data/yt_master.csv` + `config/yt_classes.yaml` | `scripts/classify_yt_classes.py` → `data/yt_classes.csv` |
-| Unpublished (creators, duration, comments, Douyin, TikTok) | respective masters / samples | `scripts/build_web_data.py` (outputs parked under `data/unpublished/`) |
+Re-enable: copy fragment into `web/index.html` + add id to `ENABLED_SECTIONS` (see `src_hidden/sections_hidden/README.md`).
 
-**Order:** classify (optional) → `python3 scripts/build_web_data.py` → scope filters → `python3 scripts/verify_web_data.py` → deploy.
+## Pipeline (order)
 
-## (iv) Key numbers (from published JSON)
+1. `scripts/build_trends_v3c.py` (+ pop gate in `trends_pop_gate.py`) → `data/unpublished/v3/trends_*_v3c.json`
+2. `scripts/trends_v3_trend.py` → `docs/TRENDS_V3_TREND.md` (canonical strict_ok)
+3. `scripts/publish_trends_v3c_web.py` → `web/data/trends_country_v3c.json`, `trends_monthly_v3c.json`, `correlations_v3c.json`
+4. Wiki: `scripts/build_web_data.py` (ASMR-only via `config/wiki_concepts.yaml`) → `web/data/wiki_lang.json`
+5. Classes (local): `scripts/classify_yt_classes_v32.py` → `data/yt_classes_v32.csv` + `docs/CLASS_RULES_V32.md`
+6. Explore (local): `scripts/explore_yt_v3_5.py` → `docs/YT_EXPLORE_5.md`
+7. Gate: `python3 scripts/verify_web_data.py` (0 failed) + web leak scan; regenerate `config/DATA_FREEZE.md`
+8. Layout check (optional): `python3 scripts/layout_screenshot_test.py` → `docs/screens/` (gitignored)
+9. Commit scripts/config/docs/web only (no `data/*.csv`); push `origin main`
 
-From `trends_country_v2.json` `meta.flag_counts` and rows:
+## Final Trends numbers (from `web/data/trends_country_v3c.json`)
 
-- Rising beyond noise: **19**; within noise: **10**; falling beyond noise: **2** (n countries = 31)
-- Median `change_in_window`: **6.80**; median `recent_vs_peak`: **84.52**
+- Measured (quality ok): **103**; too few searches: **97**; no data: **30** (29 not_in_v3 + mainland China); **China not measured**
+- Among measured: rising **74**, no significant trend **26**, falling **3** (Mann–Kendall, BH q = 0.05)
+- Median growth **25.4%** (IQR **9.6%** to **43.0%**); Small base (mean first-12 &lt; 10): **6**
+- Strict-ok (additional criteria): **82**
+- Caption / legend copy live in JSON `meta.map1_caption` / `meta.map1_legend` (no visible word “ok”)
 
-Holm family (`insomnia_vs_asmr.json` `correlations`, **includes TWN**, n=31):
+## Correlation results (`web/data/correlations_v3c.json`)
 
-| pair | rho | n | p | p_holm |
-|------|-----|---|---|--------|
-| change_vs_internet | 0.0048 | 31 | 0.9794 | 1.0 |
-| change_vs_youth | 0.0335 | 31 | 0.8581 | 1.0 |
-| recent_vs_internet | 0.0702 | 31 | 0.7076 | 1.0 |
-| recent_vs_youth | -0.2085 | 31 | 0.2604 | 1.0 |
+Frame `ok_with_TWN` raw Spearman (Holm over 2 pairs):
 
-`correlations_excluding_twn` uses the same four pairs with **n=30**. Earlier handoff copy accidentally pasted the excluding-TWN table as `correlations` (that made it look like Taiwan was missing). Spearman drops incomplete indicator rows; before official Taiwan stats filled `IT.NET.USER.ZS` / youth share, TWN had `indicators_status=missing` and was excluded from the n=30 pairs.
+| pair | n | ρ | p | p_holm |
+|------|--:|--:|--:|-------:|
+| growth_vs_internet | 103 | −0.124 | 0.212 | 0.425 |
+| growth_vs_youth | 103 | 0.093 | 0.351 | 0.425 |
 
-Wikipedia `meta.low_traffic_languages_asmr`: **hi, id, ms, th, uk, vi**. Published concepts: **ASMR only** (`config/wiki_concepts.yaml`).
+Same pairs exist for `ok_excl_TWN`, `strict_ok_with_TWN`, `strict_ok_excl_TWN` (partial-noise block too). Not evidence about who uses ASMR; Trends levels are not cross-country comparable.
 
-## (v) Verification state
+## Wikipedia caveats
 
-- `config/verified_themes.json` (verbatim themes for when comments return): anxiety_stress, gratitude, insomnia, sleep_aid_effectiveness (loneliness / companionship excluded from publish).
-- `data/class_check_human.csv`, `class_check_ambient_labelled.csv`, `class_check_noise_not_asmr.csv`, `sleep_strict_check.csv`: **pending manual judgement** (local only).
-- `scripts/verify_web_data.py`: published-file checks + leak/noise-phrase scan; unpublished payload spot-checks skipped.
+- Access = all (API `agent=user` rollup); not re-summed by device.
+- Each language indexed to its own max = 100 — not absolute cross-language traffic.
+- Language edition ≠ country; do not map onto choropleths.
+- Chinese Wikipedia is not accessible from mainland China — does not measure mainland interest.
+- Low-traffic ASMR editions (p25): **hi, id, ms, th, uk, vi**. Published concepts: **ASMR only**.
 
-## (vi) Decisions already made
+## Classification v3.2 (rules + counts)
 
-- Scope → human-performed ASMR only (`config/yt_classes.yaml` exclusion lexicon retained).
-- Taiwan indicators from official TW statistics (`ok_tw_official`).
-- Loneliness and companionship not published in comment themes.
-- `take_off_year` and `asmr_share_of_batch` dropped from published Trends rows.
+See `docs/CLASS_RULES_V32.md` / `config/yt_classes_v32.yaml`.
 
-## (vii) Privacy incident log
+- White-noise family: **strict** = anywhere → ambient; **title_only** = title only (tag-only → `ambient_tag_only`).
+- Other strong ambient still anywhere under both rules; nature remains title-only + v3.2 inflections.
+- Script groups from title (Korean / Japanese / Han / Latin / other); do not use da/tl/und.
+- Counts: strict asmr_labelled **148569**; title_only **151626**; ambient_tag_only **3057**.
 
-Moved to local-only `data/HANDOFF_PRIVATE.md` (gitignored via `/data/`).
+## YouTube robustness (`docs/YT_EXPLORE_5.md`)
 
-## (viii) Open items (order)
+| result | group | verdict |
+|--------|-------|---------|
+| duration_sleep_gt_not | Korean / Japanese / Han / Latin | **robust** |
+| upload_night_sleep_gt_not | KR, TW, HK | **robust** |
+| upload_night_sleep_gt_not | JP | **sensitive** (rule-dependent) |
+| comments_theme_shares | all | report-only |
 
-1. Judge `data/class_check_*.csv` and `data/sleep_strict_check.csv`.
-2. Fix final `human_asmr` rules in `config/yt_classes.yaml` if needed; re-run `scripts/classify_yt_classes.py`.
-3. Rebuild YouTube payloads for human_asmr (creator map by channel count; duration for human_asmr × sleep_strict; comment sample restricted to human_asmr).
-4. Rebuild Douyin / TikTok without ambient-matching rows.
-5. Re-enable hidden sections in `web/js/sections.js` and restore payloads to `web/data/`.
-6. Wikipedia timeline decision after review of `docs/WIKI_CHECK_2.md`.
+## Comments sample membership (900-plan × v3.2)
+
+Of the 900-video comment sample, videos kept = `asmr_labelled` ∧ ¬long_B ∧ `sleep_title`:
+
+**strict: 241 / 900**
+
+| script × stratum | n |
+|------------------|---:|
+| Han × random | 8 |
+| Han × top_view | 25 |
+| Japanese × random | 13 |
+| Japanese × top_view | 46 |
+| Korean × random | 9 |
+| Korean × top_view | 30 |
+| Latin × random | 29 |
+| Latin × top_view | 81 |
+| **TOTAL** | **241** |
+
+**title_only: 244 / 900**
+
+| script × stratum | n |
+|------------------|---:|
+| Han × random | 8 |
+| Han × top_view | 26 |
+| Japanese × random | 13 |
+| Japanese × top_view | 46 |
+| Korean × random | 10 |
+| Korean × top_view | 31 |
+| Latin × random | 29 |
+| Latin × top_view | 81 |
+| **TOTAL** | **244** |
+
+(+3 vs strict from ambient_tag_only / rule difference on Korean and Han top_view).
+
+## `config/review_log.csv` summary
+
+| reviewed_by | files |
+|-------------|-------|
+| **AI-assisted** | class_check_v3_* (ambient, nonlatin_nature, longB, sleep_title, A); lang_check_extra; class_check_v31_* (rain_word, vacuum, heartbeat) |
+| **UNSET** | older comment_precision_check_*; class_check_human / ambient_labelled / noise / other; class_check_v2_*; sleep_strict_check; lang_check.csv |
+| **human** | (none yet) |
+
+Do not mark AI judgments as `human`. Enabling a YouTube chart blocked by UNSET must fail closed.
+
+## Open items (order)
+
+1. Human review of remaining `UNSET` class/lang/comment checks; fill `review_log.csv`.
+2. Optional: publish YouTube chart modules (`web/js/charts_yt/*` + `data/unpublished/web_ready/`) — **not** in `ENABLED_SECTIONS` until reviewed.
+3. Re-enable hidden scrolly sections only after payloads + review labels are ready.
+4. Wikipedia timeline decision after `docs/WIKI_CHECK_2.md` review.
+5. Story / step copy (replace `TODO: my text` only when the human author writes it).
+
+## How to resume (paste into a new chat)
+
+```
+Repo: asmr-feasibility-test. Push rules apply (scripts/config/docs/web only; no data/*.csv).
+Keep every "TODO: my text"; write no story text. AI judgments → reviewed_by=AI-assisted.
+Live: https://wppannap.github.io/asmr-feasibility-test/
+Read docs/HANDOFF.md + docs/PROJECT_OVERVIEW.md + config/DATA_FREEZE.md.
+Published: Map1/Map2/Association/Wiki (Trends v3c). Hidden HTML: src_hidden/sections_hidden/.
+Next: <describe the next task>.
+```

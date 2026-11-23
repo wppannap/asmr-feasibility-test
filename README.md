@@ -8,6 +8,8 @@ Raw data (YouTube/Douyin/TikTok comments, channel ids, creator hashes, scraped s
 
 Static files live under `web/`. GitHub Pages should serve the `web/` folder from the default branch.
 
+Disabled scrolly section HTML lives under `src_hidden/sections_hidden/` (outside `web/`, not deployed). To re-enable a section, copy its fragment into `web/index.html` and add the section id to `ENABLED_SECTIONS` in `web/js/sections.js`.
+
 ## Regenerating payloads (requires private raw data locally)
 
 These scripts read raw CSVs that are **not** in this repo and write aggregated JSON under `web/data/`:

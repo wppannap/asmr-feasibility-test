@@ -10,6 +10,7 @@
 browser_data/
 .DS_Store
 HISTORY_AUDIT.md
+docs/screens/
 
 # --- retained from old repo (not already covered) ---
 output/

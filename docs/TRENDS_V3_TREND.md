@@ -1,6 +1,6 @@
 # Trends v3 trend test
 
-_Generated 2026-11-23T07:47:14Z. Payloads: `data/unpublished/v3/trends_country_v3b.json`, `trends_monthly_v3b.json` (not published)._
+_Generated 2026-11-23T11:49:14Z. Payloads: `data/unpublished/v3/trends_country_v3b.json`, `trends_monthly_v3b.json` (not published)._
 
 ## Changelog (canonical strict-ok)
 

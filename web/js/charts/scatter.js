@@ -15,10 +15,10 @@ const PAIR_ROWS = [
 ];
 
 const FRAME_OPTS = [
-  { id: "ok_with_TWN", label: "ok · with TWN" },
-  { id: "ok_excl_TWN", label: "ok · without TWN" },
-  { id: "strict_ok_with_TWN", label: "strict-ok · with TWN" },
-  { id: "strict_ok_excl_TWN", label: "strict-ok · without TWN" },
+  { id: "ok_with_TWN", label: "measured · with TWN" },
+  { id: "ok_excl_TWN", label: "measured · without TWN" },
+  { id: "strict_ok_with_TWN", label: "strict measured · with TWN" },
+  { id: "strict_ok_excl_TWN", label: "strict measured · without TWN" },
 ];
 
 let ctx = null;

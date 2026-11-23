@@ -2,62 +2,61 @@
 
 Everything below is computed or quoted from this repo. Missing facts: **NOT FOUND**. No raw comments, author names, channel ids, or API keys.
 
-Git branch: `main`. Regenerated from the working tree after human-ASMR scope lockdown. Freeze hashes: `config/DATA_FREEZE.md` (regenerated with the publish commit).
+Git branch: `main`. Freeze hashes: `config/DATA_FREEZE.md`. Live site: https://wppannap.github.io/asmr-feasibility-test/
 
 ---
 
 ## 1. Page map
 
-Scroll order from `web/index.html`. **Published** FE loads (`web/js/sections.js` → `ENABLED_DATA` / `web/js/main.js`): `countries-50m.json`, `trends_country_v2.json`, `trends_monthly_v2.json`, `insomnia_vs_asmr.json`, `wiki_lang.json`.
+Scroll order from `web/index.html`. **Published** FE loads (`web/js/sections.js` → `ENABLED_DATA`): `countries-50m.json`, `trends_country_v3c.json`, `trends_monthly_v3c.json`, `correlations_v3c.json`, `wiki_lang.json`.
 
-Hidden until class_check review (HTML present; not fetched): Creators, Duration, Douyin, Comments — payloads parked under `data/unpublished/` (and `data/unpublished/v2/`).
+Hidden section HTML lives under `src_hidden/sections_hidden/` (outside `web/`, not deployed). YouTube / Douyin / comment payloads stay under `data/unpublished/` (gitignored).
 
 | # | id | Chart | Data | Status | Default |
 |---|-----|-------|------|--------|---------|
 | 0 | `top` | none | — | published | hero |
-| 1 | `scrolly-1` | dual choropleth | trends_country_v2, topo | **published** (Trends layer only; creator/compare controls hidden) | Metric=`change_in_window` |
-| 2 | `scrolly-2` | monthly choropleth | trends_monthly_v2 | **published** | monthIndex=0; `own_peak_asmr` |
-| 3 | `scrolly-3` | creator symbols + TikTok | unpublished | **hidden** | — |
-| 4 | `scrolly-4` | corr table + scatter | insomnia_vs_asmr | **published** | table on |
-| 5 | `scrolly-5` | duration histograms | unpublished | **hidden** | — |
+| 1 | `scrolly-1` | choropleth + legend/caption/notes | trends_country_v3c, topo | **published** | growth_ratio_clipped colour; MK hatch |
+| 2 | `scrolly-2` | monthly choropleth | trends_monthly_v3c | **published** | own_peak_asmr scrubber |
+| 3 | `scrolly-3` | creators (disabled) | unpublished | **hidden** | — |
+| 4 | `scrolly-4` | corr table + scatter | correlations_v3c | **published** | table on; frames measured/strict |
+| 5 | `scrolly-5` | duration (disabled) | unpublished | **hidden** | — |
 | 6 | `scrolly-6` | wiki small multiples | wiki_lang | **published** | concept `ASMR` only |
-| 7 | `scrolly-7` | Douyin bars | unpublished | **hidden** | — |
-| 8 | `scrolly-8` | comment theme bars | unpublished | **hidden** | — |
+| 7 | `scrolly-7` | Douyin (disabled) | unpublished | **hidden** | — |
+| 8 | `scrolly-8` | comments (disabled) | unpublished | **hidden** | — |
 
 ### Visible claim-like strings (verbatim)
 
 **`web/index.html`**
 - Brand / title: `ASMR · sleep`
-- 28× `TODO: my text` placeholders (hero, steps, footer)
-- Nav labels still list Creators / Duration / Douyin / Comments; those anchors are hidden via `applySectionVisibility`
-- Map 1: Layer Trends; Metric Change in window / Recent vs peak
+- Placeholders: `TODO: my text` (hero, steps, footer) — do not replace without author copy
+- Nav: Top, Map 1, Map 2, Scatter, Wiki
+- Map 1 caption/legend from JSON; Notes and limits in `<details>` (open desktop / closed ≤820px)
 - Caveat slots `#caveat-*` filled from JSON `meta.caveats`
 
 **JS**
-- `METRIC_LABEL` for `change_in_window` / `recent_vs_peak` (own-peak definitions)
-- Map hatch: `Change is within noise (…2 standard errors…; Google Trends is a sample)`
-- Scatter: `A question with no clear answer`; `…not evidence about who uses ASMR.`
-- Wiki: indexed to each language edition’s own max = 100
+- Growth colour domain −50% … +150% (clipped for colour only)
+- Legend: ramp / solid significant / hatch flat / dotted low-volume / plain no-data (incl. mainland China) / dotted outline small base
+- Scatter: `A question with no clear answer`; frame labels use “measured” not “ok”
+- Wiki: each language indexed to own max = 100
 
-No finished key-findings prose. `take_off_year` / `asmr_share_of_batch` are not on the page.
+No finished key-findings prose.
 
 ---
 
 ## 2. Numbers on the page
 
-| Visible / hardcoded number | Source | Value now | Flag |
-|----------------------------|--------|-----------|------|
-| Noise country counts | `trends_country_v2.meta.flag_counts` | rise **19** · within **10** · fall **2** | OK |
-| Window Spearman 12 vs 6 | `window_spearman_12_vs_6` | 0.9226 / 0.8859 | OK |
-| Holm 4 pairs (±TWN) | `insomnia_vs_asmr.correlations*` | with TWN **n=31**; excluding TWN **n=30**; all Holm p ≥ 0.89 | OK |
-| Taiwan internet / youth | TWN row | 87.6% / 11.796%; `ok_tw_official` | OK |
-| Wiki concepts | `wiki_lang.concepts` | `["ASMR"]` (23 language editions) | OK |
-| Wiki low_traffic | `meta.low_traffic_languages_asmr` | hi, id, ms, th, uk, vi | OK |
-| Median change / recent | rows | **6.80** / **84.52** | OK |
+| Visible / meta number | Source | Value now |
+|-----------------------|--------|-----------|
+| Measured / too few / no data / small base | `trends_country_v3c.meta.counts` + caption | **103** / **97** / **30** / **6** |
+| Rising / flat / falling | `counts_by_mk_class` | **74** / **26** / **3** |
+| Median growth (IQR) | `growth_ratio_ok` | **25.4%** (9.6%–43.0%) |
+| Strict-ok | `counts.strict_ok` | **82** |
+| Small-base threshold | `config/trends_display.yaml` | mean_first_12 &lt; **10** |
+| Correlation n (measured · with TWN) | `correlations_v3c` | **103**; Holm p ≈ 0.42 both pairs |
+| Wiki concepts | `wiki_lang` | `["ASMR"]`; 23 languages |
+| Wiki low_traffic | `meta.low_traffic_languages_asmr` | hi, id, ms, th, uk, vi |
 
-Creator / Douyin / TikTok / comment / duration headline numbers are **not** on the published page (payloads unpublished). Local v2 sensitivity (mixed in/out) lives under `data/unpublished/v2/sensitivity_mixed_report.md`.
-
-No finished step prose with stats (all TODO). Sign-test p-value is **not** displayed.
+Creator / Douyin / TikTok / comment / duration headline numbers are **not** on the published page.
 
 ---
 
@@ -65,106 +64,64 @@ No finished step prose with stats (all TODO). Sign-test p-value is **not** displ
 
 ### Raw sources (local `/data/`, gitignored)
 
-| Source | File | Scale | Notes |
-|--------|------|------:|-------|
-| YouTube | `yt_master.csv` + `yt_classes.csv` | 342,423 videos | Classes: human_asmr 145110 · other 168888 · noise_not_asmr 20115 · ambient_labelled_asmr 8310; mixed⊂human_asmr 14569 |
-| Channel country | `yt_channel_country.csv` | — | Self-declared countryCode |
-| Comments | `yt_comments_sample.csv` | 85,224 comments | 150 videos × 6 langs design; relevance ranking |
-| Trends | `trends_timeseries.csv` | 31 geos | Window Nov 2021–Oct 2026 (complete months) |
-| Wikipedia | `wiki_pageviews_monthly.csv` | many concepts | Builder publishes ASMR only via `config/wiki_concepts.yaml` |
-| Indicators | `indicators_country.csv` + Taiwan official | 31 iso3 | TWN not in World Bank |
-| Douyin / TikTok trials | `*_trial/*_master.csv` | 528 / 168 | Filtered copies in unpublished/v2 |
+| Source | Role |
+|--------|------|
+| Trends timeseries + batches | Country monthly ASMR interest → v3c builders |
+| World Bank / Taiwan official pops | Pop gate (≥1M) for measured quality |
+| `indicators_country_v3.csv` | Internet % / youth share for correlations |
+| `wiki_pageviews_monthly.csv` | ASMR-only via `config/wiki_concepts.yaml` |
+| `yt_master` + `yt_classes_v32.csv` | Classification / explore (unpublished charts) |
+| Comment sample plan v2 (900) + comments | Theme shares under v3.2 membership |
 
 ### Published `web/data/`
 
-| File | Bytes (approx) | Role |
-|------|---------------:|------|
-| countries-50m.json | 756,420 | TopoJSON |
-| trends_country_v2.json | 13,172 | Map 1 own-peak change/recent |
-| trends_monthly_v2.json | 15,631 | Map 2 time-lapse |
-| insomnia_vs_asmr.json | 10,050 | Holm Spearman + country rows |
-| wiki_lang.json | ~26.7K | ASMR indexed pageviews |
+| File | Role |
+|------|------|
+| `trends_country_v3c.json` | Map 1 rows + caption/legend/meta |
+| `trends_monthly_v3c.json` | Map 2 series (measured geos) |
+| `correlations_v3c.json` | Association frames + scatter points |
+| `wiki_lang.json` | Wiki small multiples |
+| `countries-50m.json` | world-atlas TopoJSON |
 
-Producer: `scripts/build_web_data.py` (unpublished YouTube/Douyin/TikTok/comment JSON written under `data/unpublished/`, not `web/data/`).
+Hashes: `config/DATA_FREEZE.md`.
 
 ---
 
 ## 4. Methods (short)
 
-- **Trends v2:** primary comparison_group per geo; own-peak index; `change_in_window` / `recent_vs_peak`; `within_noise` from optimistic SE.
-- **Scatter / Holm:** four ASMR own-peak × internet/youth pairs; descriptive `internet_vs_youth` outside Holm; tables with and without TWN.
-- **Wiki:** access=all; concepts from `config/wiki_concepts.yaml` (default `["ASMR"]`); per-language max=100 index.
-- **Classes:** `config/yt_classes.yaml` → `scripts/classify_yt_classes.py` → `data/yt_classes.csv`. Proposal-only leakage notes: `config/yt_classes_proposed.yaml` (not applied to live rules).
+- **Growth:** mean(latest 12 months) / mean(first 12 months) − 1; colour uses clipped ratio ∈ [−0.5, 1.5].
+- **MK class:** Mann–Kendall on monthly series; Benjamini–Hochberg q = 0.05 → rising / flat / falling.
+- **Quality:** measured vs too few searches vs no data; pop gate downgrades &lt;1M (or unknown) to too few searches; mainland China not measured.
+- **Small base:** among measured, mean_first_12 &lt; threshold (default 10) → unstable ratio outline.
+- **Correlations:** Spearman ± Holm (2 pairs); partial controls for noise.
+- **Classes v3.2:** white-noise family strict vs title_only; nature title-only + inflections; script groups from title.
 
 ---
 
-## 5. Verification
+## 5. Front-end layout notes
 
-- `python3 scripts/verify_web_data.py` — published files only; ASMR-only wiki concepts; no white/brown/pink/binaural/ambient-noise phrases under `web/`; Holm n=31 / excluding-TWN n=30.
-- web/ leak scan: no comment text, channel ids, or Google API key prefixes in tracked published payloads.
-- `config/DATA_FREEZE.md` — sha256 of current `web/data/`.
-
----
-
-## 6. Scope lockdown
-
-Published story = human-performed ASMR demand context (Trends + indicators + Wikipedia ASMR). Ambient/noise and unverified YouTube/Douyin/TikTok/comment charts stay local until manual `class_check_*.csv` review (`docs/HANDOFF.md`).
-
-Privacy incident log: `data/HANDOFF_PRIVATE.md` (gitignored).
+- Desktop: sticky stage beside steps.
+- Mobile (≤820px): stage in normal flow; map ≤45vh; legend / caption / notes below map; notes `<details>` closed; no absolute captions; chart roots scroll inside max 45vh.
+- Layout regression: `scripts/layout_screenshot_test.py` (Playwright).
 
 ---
 
-## 7. Sampling and representativeness
+## 6. Verification / publish gate
 
-| Chart | Sample is… | Cannot show… |
-|-------|------------|--------------|
-| Trends maps | 31 geos × primary-batch relative interest; within_noise hatched; rise/within/fall from `flag_counts` | Absolute volume; independent geos |
-| Scatter / corr | Own-peak change/recent + WB/TW indicators (n=31 with TWN) | Causal “who uses ASMR” |
-| Wiki | Indexed ASMR pageviews by language edition (23 langs) | Country demand; mainland Chinese interest via zh.wikipedia |
-| Creators / TikTok / Duration / Douyin / Comments | **Not published** — unpublished payloads / v2 drafts only | — |
-
-When comments return: sample is top-view sleep-related × relevance comments; human_asmr subset report at `data/unpublished/v2/comment_subset_report.md` (local). Keyword lists: `docs/YOUTUBE_KEYWORDS.md`. Expansion caveat: uploads playlist newest-first, typically ≤100 videos/pass.
+1. `python3 scripts/verify_web_data.py` → 0 failed  
+2. Leak scan on `web/` (no Google API key prefixes, comment text, channel ids)  
+3. Regenerate `config/DATA_FREEZE.md`  
+4. Commit scripts/config/docs/web only; push `origin main` (no force)  
+5. Confirm Pages 200s for HTML + fetched assets  
 
 ---
 
-## 8. Claims audit
+## 7. Open items
 
-Finished step sentences with causal/comparative/ranking language: **none** (all `TODO: my text`). Remaining UI phrases are metric definitions or explicit disclaimers (`not evidence about who uses ASMR`). No `take_off` / share-of-batch ranking copy on the page.
+1. Human review for `UNSET` rows in `config/review_log.csv`  
+2. Optional unpublished YouTube chart modules (not in `ENABLED_SECTIONS`)  
+3. Re-enable hidden sections only after review  
+4. Author story copy for `TODO: my text`  
+5. Wiki timeline decision  
 
----
-
-## 9. Accessibility and mobile
-
-| Item | In repo |
-|------|---------|
-| Skip link | `web/index.html` |
-| `prefers-reduced-motion` | `web/css/styles.css` + util |
-| Scrubber | aria labels |
-| Mobile CSS | `@media (max-width: 800px)` |
-| Formal a11y / mobile QA log | **NOT FOUND** |
-| Page weight | `web/data` dominated by countries-50m + small JSON set |
-
----
-
-## 10. Open items
-
-- 28× `TODO: my text` in `web/index.html`.
-- Judge local `data/class_check_*.csv` / `sleep_strict_check.csv`; consider `config/yt_classes_proposed.yaml` (proposal only).
-- Rebuild and re-enable Creators / Duration / Douyin / Comments after human_asmr rules freeze.
-- Wikipedia timeline decision after `docs/WIKI_CHECK_2.md`.
-- Trends expansion work (if present as untracked scripts) is separate from this publish freeze.
-
----
-
-## 10-line summary
-
-1. Published site: Trends maps + ASMR–indicator Holm table + Wikipedia ASMR only.  
-2. Creators / Duration / Douyin / Comments hidden; payloads under `data/unpublished/`.  
-3. Holm correlations **n=31** (TWN included); excluding-TWN **n=30**.  
-4. Wiki concepts forced to `["ASMR"]` via `config/wiki_concepts.yaml`.  
-5. Noise flags: 19 rise / 10 within / 2 fall.  
-6. All step prose still TODO.  
-7. Class leakage proposal recorded; live `yt_classes.yaml` unchanged.  
-8. Comment human_asmr subset + Douyin/TikTok ambient drops + mixed sensitivity are local-only reports.  
-9. verify_web_data + noise-phrase leak scan gate publish.  
-10. Check `config/DATA_FREEZE.md` hashes against `web/data/` after each rebuild.
+See also `docs/HANDOFF.md`.

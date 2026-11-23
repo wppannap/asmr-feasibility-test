@@ -148,6 +148,13 @@ async function loadAll() {
     applyMapCaptions(trends.meta, monthly.meta);
   }
 
+  function syncNotesOpen() {
+    const mobile = window.matchMedia("(max-width: 820px)").matches;
+    document.querySelectorAll("details.notes-details").forEach((el) => {
+      el.open = !mobile;
+    });
+  }
+
   function applyMapCaptions(trendsMeta, monthlyMeta) {
     const noteBits = [
       MAP_CAPTION_NOTES.latinAsmrOnly,
@@ -169,12 +176,11 @@ async function loadAll() {
 
     const c1 = document.getElementById("caveat-1");
     if (c1) {
-      const base = [...(trendsMeta?.caveats || []).slice(0, 2)].join(" ");
+      const base = [...(trendsMeta?.caveats || [])].join(" ");
       c1.textContent = [base, ...noteBits].filter(Boolean).join(" ");
     }
     const c2 = document.getElementById("caveat-2");
     if (c2) {
-      // Window sentence lives in subtitle / month-caption only once; caveats omit it.
       const raw = (monthlyMeta?.caveats || []).join(" ");
       const stripped = raw
         .replace(/window is Nov 2021 to Oct 2026[^.]*(?:\.|$)/gi, "")
@@ -182,6 +188,7 @@ async function loadAll() {
         .trim();
       c2.textContent = [stripped, ...noteBits].filter(Boolean).join(" ");
     }
+    syncNotesOpen();
   }
 
   function makeScale(values, { log, diverging } = {}) {
@@ -236,11 +243,10 @@ async function loadAll() {
 
   function drawLegend(el, scaleInfo, label, opts = {}) {
     const {
+      map1Full,
       hatchNote,
       showMiss,
       showLowVolume,
-      showChina,
-      clipNote,
       growthTicks,
     } = opts;
     const root = d3.select(el);
@@ -284,6 +290,35 @@ async function loadAll() {
         .text(`${formatNum(scaleInfo.domain[0], 0)} – ${formatNum(scaleInfo.domain[1], 0)}`);
     }
     const legendCopy = state.trendsMeta?.map1_legend || {};
+    if (map1Full) {
+      if (legendCopy.ramp) {
+        root.append("span").attr("class", "legend-hatch-note").text(legendCopy.ramp);
+      }
+      const solid = root.append("div").attr("class", "legend-swatch-row");
+      solid.append("span").attr("class", "legend-swatch legend-swatch-solid");
+      solid.append("span").text(legendCopy.solid || "Statistically significant trend");
+      const hatch = root.append("div").attr("class", "legend-swatch-row");
+      hatch.append("span").attr("class", "legend-swatch legend-swatch-hatch");
+      hatch.append("span").text(
+        legendCopy.hatch_flat || "Estimated growth shown; no statistically significant trend"
+      );
+      const low = root.append("div").attr("class", "legend-swatch-row");
+      low.append("span").attr("class", "legend-swatch legend-swatch-lowvol");
+      low.append("span").text(legendCopy.low_volume || "Too few searches to measure");
+      const miss = root.append("div").attr("class", "legend-swatch-row");
+      miss.append("span").attr("class", "legend-swatch legend-swatch-miss");
+      miss.append("span").text(
+        legendCopy.no_data ||
+          "No data (including mainland China: Google is not accessible there)"
+      );
+      const small = root.append("div").attr("class", "legend-swatch-row");
+      small.append("span").attr("class", "legend-swatch legend-swatch-smallbase");
+      small.append("span").text(legendCopy.small_base || "Small base");
+      if (legendCopy.clip_note) {
+        root.append("span").attr("class", "legend-hatch-note").text(legendCopy.clip_note);
+      }
+      return;
+    }
     if (showMiss) {
       const row = root.append("div").attr("class", "legend-swatch-row");
       row.append("span").attr("class", "legend-swatch legend-swatch-miss");
@@ -294,19 +329,8 @@ async function loadAll() {
       row.append("span").attr("class", "legend-swatch legend-swatch-lowvol");
       row.append("span").text(legendCopy.low_volume || "Too few searches to measure");
     }
-    if (showChina) {
-      const row = root.append("div").attr("class", "legend-swatch-row");
-      row.append("span").attr("class", "legend-swatch legend-swatch-miss");
-      row.append("span").text(legendCopy.china || "Not measured: Google is not accessible there");
-    }
     if (hatchNote) {
       root.append("span").attr("class", "legend-hatch-note").text(hatchNote);
-    }
-    if (clipNote || legendCopy.clip_note) {
-      root
-        .append("span")
-        .attr("class", "legend-hatch-note")
-        .text(clipNote || legendCopy.clip_note);
     }
   }
 
@@ -321,7 +345,7 @@ async function loadAll() {
       .attr("role", "img")
       .attr("aria-label", "World choropleth map");
 
-    // Hatch overlay (lines only) for low_volume — sits above coloured fill
+    // Hatch (flat MK) + dotted fill (low_volume) patterns
     const defs = svg.append("defs");
     const pat = defs
       .append("pattern")
@@ -339,6 +363,19 @@ async function loadAll() {
       .attr("stroke", "#1a242c")
       .attr("stroke-width", 1.5)
       .attr("stroke-opacity", 0.55);
+    const dots = defs
+      .append("pattern")
+      .attr("id", `dots-lowvol-${key}`)
+      .attr("patternUnits", "userSpaceOnUse")
+      .attr("width", 5)
+      .attr("height", 5);
+    dots.append("rect").attr("width", 5).attr("height", 5).attr("fill", "#d7dee4");
+    dots
+      .append("circle")
+      .attr("cx", 1.5)
+      .attr("cy", 1.5)
+      .attr("r", 0.9)
+      .attr("fill", "#9aa7b2");
 
     const projection = d3.geoNaturalEarth1().fitSize([width, height], state.lands);
     const path = d3.geoPath(projection);
@@ -385,6 +422,7 @@ async function loadAll() {
       width,
       height,
       hatchId: `hatch-${key}`,
+      lowvolPatternId: `dots-lowvol-${key}`,
     };
     return state.maps[key];
   }
@@ -417,7 +455,8 @@ async function loadAll() {
         html += `<br>Growth: <b>${g}</b>`;
         html += `<br>MK class: <b>${row.mk_class || "—"}</b>`;
         html += `<br>First-12-month mean: <b>${formatNum(row.mean_first_12, 1)}</b>`;
-        html += `<br>Quality: <b>${row.quality}</b>`;
+        html += `<br>State: <b>${row.state || "measured"}</b>`;
+        if (row.small_base) html += `<br>Small base`;
       } else {
         html += `<br>No data`;
       }
@@ -451,20 +490,28 @@ async function loadAll() {
       .attr("class", (d) => {
         const iso = d.properties.iso3;
         const row = iso ? state.countryV2ByIso.get(iso) : null;
-        if (mapKey === "trends") {
-          if (row?.quality === "low_volume") return "country is-lowvol";
+        const bits = ["country"];
+        if (mapKey === "trends" || mapKey === "monthly") {
+          if (row?.quality === "low_volume") bits.push("is-lowvol");
+          else {
+            const v = iso ? valueMap[iso] : null;
+            if (v == null || !Number.isFinite(v)) bits.push("is-miss");
+          }
+          if (mapKey === "trends" && row?.small_base && row?.quality === "ok") {
+            bits.push("is-smallbase");
+          }
+        } else {
           const v = iso ? valueMap[iso] : null;
-          return v == null || !Number.isFinite(v) ? "country is-miss" : "country";
+          if (v == null || !Number.isFinite(v)) bits.push("is-miss");
         }
-        const v = iso ? valueMap[iso] : null;
-        if (row?.quality === "low_volume") return "country is-lowvol";
-        return v == null || !Number.isFinite(v) ? "country is-miss" : "country";
+        return bits.join(" ");
       })
       .attr("fill", (d) => {
         const iso = d.properties.iso3;
         const row = iso ? state.countryV2ByIso.get(iso) : null;
-        if (mapKey === "trends" && row?.quality === "low_volume") return "#c5cdd4";
-        if (mapKey === "monthly" && row?.quality === "low_volume") return "#c5cdd4";
+        if (row?.quality === "low_volume") {
+          return `url(#${map.lowvolPatternId})`;
+        }
         const v = iso ? valueMap[iso] : null;
         if (v == null || !Number.isFinite(v)) return "#dce3e8";
         if (scaleInfo.log && v <= 0) return scaleInfo.scale(scaleInfo.domain[0]);
@@ -568,12 +615,8 @@ async function loadAll() {
 
     if (!state.maps.trends) return;
     paintMap("trends", state.displayValues.trends, tScale);
-    const legendCopy = state.trendsMeta?.map1_legend || {};
     drawLegend(document.getElementById("legend-trends"), tScale, GROWTH_LABEL, {
-      hatchNote: legendCopy.hatch_flat || null,
-      showMiss: true,
-      showLowVolume: anyLowVolumeFlag(),
-      showChina: true,
+      map1Full: true,
       growthTicks: [-50, 0, 50, 150],
     });
     updateMap1Caption();
@@ -591,10 +634,10 @@ async function loadAll() {
         row.growth_ratio != null ? (row.growth_ratio * 100).toFixed(1) + "%" : "—",
         row.mk_class || "—",
         row.mean_first_12 != null ? formatNum(row.mean_first_12, 1) : "—",
-        row.quality || "—",
+        row.state || row.quality || "—",
+        row.small_base ? "yes" : "",
       ]);
     });
-    // undrawable geos (in payload but not on topo)
     (state.undrawableGeos || []).forEach((g) => {
       rows.push([
         g.name || g.iso3 || g.geo,
@@ -602,12 +645,13 @@ async function loadAll() {
         "—",
         "—",
         "—",
-        "not on map (topo)",
+        "not on map",
+        "",
       ]);
     });
     rows.sort((a, b) => String(a[0]).localeCompare(String(b[0])));
     attachTableToggle(host, () => ({
-      columns: ["region", "iso3", "growth", "mk_class", "mean_first_12", "quality"],
+      columns: ["region", "iso3", "growth", "mk_class", "mean_first_12", "state", "small_base"],
       rows,
     }));
   }
@@ -808,7 +852,10 @@ function initExtraCharts() {
           }
         });
 
-      window.addEventListener("resize", () => scroller.resize());
+      window.addEventListener("resize", () => {
+        scroller.resize();
+        syncNotesOpen();
+      });
     });
 
     const nav = document.getElementById("site-nav");
@@ -819,6 +866,8 @@ function initExtraCharts() {
       },
       { passive: true }
     );
+    window.addEventListener("resize", syncNotesOpen);
+    syncNotesOpen();
   }
 
   async function main() {
@@ -877,7 +926,8 @@ function initExtraCharts() {
         r.growth_ratio != null ? `${(r.growth_ratio * 100).toFixed(1)}%` : "—",
         r.mk_class || "—",
         r.mean_first_12,
-        r.quality || "—",
+        r.state || r.quality || "—",
+        r.small_base ? "yes" : "",
       ]);
       (state.undrawableGeos || []).forEach((g) => {
         rows.push([
@@ -887,10 +937,11 @@ function initExtraCharts() {
           "—",
           "—",
           "not on map",
+          "",
         ]);
       });
       return {
-        columns: ["region", "iso3", "growth", "mk_class", "mean_first_12", "quality"],
+        columns: ["region", "iso3", "growth", "mk_class", "mean_first_12", "state", "small_base"],
         rows,
       };
     }

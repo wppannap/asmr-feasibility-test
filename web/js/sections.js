@@ -1,6 +1,7 @@
 /**
  * Enabled scrolly sections for the published site.
- * Disabled section HTML lives under web/js/sections_hidden/ (not in index.html).
+ * Disabled section HTML lives under src_hidden/sections_hidden/ (not deployed).
+ * To re-enable: copy markup into web/index.html and add the id here.
  */
 export const ENABLED_SECTIONS = [
   "top",

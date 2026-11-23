@@ -27,6 +27,14 @@ ARCHIVE = DATA / "archive_not_published"
 SEED = 42
 BOOT_N = 2000
 
+def small_base_threshold() -> float:
+    import yaml
+    p = ROOT / "config" / "trends_display.yaml"
+    if p.exists():
+        cfg = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+        return float(cfg.get("small_base_mean_first_12", 10))
+    return 10.0
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -130,8 +138,30 @@ def main() -> int:
     meta_src = src["meta"]
     mk = meta_src["counts_by_mk_class"]
     gr = meta_src["growth_ratio_ok"]
+    thr = small_base_threshold()
     page_rows = []
+    n_small_base = 0
     for r in src["rows"]:
+        mf = r.get("mean_first_12")
+        small_base = (
+            r.get("quality") == "ok"
+            and mf is not None
+            and float(mf) < thr
+        )
+        if small_base:
+            n_small_base += 1
+        # map state label for tables
+        if r.get("quality") == "ok":
+            if r.get("mk_class") == "flat":
+                state = "no significant trend"
+            elif r.get("mk_class") in ("rising", "falling"):
+                state = "significant trend"
+            else:
+                state = "measured"
+        elif r.get("quality") == "low_volume":
+            state = "too few searches"
+        else:
+            state = "no data"
         page_rows.append({
             "iso3": r["iso3"],
             "geo": r.get("geo"),
@@ -143,6 +173,8 @@ def main() -> int:
             "quality": r.get("quality"),
             "strict_ok": bool(r.get("strict_ok")),
             "mean_first_12": r.get("mean_first_12"),
+            "small_base": bool(small_base),
+            "state": state,
             **({"quality_reason": r["quality_reason"]} if r.get("quality_reason") else {}),
         })
 
@@ -162,37 +194,46 @@ def main() -> int:
         "colour_range_pct": [-50, 150],
         "counts": {
             "ok": meta_src["counts"]["ok"],
+            "measured": meta_src["counts"]["ok"],
             "low_volume": meta_src["counts"]["low_volume"],
             "not_in_v3": meta_src["counts"]["not_in_v3"],
             "china_not_measured": meta_src["counts"]["china_not_measured"],
             "strict_ok": meta_src["counts"]["strict_ok"],
+            "small_base": n_small_base,
+            "no_data": meta_src["counts"]["not_in_v3"] + meta_src["counts"]["china_not_measured"],
         },
         "counts_by_mk_class": mk,
         "growth_ratio_ok": gr,
+        "small_base_threshold": thr,
         "not_in_v3": meta_src.get("not_in_v3", []),
         "not_measured": meta_src.get("not_measured", []),
         "pop_gate": meta_src.get("pop_gate", {}),
         "map1_caption": (
-            f"Measured (ok)={meta_src['counts']['ok']}; "
-            f"low volume={meta_src['counts']['low_volume']}; "
-            f"not measured (empty series)={meta_src['counts']['not_in_v3']}; "
-            f"China not measured={meta_src['counts']['china_not_measured']}. "
-            f"Among ok: rising={mk['rising']}, flat={mk['flat']}, falling={mk['falling']}. "
-            f"Median growth={gr['median']}; IQR={gr['iqr']}."
+            f"Measured: {meta_src['counts']['ok']}; "
+            f"too few searches: {meta_src['counts']['low_volume']}; "
+            f"no data: {meta_src['counts']['not_in_v3'] + meta_src['counts']['china_not_measured']}; "
+            f"China not measured. "
+            f"Among measured regions: rising {mk['rising']}, "
+            f"no significant trend {mk['flat']}, falling {mk['falling']}. "
+            f"Median growth {gr['median'] * 100:.1f}% "
+            f"(IQR {gr['iqr'][0] * 100:.1f}% to {gr['iqr'][1] * 100:.1f}%). "
+            f"Small base: {n_small_base}."
         ),
         "map1_legend": {
-            "solid": "Measured with significant trend",
-            "hatch_flat": "No statistically significant trend (Mann-Kendall, BH q = 0.05)",
+            "ramp": "Colour = estimated growth (clipped −50% to +150%)",
+            "solid": "Statistically significant trend (Mann-Kendall, BH q = 0.05)",
+            "hatch_flat": "Estimated growth shown; no statistically significant trend",
             "low_volume": "Too few searches to measure",
-            "no_data": "No data",
-            "china": "Not measured: Google is not accessible there",
-            "clip_note": "Colour uses growth clipped to −50% … +150%; values outside that range are clipped.",
+            "no_data": "No data (including mainland China: Google is not accessible there)",
+            "small_base": "Small base: first-12-month average below 10 on Trends' 0–100 scale (growth ratio unstable)",
+            "clip_note": "Values outside −50% … +150% are clipped for colour only.",
         },
         "caveats": [
             "Growth = average of the latest 12 months divided by the first 12 months of Nov 2021 - Oct 2026, minus 1, from Google Trends values; Trends is a sample; small bases inflate ratios; only the Latin-script term ASMR is measured",
             "Mainland China is not measured: Google is not accessible there.",
             "Colour scale uses growth_ratio_clipped in [-0.5, 1.5]; reported value is growth_ratio.",
-            "Ok geos require World Bank (or Taiwan official) population ≥ 1,000,000; smaller or unknown populations are low_volume.",
+            "Measured geos require World Bank (or Taiwan official) population ≥ 1,000,000; smaller or unknown populations are treated as too few searches.",
+            f"Small base: mean of the first 12 months < {thr:g} on the Trends 0–100 index.",
         ],
         "window": "Nov 2021 to Oct 2026",
     }
@@ -206,7 +247,7 @@ def main() -> int:
             "generated_at": now_iso(),
             "caveats": [
                 "Each region relative to its own peak.",
-                "ok geos only; low_volume / not measured shown as grey on the map.",
+                "Measured geos only; too few searches shown as dotted light grey; no data as plain light grey.",
             ],
             "map2_caption": "each region relative to its own peak",
         },

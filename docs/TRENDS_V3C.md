@@ -1,6 +1,6 @@
 # Trends v3c page payloads
 
-_Generated 2026-11-23T07:46:57Z. Local only: `data/unpublished/v3/trends_country_v3c.json`, `trends_monthly_v3c.json`._
+_Generated 2026-11-23T11:48:56Z. Local only: `data/unpublished/v3/trends_country_v3c.json`, `trends_monthly_v3c.json`._
 
 ## 1. Why strict-ok was 22 in TRENDS_V3_TREND.md but 82 in TRENDS_V3_FIX.md
 
