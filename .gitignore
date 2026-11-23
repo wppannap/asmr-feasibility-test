@@ -17,6 +17,7 @@ __pycache__/
 .env
 data/.yt_comment_salt
 cache/
+.venv/
 **/.venv/
 trial_scrapers/MediaCrawler/
 trial_scrapers/chocodata-tiktok/
@@ -40,7 +41,6 @@ fix_wiki_zh.py
 keywords.py
 launcher.py
 reclassify.py
-requirements.txt
 run_all_trends.sh
 run_harvest_daily.sh
 validate_keywords.py

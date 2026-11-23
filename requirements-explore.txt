@@ -1,0 +1,4 @@
+# Optional exploration stack — not installed by default.
+# pip install -r requirements-explore.txt
+lingua-language-detector
+umap-learn
