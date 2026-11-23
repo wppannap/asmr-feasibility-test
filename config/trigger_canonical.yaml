@@ -14,6 +14,10 @@ canonical:
     - whispers
     - 耳語
     - 耳语
+    - ささやく
+    - 囁き
+    - 속삭임
+    - 속삭여
     - susurro
     - susurros
     - flüstern
@@ -27,64 +31,93 @@ canonical:
     - 耳かき
     - 掏耳
     - 挖耳
+    - 귀청소
+    - 귀파기
+    - 귀스파
   brushing:
     - brushing
     - hair brushing
     - brush
     - 刷毛
     - 梳理
+    - ブラッシング
+    - 빗질
   massage:
     - massage
     - kneading
     - 按摩
     - 揉
+    - マッサージ
+    - 마사지
   scratching:
     - scratching
     - scratch
+    - スクラッチ
+    - 긁기
   mouth_sounds:
     - mouth sounds
     - 口腔音
+    - マウスサウンド
+    - 입소리
   chewing:
     - chewing
     - 咀嚼
     - 咀嚼音
     - munching
     - eating sound
+    - もぐもぐ
+    - 씹는소리
   mukbang:
     - mukbang
     - 吃播
+    - 먹방
+    - 飯テロ
   slime:
     - slime
     - asmr slime
     - slimy
     - 黏液
+    - スライム
+    - 슬라임
   roleplay:
     - roleplay
     - role play
     - role-play
     - 角色扮演
+    - ロールプレイ
+    - 상황극
   personal_attention:
     - personal attention
     - 個人關注
     - 个人关注
+    - パーソナルアテンション
   crinkle:
     - crinkle
     - squelch
+    - クリンクル
   soap_cutting:
     - soap cutting
     - 切皂
+    - 石鹸カット
   unboxing:
     - unboxing
     - 開箱
+    - 開封
+    - 언박싱
   page_turn:
     - page turn
     - 翻書
     - 翻頁
+    - ページめくり
   typing:
     - typing
     - keyboard
     - 鍵盤
+    - タイピング
+    - 키보드
   mic:
     - mic
     - 麥克風
     - 麦克风
+    - マイク
+    - 마이크
