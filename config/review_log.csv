@@ -1,4 +1,4 @@
-file,n,result,reviewed_by,reviewer_note
+﻿file,n,result,reviewed_by,reviewer_note
 comment_precision_check.csv,,UNSET,UNSET,
 comment_precision_check_2.csv,,UNSET,UNSET,
 comment_precision_check_3.csv,,UNSET,UNSET,
@@ -15,11 +15,14 @@ class_check_v2_C.csv,,UNSET,UNSET,
 class_check_v2_ambient.csv,,UNSET,UNSET,
 class_check_v2_sleep.csv,,UNSET,UNSET,
 class_check_v2_other.csv,,UNSET,UNSET,
-class_check_v3_ambient.csv,,UNSET,UNSET,
-class_check_v3_nonlatin_nature.csv,,UNSET,UNSET,
-class_check_v3_longB.csv,,UNSET,UNSET,
-class_check_v3_sleep_title.csv,,UNSET,UNSET,
-class_check_v3_A.csv,,UNSET,UNSET,
+class_check_v3_ambient.csv,20,9/20 content-correct as ambient_labelled,AI-assisted,"11/20 FP ambient (brain→rain, bare heartbeat, white-noise tags on human ASMR, water/作業用)"
+class_check_v3_nonlatin_nature.csv,20,3/20 nature cue content-OK,AI-assisted,Most hits are 作業用/環境音 tags on human ASMR; only 水声/波音 title hits solid
+class_check_v3_longB.csv,20,20/20 meet long_B rule (tier B + ≥3h),AI-assisted,Flag mechanics OK; several rows are streams/lectures/games weakly ASMR
+class_check_v3_sleep_title.csv,30,sleep_title 16/20 relevant; sleep_v2-only 3/10 relevant,AI-assisted,"FPs: socks article, Minecraft 睡眠不足, Pokémon Sleep, 無法入眠 vlog; v2-only often tag-only"
+class_check_v3_A.csv,10,10/10 tier A content-OK,AI-assisted,Human triggers look real; no ambient in title
 sleep_strict_check.csv,,UNSET,UNSET,
 lang_check.csv,,UNSET,UNSET,
-lang_check_extra.csv,,UNSET,UNSET,
+lang_check_extra.csv,120,"3/120 labels OK (da 0/40, tl 0/40, und 3/40)",AI-assisted,da/tl nearly all wrong (EN/Thai/etc.); und often clear EN/id/pt — hold out from lang charts
+class_check_v31_rain_word.csv,20,18/20 true Latin FPs (brain/train/rainbow/drain),AI-assisted,2/20 are Rainfall/Rainy — whole-word drops real rain words
+class_check_v31_vacuum.csv,10,9/10 moves appropriate,AI-assisted,1 miss: Vacuum Cleaner Sound sleep track needs phrase coverage
+class_check_v31_heartbeat.csv,10,10/10 moves appropriate,AI-assisted,Bare heartbeat was product-name + human-RP FP into ambient

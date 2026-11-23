@@ -1,7 +1,6 @@
 /**
  * Enabled scrolly sections for the published site.
- * Hidden sections stay in the HTML but are not shown, linked, or data-fetched
- * until human_asmr-scoped payloads are verified and re-enabled.
+ * Disabled section HTML lives under web/js/sections_hidden/ (not in index.html).
  */
 export const ENABLED_SECTIONS = [
   "top",
@@ -29,6 +28,7 @@ export const MAP_CAPTION_NOTES = {
 };
 
 export function applySectionVisibility(doc = document) {
+  // index.html now contains only enabled sections; keep as a safety net.
   const enabled = new Set(ENABLED_SECTIONS);
   doc.querySelectorAll("section.scrolly[id]").forEach((el) => {
     const on = enabled.has(el.id);
@@ -39,18 +39,9 @@ export function applySectionVisibility(doc = document) {
   if (nav) {
     nav.querySelectorAll("a[href^='#']").forEach((a) => {
       const id = (a.getAttribute("href") || "").replace(/^#/, "");
-      const on = enabled.has(id);
+      const on = enabled.has(id) || id === "top";
       a.hidden = !on;
       a.style.display = on ? "" : "none";
-    });
-  }
-  // Stage-1 creator layers need unpublished creator_country payload — hide those controls.
-  const layer = doc.getElementById("layer-mode");
-  if (layer) {
-    layer.querySelectorAll('button[data-mode="creators"], button[data-mode="compare"]').forEach((btn) => {
-      btn.hidden = true;
-      btn.style.display = "none";
-      btn.disabled = true;
     });
   }
   const metric = doc.getElementById("metric-toggle");

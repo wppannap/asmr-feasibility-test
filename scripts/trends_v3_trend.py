@@ -137,10 +137,18 @@ def main() -> int:
     own_peak_ok = {}
     low_volume_flags = []
 
+    from trends_pop_gate import load_populations, passes_pop_gate, REASON as POP_REASON  # noqa: E402
+    print("Loading populations for ok-gate…", flush=True)
+    pops = load_populations([m["iso3"] for m in v3_rows.values()])
+
     for geo, g in weekly.groupby("geo"):
         if geo not in v3_rows:
             continue
-        meta = v3_rows[geo]
+        meta = dict(v3_rows[geo])
+        # Population gate (same as build_trends_v3c)
+        if meta.get("quality") == "ok" and not passes_pop_gate(meta["iso3"], pops):
+            meta["quality"] = "low_volume"
+            meta["quality_reason"] = POP_REASON
         asmr_m = g.groupby("month", sort=True)["value"].mean()
         # raw monthly series aligned to complete_months
         y = []

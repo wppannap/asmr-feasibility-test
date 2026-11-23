@@ -22,28 +22,13 @@
     <a href="#top">Top</a>
     <a href="#scrolly-1">Map 1</a>
     <a href="#scrolly-2">Map 2</a>
-    <a href="#scrolly-3">Creators</a>
     <a href="#scrolly-4">Scatter</a>
-    <a href="#scrolly-5">Duration</a>
     <a href="#scrolly-6">Wiki</a>
-    <a href="#scrolly-7">Douyin</a>
-    <a href="#scrolly-8">Comments</a>
   </nav>
 
   <!-- Stage 1: dual-layer choropleth -->
   <section class="scrolly" id="scrolly-1" data-stage="1">
     <figure class="stage" id="stage-1">
-      <div class="stage-chrome">
-        <div class="control-row" role="group" aria-label="Map layer">
-          <span class="control-label">Layer</span>
-          <div class="seg" id="layer-mode">
-            <button type="button" data-mode="trends" class="is-active">搜尋熱度（Trends）</button>
-            <button type="button" data-mode="creators">創作者所在地</button>
-            <button type="button" data-mode="compare">左右對照</button>
-          </div>
-        </div>
-      </div>
-
       <div class="map-panels" id="map-panels-1">
         <div class="map-panel" data-panel="trends">
           <p class="map-panel-title" id="trends-panel-title">ASMR search growth (latest 12 months ÷ first 12 months − 1)</p>
@@ -52,11 +37,6 @@
           <div class="legend" id="legend-trends"></div>
           <p class="map-caption" id="trends-map-caption" aria-live="polite"></p>
           <div class="table-host" id="trends-table-host"></div>
-        </div>
-        <div class="map-panel is-hidden" data-panel="creators">
-          <p class="map-panel-title">創作者所在地（頻道國家）</p>
-          <div class="map-svg-wrap" id="map-creators"></div>
-          <div class="legend" id="legend-creators"></div>
         </div>
       </div>
 
@@ -104,18 +84,6 @@
     </article>
   </section>
 
-  <!-- Stage 3: creator proportional symbols + TikTok inset -->
-  <section class="scrolly" id="scrolly-3" data-chart="creatorSymbols">
-    <figure class="stage stage-chart">
-      <div class="chart-root" id="chart-creator-symbols"></div>
-      <p class="caveat" id="caveat-3">Loading…</p>
-    </figure>
-    <article class="steps">
-      <div class="step" data-step="3-1"><p>TODO: my text</p></div>
-      <div class="step" data-step="3-2"><p>TODO: my text</p></div>
-      <div class="step" data-step="3-3"><p>TODO: my text</p></div>
-    </article>
-  </section>
 
   <!-- Stage 4: insomnia scatter -->
   <section class="scrolly" id="scrolly-4" data-chart="scatter">
@@ -130,18 +98,6 @@
     </article>
   </section>
 
-  <!-- Stage 5: duration histograms -->
-  <section class="scrolly" id="scrolly-5" data-chart="duration">
-    <figure class="stage stage-chart">
-      <div class="chart-root" id="chart-duration"></div>
-      <p class="caveat" id="caveat-5">Loading…</p>
-    </figure>
-    <article class="steps">
-      <div class="step" data-step="5-1"><p>TODO: my text</p></div>
-      <div class="step" data-step="5-2"><p>TODO: my text</p></div>
-      <div class="step" data-step="5-3"><p>TODO: my text</p></div>
-    </article>
-  </section>
 
   <!-- Stage 6: wiki small multiples -->
   <section class="scrolly" id="scrolly-6" data-chart="wiki">
@@ -156,31 +112,7 @@
     </article>
   </section>
 
-  <!-- Stage 7: douyin keywords -->
-  <section class="scrolly" id="scrolly-7" data-chart="douyin">
-    <figure class="stage stage-chart">
-      <div class="chart-root" id="chart-douyin"></div>
-      <p class="caveat" id="caveat-7">Loading…</p>
-    </figure>
-    <article class="steps">
-      <div class="step" data-step="7-1"><p>TODO: my text</p></div>
-      <div class="step" data-step="7-2"><p>TODO: my text</p></div>
-      <div class="step" data-step="7-3"><p>TODO: my text</p></div>
-    </article>
-  </section>
 
-  <!-- Stage 8: comment themes -->
-  <section class="scrolly" id="scrolly-8" data-chart="comments">
-    <figure class="stage stage-chart stage-tall">
-      <div class="chart-root chart-scroll" id="chart-comments"></div>
-      <p class="caveat" id="caveat-8">Loading…</p>
-    </figure>
-    <article class="steps">
-      <div class="step" data-step="8-1"><p>TODO: my text</p></div>
-      <div class="step" data-step="8-2"><p>TODO: my text</p></div>
-      <div class="step" data-step="8-3"><p>TODO: my text</p></div>
-    </article>
-  </section>
 
   <footer class="site-footer">
     <p>TODO: my text</p>

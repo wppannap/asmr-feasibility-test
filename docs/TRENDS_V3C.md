@@ -1,6 +1,6 @@
 # Trends v3c page payloads
 
-_Generated 2026-11-23T03:34:00Z. Local only: `data/unpublished/v3/trends_country_v3c.json`, `trends_monthly_v3c.json`._
+_Generated 2026-11-23T07:46:57Z. Local only: `data/unpublished/v3/trends_country_v3c.json`, `trends_monthly_v3c.json`._
 
 ## 1. Why strict-ok was 22 in TRENDS_V3_TREND.md but 82 in TRENDS_V3_FIX.md
 
@@ -19,13 +19,13 @@ Among ok geos, **62** have `zero_week_share == 0.0`. In Python, `0.0 or 1` evalu
 
 ## 2. Headline numbers
 
-- ok: **104**
-- low_volume: **96**
+- ok: **103**
+- low_volume: **97**
 - not in v3 (empty series): **29**
 - China not measured: **1**
 - strict_ok (canonical): **82**
-- mk_class (ok): rising/flat/falling = **74/27/3**
-- growth_ratio (ok) median: **0.2495**; IQR: **[0.094, 0.4271]**
+- mk_class (ok): rising/flat/falling = **74/26/3**
+- growth_ratio (ok) median: **0.2537**; IQR: **[0.0961, 0.4297]**
 
 ## 3. Five largest growth_ratio (with first-12-month mean)
 

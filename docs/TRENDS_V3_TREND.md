@@ -1,6 +1,6 @@
 # Trends v3 trend test
 
-_Generated 2026-11-23T06:23:39Z. Payloads: `data/unpublished/v3/trends_country_v3b.json`, `trends_monthly_v3b.json` (not published)._
+_Generated 2026-11-23T07:47:14Z. Payloads: `data/unpublished/v3/trends_country_v3b.json`, `trends_monthly_v3b.json` (not published)._
 
 ## Changelog (canonical strict-ok)
 
@@ -12,14 +12,14 @@ Complete months used: **60** (2021-11 … 2026-10).
 
 | set | n | rising | flat | falling |
 |---|---:|---:|---:|---:|
-| ok | 104 | 74 | 27 | 3 |
+| ok | 103 | 74 | 26 | 3 |
 | strict-ok | 82 | 63 | 18 | 1 |
 
 ### growth_ratio distribution (ok)
 
 | min | p25 | median | p75 | max |
 |---:|---:|---:|---:|---:|
-| -0.8285 | 0.094 | 0.2495 | 0.4271 | 6.9255 |
+| -0.8285 | 0.0961 | 0.2537 | 0.4297 | 6.9255 |
 
 ### 5 highest growth_ratio
 
@@ -41,7 +41,7 @@ Complete months used: **60** (2021-11 … 2026-10).
 | ES | ESP | Spain | -0.1109 | flat |
 | MM | MMR | Myanmar | -0.0723 | flat |
 
-Spearman(growth_ratio, relative_slope_pct_per_year): n=104 ρ=0.8666 p=0.0 CI=[0.736, 0.9693]
+Spearman(growth_ratio, relative_slope_pct_per_year): n=103 ρ=0.8628 p=0.0 CI=[0.7228, 0.9692]
 Sign disagreements growth vs relative slope: **6**
 
 ### MK vs SE within_noise cross-counts
@@ -61,7 +61,7 @@ Sign disagreements growth vs relative slope: **6**
 
 Holm over the **2** pairs within each block. `recent_vs_peak` is **not** written to v3b page payloads.
 
-Docs-only: Spearman(recent_vs_peak, noise) on ok = n=104 ρ=-0.7687 p=0.0
+Docs-only: Spearman(recent_vs_peak, noise) on ok = n=103 ρ=-0.7633 p=0.0
 
 ### ok_with_TWN
 

@@ -40,7 +40,13 @@ def dump(path: Path, obj) -> None:
 
 def main() -> int:
     B.require_scipy()
-    # 1) regenerate TREND doc with fixed strict_ok
+    # 1) rebuild unpublished v3c with population gate, then TREND doc
+    print("Re-running build_trends_v3c (pop gate)…", flush=True)
+    import build_trends_v3c as V3C
+    rc = V3C.main()
+    if rc != 0:
+        return rc
+
     print("Re-running trends_v3_trend for TRENDS_V3_TREND.md…", flush=True)
     import trends_v3_trend as T
     rc = T.main()
@@ -137,6 +143,7 @@ def main() -> int:
             "quality": r.get("quality"),
             "strict_ok": bool(r.get("strict_ok")),
             "mean_first_12": r.get("mean_first_12"),
+            **({"quality_reason": r["quality_reason"]} if r.get("quality_reason") else {}),
         })
 
     # geos that cannot be drawn on countries-50m — compute vs topo numeric map via iso.js isn't available;
@@ -164,6 +171,7 @@ def main() -> int:
         "growth_ratio_ok": gr,
         "not_in_v3": meta_src.get("not_in_v3", []),
         "not_measured": meta_src.get("not_measured", []),
+        "pop_gate": meta_src.get("pop_gate", {}),
         "map1_caption": (
             f"Measured (ok)={meta_src['counts']['ok']}; "
             f"low volume={meta_src['counts']['low_volume']}; "
@@ -184,6 +192,7 @@ def main() -> int:
             "Growth = average of the latest 12 months divided by the first 12 months of Nov 2021 - Oct 2026, minus 1, from Google Trends values; Trends is a sample; small bases inflate ratios; only the Latin-script term ASMR is measured",
             "Mainland China is not measured: Google is not accessible there.",
             "Colour scale uses growth_ratio_clipped in [-0.5, 1.5]; reported value is growth_ratio.",
+            "Ok geos require World Bank (or Taiwan official) population ≥ 1,000,000; smaller or unknown populations are low_volume.",
         ],
         "window": "Nov 2021 to Oct 2026",
     }

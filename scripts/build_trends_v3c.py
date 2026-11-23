@@ -27,6 +27,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import build_web_data as B  # noqa: E402
 import build_trends_v3 as V3  # noqa: E402
 from trends_v3_trend import theil_sen_slope, bh_adjust  # noqa: E402
+from trends_pop_gate import load_populations, passes_pop_gate, REASON as POP_REASON  # noqa: E402
 
 DATA = ROOT / "data"
 UNPUB = DATA / "unpublished" / "v3"
@@ -110,12 +111,31 @@ def main() -> int:
     all_rows = []
     own_peak_ok = {}
     low_volume = []
+    pop_downgraded = []
+
+    print("Loading populations for ok-gate (WB SP.POP.TOTL + Taiwan official)…", flush=True)
+    pops = load_populations([m["iso3"] for m in v3_rows.values()])
 
     for geo, meta in v3_rows.items():
         iso3 = meta["iso3"]
         name = iso2_to_name.get(geo, meta.get("name") or "")
         quality = meta.get("quality")
-        strict = is_strict_ok(meta)
+        quality_reason = None
+        # Population gate: ok requires known pop >= 1e6
+        if quality == "ok" and not passes_pop_gate(iso3, pops):
+            pop_downgraded.append({
+                "geo": geo,
+                "iso3": iso3,
+                "name": name,
+                "population": pops.get(str(iso3).upper()),
+                "reason": POP_REASON,
+            })
+            quality = "low_volume"
+            quality_reason = POP_REASON
+        # Rebuild a meta view for strict_ok after possible downgrade
+        meta_eff = dict(meta)
+        meta_eff["quality"] = quality
+        strict = is_strict_ok(meta_eff)
         noise = meta.get("noise")
 
         gdf = weekly[weekly["geo"].astype(str) == str(geo)]
@@ -160,7 +180,10 @@ def main() -> int:
                 noise = med_abs / med_val if med_val and med_val > 0 else None
             results_ok.append({"geo": geo, "iso3": iso3, "mk_p": mk_p, "slope": slope})
         elif quality == "low_volume":
-            low_volume.append({"geo": geo, "iso3": iso3, "name": name})
+            low_volume.append({
+                "geo": geo, "iso3": iso3, "name": name,
+                **({"quality_reason": quality_reason} if quality_reason else {}),
+            })
 
         row = {
             "geo": geo,
@@ -176,7 +199,10 @@ def main() -> int:
             "noise": B.clean_num(noise) if noise is not None and np.isfinite(float(noise)) else None,
             "mk_p": B.clean_num(mk_p) if mk_p is not None else None,
             "theil_sen_slope_per_month": B.clean_num(slope) if slope is not None else None,
+            "population": pops.get(str(iso3).upper()),
         }
+        if quality_reason:
+            row["quality_reason"] = quality_reason
         all_rows.append(row)
 
     # BH on ok only
@@ -223,8 +249,14 @@ def main() -> int:
             "china_not_measured": 1,
             "strict_ok": n_strict,
             "strict_ok_if_buggy_or1": n_strict_buggy,
+            "pop_downgraded": len(pop_downgraded),
         },
         "counts_by_mk_class": mk_counts,
+        "pop_gate": {
+            "min_population": 1_000_000,
+            "reason": POP_REASON,
+            "downgraded": pop_downgraded,
+        },
         "growth_ratio_ok": {
             "median": B.clean_num(float(gr.median())) if len(gr) else None,
             "iqr": [
