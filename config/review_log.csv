@@ -30,3 +30,4 @@ class_check_v32_ambient_tag_only.csv,,,UNSET,
 class_check_v32_inflect.csv,,,UNSET,
 script_check.csv,,,UNSET,
 comment_precision_check_8.csv,,,UNSET,
+human_review_pack.csv,40,ambient_v32 10/10; not_asmr_but_human_trigger 4/5; sleep_title 10/10; tierA 10/10; tierB 5/5,AI-assisted,title-only AI-assisted fill; not a human review

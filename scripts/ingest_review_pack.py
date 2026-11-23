@@ -3,9 +3,13 @@
 """Ingest filled data/human_review_pack.csv into review_log + REVIEW_RESULTS.md.
 
 Refuses to run if any my_judgment is blank. Does not invent judgments.
+
+Default reviewed_by=human is for a real human fill. AI fills must pass
+--reviewed-by AI-assisted (never mark AI judgments as human).
 """
 from __future__ import annotations
 
+import argparse
 import csv
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -16,17 +20,24 @@ PACK = ROOT / "data" / "human_review_pack.csv"
 REVIEW = ROOT / "config" / "review_log.csv"
 DOC = ROOT / "docs" / "REVIEW_RESULTS.md"
 
-# Expected 1 = positive judgment per block (see REVIEW_PACK_INSTRUCTIONS.md)
-EXPECT_ONE = {
-    "ambient_v32": True,
-    "sleep_title": True,
-    "tierA": True,
-    "tierB": True,
-    "not_asmr_but_human_trigger": True,
-}
-
 
 def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument(
+        "--reviewed-by",
+        choices=("human", "AI-assisted"),
+        default="human",
+        help="Who filled my_judgment. AI fills must use AI-assisted.",
+    )
+    ap.add_argument("--reviewer-note", default="")
+    args = ap.parse_args()
+    if args.reviewed_by == "human" and not args.reviewer_note:
+        note = "own review"
+    elif args.reviewed_by == "AI-assisted" and not args.reviewer_note:
+        note = "title-only AI-assisted fill; not a human review"
+    else:
+        note = args.reviewer_note
+
     if not PACK.exists():
         print(f"missing {PACK}", flush=True)
         return 1
@@ -65,8 +76,8 @@ def main() -> int:
         "file": "human_review_pack.csv",
         "n": str(len(rows)),
         "result": summary,
-        "reviewed_by": "human",
-        "reviewer_note": "own review",
+        "reviewed_by": args.reviewed_by,
+        "reviewer_note": note,
     }
     found = False
     for r in review_rows:
@@ -84,16 +95,24 @@ def main() -> int:
     lines = [
         "# Review results — human_review_pack",
         "",
-        f"_Ingested {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}. reviewed_by=human; reviewer_note=own review._",
+        f"_Ingested {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}. "
+        f"reviewed_by={args.reviewed_by}; reviewer_note={note}._",
         "",
-        "| block | correct/n |",
+        "| block | ones/n (criterion holds) |",
         "|---|---|",
     ]
     for b in sorted(results):
         lines.append(f"| {b} | {results[b]['score']} |")
     lines.append("")
+    if args.reviewed_by != "human":
+        lines.append(
+            f"**Note:** This ingest is `{args.reviewed_by}`, not a human review. "
+            "Re-run with `--reviewed-by human` after a real person fills the pack."
+        )
+        lines.append("")
     DOC.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"wrote {REVIEW.relative_to(ROOT)} and {DOC.relative_to(ROOT)}", flush=True)
+    print(f"reviewed_by={args.reviewed_by}", flush=True)
     for b, v in results.items():
         print(f"  {b}: {v['score']}", flush=True)
     return 0

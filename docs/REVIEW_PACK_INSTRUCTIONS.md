@@ -10,10 +10,18 @@ Fill `my_judgment` with `1` or `0` only. Leave `note` blank unless something is 
 | `tierB` | It is plausibly ASMR content |
 | `not_asmr_but_human_trigger` | It is **NOT** ASMR (correctly left out of labelled ASMR) |
 
-Do not mark AI judgments as human. After filling every `my_judgment`, run:
+Do not mark AI judgments as human.
+
+After a **human** fills every `my_judgment`, run:
 
 ```bash
 .venv/bin/python scripts/ingest_review_pack.py
 ```
 
-That script refuses blank judgments, writes `reviewed_by=human` into `config/review_log.csv`, and creates `docs/REVIEW_RESULTS.md`.
+If an AI filled the pack (title-only), ingest with:
+
+```bash
+.venv/bin/python scripts/ingest_review_pack.py --reviewed-by AI-assisted
+```
+
+The script refuses blank judgments, writes `config/review_log.csv`, and creates `docs/REVIEW_RESULTS.md`.
