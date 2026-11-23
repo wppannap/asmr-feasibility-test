@@ -1,11 +1,11 @@
 # Trends v3 trend test
 
-_Generated 2026-11-23T02:12:05Z. Payloads: `data/unpublished/v3/trends_*_v3b.json` (not published)._
+_Generated 2026-11-23T02:14:20Z. Payloads: `data/unpublished/v3/trends_*_v3b.json` (not published)._
 
 ## 1. Mann–Kendall / Theil–Sen on ok geos
 
 Complete months: **60** (2021-11 … 2026-10).
-ok counts: {'n': 104, 'rising': 74, 'flat': 27, 'falling': 3}; strict-ok: {'n': 22, 'rising': 16, 'flat': 6, 'falling': 0}.
+ok counts: {'n': 104, 'rising': 74, 'flat': 27, 'falling': 3}; strict-ok: {'n': 82, 'rising': 63, 'flat': 18, 'falling': 1}.
 
 growth_ratio distribution (ok): {'min': -0.8285, 'p25': 0.094, 'median': 0.2495, 'p75': 0.4271, 'max': 6.9255}
 
@@ -62,15 +62,15 @@ recent_vs_peak vs noise (ok, docs-only): n=104 ρ=-0.7687 p=0.0 CI=[-0.8502,-0.6
 
 | pair | raw | partial (control noise) |
 |---|---|---|
-| growth_vs_internet | n=22 ρ=0.144 p=0.5226 CI=[-0.3553,0.7031] p_holm=0.9804 | n=22 ρ=0.1293 p=0.5663 CI=[-0.4026,0.6732] p_holm=0.9804 |
-| growth_vs_youth | n=22 ρ=0.1553 p=0.4902 CI=[-0.3197,0.5618] p_holm=0.9804 | n=22 ρ=0.1553 p=0.4902 CI=[-0.3524,0.5821] p_holm=0.9804 |
+| growth_vs_internet | n=82 ρ=-0.1098 p=0.3263 CI=[-0.3373,0.1276] p_holm=0.6526 | n=82 ρ=-0.0159 p=0.8876 CI=[-0.247,0.2181] p_holm=1.0 |
+| growth_vs_youth | n=82 ρ=0.0836 p=0.4551 CI=[-0.1484,0.3157] p_holm=0.6526 | n=82 ρ=0.0401 p=0.7202 CI=[-0.1666,0.2512] p_holm=1.0 |
 
 ### strict_ok_excl_TWN
 
 | pair | raw | partial (control noise) |
 |---|---|---|
-| growth_vs_internet | n=22 ρ=0.144 p=0.5226 CI=[-0.3929,0.6832] p_holm=0.9804 | n=22 ρ=0.1293 p=0.5663 CI=[-0.3849,0.6669] p_holm=0.9804 |
-| growth_vs_youth | n=22 ρ=0.1553 p=0.4902 CI=[-0.3368,0.5657] p_holm=0.9804 | n=22 ρ=0.1553 p=0.4902 CI=[-0.341,0.5773] p_holm=0.9804 |
+| growth_vs_internet | n=81 ρ=-0.114 p=0.3109 CI=[-0.3565,0.1289] p_holm=0.6218 | n=81 ρ=-0.0232 p=0.8373 CI=[-0.2682,0.2008] p_holm=1.0 |
+| growth_vs_youth | n=81 ρ=0.0808 p=0.4735 CI=[-0.1574,0.3117] p_holm=0.6218 | n=81 ρ=0.0394 p=0.7267 CI=[-0.1616,0.2496] p_holm=1.0 |
 
 ## 3. Outputs
 

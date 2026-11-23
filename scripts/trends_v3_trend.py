@@ -162,8 +162,8 @@ def main() -> int:
         own = (asmr_m / peak * 100.0) if peak > 0 else asmr_m * 0.0
         own_complete = {m: float(own[m]) if m in own.index else None for m in complete_months}
 
-        zws = float(r0.get("zero_week_share") or 1)
-        ndv = int(r0.get("n_distinct_values") or 0)
+        zws = float(r0["zero_week_share"]) if r0.get("zero_week_share") is not None else 1.0
+        ndv = int(r0["n_distinct_values"]) if r0.get("n_distinct_values") is not None else 0
         quality = r0["quality"]
         strict_ok = bool(quality == "ok" and zws < 0.2 and ndv >= 30)
         noise = noise_of(raw)
