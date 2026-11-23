@@ -26,14 +26,36 @@ def load_cfg(path: Path) -> dict:
         return yaml.safe_load(f)
 
 
+_CJK_HANGUL_RE = re.compile(
+    r"[\u1100-\u11FF\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF"
+    r"\uAC00-\uD7AF\uF900-\uFAFF\uFF66-\uFF9D]"
+)
+
+
+def term_is_cjk_or_hangul(term: str) -> bool:
+    """CJK / Hangul / kana terms keep substring matching; Latin uses whole-word."""
+    return bool(term and _CJK_HANGUL_RE.search(term))
+
+
+def term_matches(text_lc: str, term: str) -> bool:
+    """Lowercased text + term. Latin: Unicode-aware whole word; CJK/Hangul: substring."""
+    if not term:
+        return False
+    t = term.lower()
+    if term_is_cjk_or_hangul(term):
+        return t in text_lc
+    # Whole-word: edges must not be Unicode word characters (\w).
+    return re.search(rf"(?<!\w){re.escape(t)}(?!\w)", text_lc) is not None
+
+
 def has_any(text: str, terms: list[str]) -> bool:
     tl = text.lower()
-    return any(t.lower() in tl for t in terms if t)
+    return any(term_matches(tl, t) for t in terms if t)
 
 
 def matched(text: str, terms: list[str]) -> list[str]:
     tl = text.lower()
-    return [t for t in terms if t and t.lower() in tl]
+    return [t for t in terms if t and term_matches(tl, t)]
 
 
 def sleep_hits(text: str, cfg: dict) -> list[str]:

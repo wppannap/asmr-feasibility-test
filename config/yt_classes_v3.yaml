@@ -174,7 +174,7 @@ strong_ambient:
   - fan noise
   - fan sounds
   - vacuum noise
-  - vacuum
+  - vacuum cleaner noise
   - hair-dryer noise
   - hair dryer noise
   - hairdryer noise
@@ -182,7 +182,6 @@ strong_ambient:
   - womb sound
   - heartbeat sounds
   - heartbeat sound
-  - heartbeat
 
 # Generic nature / ambient — TITLE only, and only if no human/object trigger.
 nature_title_only:
@@ -232,7 +231,6 @@ nature_title_only:
   - 焚き火
   - 環境音
   - 自然音
-  - 作業用
   - 川の音
   - 雷雨
   # Spanish / French / German / Portuguese / Russian
