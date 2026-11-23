@@ -1,0 +1,90 @@
+# Canonical human-ASMR triggers (≤18). Aliases/translations map → canonical key.
+# Used by explore rebuilds; does not change yt_classes classification lists.
+version: 1
+canonical:
+  tapping:
+    - tapping
+    - gentle tapping
+    - soft tapping
+    - 敲擊
+    - 敲打
+    - 敲敲
+  whisper:
+    - whisper
+    - whispers
+    - 耳語
+    - 耳语
+    - susurro
+    - susurros
+    - flüstern
+    - fluisteren
+    - sussurro
+    - sussurri
+  ear_cleaning:
+    - ear cleaning
+    - 採耳
+    - 采耳
+    - 耳かき
+    - 掏耳
+    - 挖耳
+  brushing:
+    - brushing
+    - hair brushing
+    - brush
+    - 刷毛
+    - 梳理
+  massage:
+    - massage
+    - kneading
+    - 按摩
+    - 揉
+  scratching:
+    - scratching
+    - scratch
+  mouth_sounds:
+    - mouth sounds
+    - 口腔音
+  chewing:
+    - chewing
+    - 咀嚼
+    - 咀嚼音
+    - munching
+    - eating sound
+  mukbang:
+    - mukbang
+    - 吃播
+  slime:
+    - slime
+    - asmr slime
+    - slimy
+    - 黏液
+  roleplay:
+    - roleplay
+    - role play
+    - role-play
+    - 角色扮演
+  personal_attention:
+    - personal attention
+    - 個人關注
+    - 个人关注
+  crinkle:
+    - crinkle
+    - squelch
+  soap_cutting:
+    - soap cutting
+    - 切皂
+  unboxing:
+    - unboxing
+    - 開箱
+  page_turn:
+    - page turn
+    - 翻書
+    - 翻頁
+  typing:
+    - typing
+    - keyboard
+    - 鍵盤
+  mic:
+    - mic
+    - 麥克風
+    - 麦克风

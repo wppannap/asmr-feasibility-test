@@ -79,8 +79,16 @@ def geo_maps() -> tuple[dict[str, str], dict[str, str]]:
 def load_weekly() -> pd.DataFrame:
     if not SRC.exists():
         raise SystemExit(f"missing {SRC} — run fetch_trends_asmr_all.py first")
-    df = pd.read_csv(SRC, encoding="utf-8-sig")
+    # keep_default_na=False so Namibia (ISO2 "NA") is not read as NaN
+    df = pd.read_csv(
+        SRC,
+        encoding="utf-8-sig",
+        keep_default_na=False,
+        na_values=[""],
+    )
+    df = df[df["geo"].notna()].copy()
     df["geo"] = df["geo"].astype(str).str.strip().str.upper()
+    df = df[(df["geo"] != "") & (df["geo"] != "NAN")].copy()
     df["value"] = pd.to_numeric(df["value"], errors="coerce")
     # date is Google formattedAxisTime; parse flexibly
     dt = pd.to_datetime(df["date"], errors="coerce", utc=True, dayfirst=True)
@@ -496,6 +504,7 @@ def coverage_report(country: dict, iso2_to_name: dict[str, str]) -> None:
 
 
 def main() -> int:
+    B.require_scipy()
     UNPUB.mkdir(parents=True, exist_ok=True)
     iso2_to_iso3, iso2_to_name = geo_maps()
     df = load_weekly()

@@ -12,6 +12,18 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def require_scipy() -> None:
+    """Fail fast when scipy is missing (Holm / Spearman need it)."""
+    try:
+        import scipy  # noqa: F401
+    except ImportError as e:  # pragma: no cover
+        raise SystemExit(
+            "scipy is required for Spearman/Holm correlations. "
+            "Install with: python3 -m pip install scipy "
+            "(or: python3 -m venv .venv && .venv/bin/pip install -r requirements.txt)"
+        ) from e
 DATA = ROOT / "data"
 OUT = ROOT / "web" / "data"
 UNPUB = DATA / "unpublished"
@@ -220,9 +232,15 @@ def _attach_time_cols(df: pd.DataFrame) -> pd.DataFrame:
 
 def load_trends_raw() -> pd.DataFrame:
     """All Trends rows with time cols (keeps every keyword in each comparison_group)."""
-    df = pd.read_csv(DATA / "trends_timeseries.csv", encoding="utf-8-sig")
-    df["geo"] = df["geo"].fillna("").astype(str).str.strip()
-    df = df[df["geo"] != ""].copy()
+    # keep_default_na=False so ISO2 "NA" (Namibia) is not read as NaN
+    df = pd.read_csv(
+        DATA / "trends_timeseries.csv",
+        encoding="utf-8-sig",
+        keep_default_na=False,
+        na_values=[""],
+    )
+    df["geo"] = df["geo"].fillna("").astype(str).str.strip().str.upper()
+    df = df[(df["geo"] != "") & (df["geo"] != "NAN")].copy()
     df["iso3"] = df["geo"].map(lambda g: iso3(g))
     df = df[df["iso3"].notna()].copy()
     df["comparison_group"] = df["comparison_group"].fillna("").astype(str)
@@ -719,6 +737,7 @@ BOOTSTRAP_SEED = 42
 
 def spearman(a: pd.Series, b: pd.Series, *, seed: int = BOOTSTRAP_SEED) -> dict:
     """Spearman rho, exact two-sided p, and 95% bootstrap CI (BOOTSTRAP_N resamples)."""
+    require_scipy()
     from scipy import stats
 
     mask = a.notna() & b.notna()
@@ -1646,6 +1665,7 @@ def build_comment_themes() -> dict:
 
 
 def main() -> None:
+    require_scipy()
     print("Building web/data …")
     OUT.mkdir(parents=True, exist_ok=True)
     archive = DATA / "archive_not_published"
