@@ -1,0 +1,306 @@
+# Classification v3 keyword lists.
+# Haystack: title + tags + description_short + topicCategories (lowercased),
+# except nature_title_only which matches TITLE only when no human/object trigger.
+# Bare microphone words (binaural, 3dio, 雙耳/双耳) are NOT strong ambient.
+
+asmr_label:
+  - asmr
+  - 耳かき
+  - 耳そうじ
+  - 耳垢
+  - 耳掃除
+  - 耳夾
+  - 耳用
+  - 挖耳
+  - 採耳
+  - 采耳
+  - 掏耳
+  - 擦耳
+  - 耳揉み
+  - 耳检査
+  - ear cleaning
+  - ear pick
+  - earwax
+  - ear spa
+  - ear message
+  - ear candl
+  - ear candle
+  - ear whisk
+  - ear brush
+  - ear muff
+  - ear lamp
+  - ear simulator
+  - earphone asmr
+  - 귀청소
+  - 귀스파
+  - limpieza de oídos
+  - "nettoyage d'oreilles"
+  - ohrenreinigung
+
+human_trigger:
+  - tapping
+  - 敲擊
+  - 敲打
+  - 敲敲
+  - gentle tapping
+  - soft tapping
+  - whisper
+  - whispers
+  - 耳語
+  - 耳语
+  - susurro
+  - susurros
+  - flüstern
+  - fluisteren
+  - sussurro
+  - sussurri
+  - ear cleaning
+  - 採耳
+  - 采耳
+  - 耳かき
+  - 掏耳
+  - 挖耳
+  - brushing
+  - hair brushing
+  - 刷毛
+  - 梳理
+  - brush
+  - massage
+  - 按摩
+  - 揉
+  - kneading
+  - scratching
+  - scratch
+  - mouth sounds
+  - 口腔音
+  - chewing
+  - 咀嚼
+  - 咀嚼音
+  - munching
+  - eating sound
+  - mukbang
+  - 吃播
+  - slime
+  - asmr slime
+  - slimy
+  - 黏液
+  - roleplay
+  - role play
+  - role-play
+  - 角色扮演
+  - personal attention
+  - 個人關注
+  - 个人关注
+  - crinkle
+  - squelch
+  - soap cutting
+  - 切皂
+  - unboxing
+  - 開箱
+  - page turn
+  - 翻書
+  - 翻頁
+  - typing
+  - 鍵盤
+  - keyboard
+  - mic
+  - 麥克風
+  - 麦克风
+
+object_action_trigger:
+  - tapping
+  - brushing
+  - brush
+  - scratching
+  - scratch
+  - crinkle
+  - squelch
+  - slime
+  - soap cutting
+  - unboxing
+  - page turn
+  - typing
+  - keyboard
+  - mic
+  - chewing
+  - 咀嚼
+  - mouth sounds
+  - 口腔音
+  - massage
+  - 按摩
+  - whisper
+  - 耳かき
+  - 掏耳
+  - cracking
+  - shampoo
+  - nape
+  - tracing
+  - barber
+  - 理容
+  - シャンプー
+
+# Strong ambient / white-noise family — match anywhere in haystack.
+# Do NOT include bare binaural / 3dio / 雙耳 (mic gear). Prefer specific phrases.
+strong_ambient:
+  - white noise
+  - whitenoise
+  - 白噪音
+  - 白噪声
+  - brown noise
+  - pink noise
+  - green noise
+  - 棕色噪音
+  - 棕噪音
+  - 粉紅噪音
+  - 粉红噪音
+  - 백색소음
+  - ホワイトノイズ
+  - ブラウンノイズ
+  - ピンクノイズ
+  - bruit blanc
+  - ruido blanco
+  - weißes rauschen
+  - weisses rauschen
+  - ruído branco
+  - белый шум
+  - binaural beats
+  - binaural beat
+  - isochronic
+  - brainwave
+  - 腦波
+  - 脑波
+  - 432 hz
+  - 432hz
+  - fan noise
+  - fan sounds
+  - vacuum noise
+  - vacuum
+  - hair-dryer noise
+  - hair dryer noise
+  - hairdryer noise
+  - womb sounds
+  - womb sound
+  - heartbeat sounds
+  - heartbeat sound
+  - heartbeat
+
+# Generic nature / ambient — TITLE only, and only if no human/object trigger.
+nature_title_only:
+  # English
+  - rain
+  - thunder
+  - ocean
+  - waves
+  - water
+  - fireplace
+  - forest
+  - nature sounds
+  - ambience
+  - ambient
+  # Chinese
+  - 雨聲
+  - 雨声
+  - 雨音
+  - 雷聲
+  - 雷声
+  - 雷雨
+  - 海浪
+  - 流水
+  - 水聲
+  - 水声
+  - 篝火
+  - 柴火
+  - 壁爐
+  - 壁炉
+  - 風聲
+  - 风声
+  - 自然音
+  - 環境音
+  - 环境音
+  # Hangul
+  - 빗소리
+  - 천둥
+  - 파도소리
+  - 모닥불
+  - 자연의 소리
+  - 자연소리
+  - 백색소음
+  - 빗소리 asmr
+  # Japanese
+  - 雨音
+  - 波の音
+  - 焚き火
+  - 環境音
+  - 自然音
+  - 作業用
+  - 川の音
+  - 雷雨
+  # Spanish / French / German / Portuguese / Russian
+  - lluvia
+  - olas
+  - trueno
+  - ruido blanco
+  - pluie
+  - orage
+  - vagues
+  - bruit blanc
+  - Regen
+  - Gewitter
+  - Wellen
+  - weißes Rauschen
+  - chuva
+  - trovão
+  - ondas
+  - ruído branco
+  - дождь
+  - гром
+  - волны
+  - белый шум
+  - костёр
+  - камин
+
+sleep_strict_latin:
+  - sleep
+  - sleeping
+  - asleep
+  - insomni
+  - dormir
+  - sommeil
+  - schlaf
+sleep_strict_substring:
+  - 助眠
+  - 哄睡
+  - 失眠
+  - 不眠
+  - 睡眠
+  - 入睡
+  - 睡前
+  - 睡觉
+  - 睡覺
+  - 眠
+  - 寝
+  - 수면
+  - 불면
+  - 眠り
+  - 眠る
+  - 不眠症
+  - 深度睡眠
+  - 哄寶
+  - 哄睡神曲
+
+relax_only:
+  - relax
+  - relaxing
+  - relaxation
+  - meditation
+  - 冥想
+  - 放鬆
+  - healing
+  - 療癒
+  - yoga
+  - 瑜伽
+  - stress relief
+  - anxiety
+
+# Duration threshold (seconds) for long_B flag on tier B.
+long_b_duration_sec: 10800

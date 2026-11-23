@@ -168,6 +168,31 @@ def collect_iso3(obj) -> set[str]:
     return found
 
 
+def check_reviewed_by_unset() -> list[tuple[str, bool, str]]:
+    """Fail if any theme check shown on the page has reviewed_by = UNSET."""
+    path = ROOT / "config" / "verified_themes.json"
+    out: list[tuple[str, bool, str]] = []
+    if not path.exists():
+        out.append(("verified_themes.json exists", False, "missing"))
+        return out
+    meta = json.loads(path.read_text(encoding="utf-8"))
+    unset = []
+    for theme, entry in meta.items():
+        if not isinstance(entry, dict):
+            continue
+        if "check" not in entry:
+            continue
+        rb = entry.get("reviewed_by", "UNSET")
+        if rb is None or str(rb).strip().upper() == "UNSET":
+            unset.append(theme)
+    out.append((
+        "verified_themes reviewed_by not UNSET",
+        len(unset) == 0,
+        f"UNSET themes: {unset}" if unset else "ok",
+    ))
+    return out
+
+
 def check_meta(obj, name: str) -> list[str]:
     errs = []
     meta = obj.get("meta")
@@ -430,6 +455,9 @@ def main() -> int:
 
     if len(loaded) == len(EXPECTED_FILES):
         results.extend(totals_checks(loaded))
+
+    # Manual-check provenance: page-shown theme checks must not be UNSET
+    results.extend(check_reviewed_by_unset())
 
     # TopoJSON country codes
     topo = fetch_topo_iso3()
