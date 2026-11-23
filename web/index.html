@@ -42,22 +42,16 @@
             <button type="button" data-mode="compare">左右對照</button>
           </div>
         </div>
-        <div class="control-row" role="group" aria-label="Trends metric">
-          <span class="control-label">Metric</span>
-          <div class="seg" id="metric-toggle">
-            <button type="button" data-metric="change_in_window" class="is-active">Change in window</button>
-            <button type="button" data-metric="recent_vs_peak">Recent vs peak</button>
-          </div>
-        </div>
       </div>
 
       <div class="map-panels" id="map-panels-1">
         <div class="map-panel" data-panel="trends">
-          <p class="map-panel-title" id="trends-panel-title">Change in ASMR search interest, latest 12 months vs first 12 months of the window (points, relative to each country's own peak)</p>
+          <p class="map-panel-title" id="trends-panel-title">ASMR search growth (latest 12 months ÷ first 12 months − 1)</p>
           <p class="map-panel-subtitle" id="trends-window-subtitle">Window: Nov 2021 to Oct 2026</p>
           <div class="map-svg-wrap" id="map-trends"></div>
           <div class="legend" id="legend-trends"></div>
-          <p class="map-noise-caption" id="trends-noise-caption" hidden></p>
+          <p class="map-caption" id="trends-map-caption" aria-live="polite"></p>
+          <div class="table-host" id="trends-table-host"></div>
         </div>
         <div class="map-panel is-hidden" data-panel="creators">
           <p class="map-panel-title">創作者所在地（頻道國家）</p>
@@ -87,9 +81,7 @@
           <input type="range" id="month-scrubber" min="0" max="1" value="0" step="1" aria-label="Month scrubber" aria-readonly="false" />
           <span class="month-label" id="month-label" aria-live="polite">—</span>
         </div>
-        <p class="month-caption" id="month-caption">
-          Relative to each country's own peak
-        </p>
+        <p class="month-caption" id="month-caption">each region relative to its own peak</p>
       </div>
 
       <div class="map-panels single">
@@ -98,6 +90,7 @@
           <p class="map-panel-subtitle" id="monthly-window-subtitle">Window: Nov 2021 to Oct 2026</p>
           <div class="map-svg-wrap" id="map-monthly"></div>
           <div class="legend" id="legend-monthly"></div>
+          <div class="table-host" id="monthly-table-host"></div>
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-/* Correlation table + change_in_window vs internet scatter */
+/* Correlation table + growth vs internet scatter (Trends v3c) */
 import {
   appendSvg,
   attachTableToggle,
@@ -9,16 +9,17 @@ import {
   sizeOf,
 } from "./util.js";
 
-/** Holm-family pairs only (4). Descriptive internet_vs_youth rendered separately. */
 const PAIR_ROWS = [
-  { key: "change_vs_internet", label: "Change in window vs internet users %" },
-  { key: "change_vs_youth", label: "Change in window vs youth share % (15–24)" },
-  { key: "recent_vs_internet", label: "Recent vs peak vs internet users %" },
-  { key: "recent_vs_youth", label: "Recent vs peak vs youth share % (15–24)" },
+  { key: "growth_vs_internet", label: "Growth vs internet users %" },
+  { key: "growth_vs_youth", label: "Growth vs youth share % (15–24)" },
 ];
 
-const NO_INSOMNIA_NOTE =
-  "Why no insomnia comparison? Google Trends indices are normalised within each request, so search levels of different terms cannot be compared across countries.";
+const FRAME_OPTS = [
+  { id: "ok_with_TWN", label: "ok · with TWN" },
+  { id: "ok_excl_TWN", label: "ok · without TWN" },
+  { id: "strict_ok_with_TWN", label: "strict-ok · with TWN" },
+  { id: "strict_ok_excl_TWN", label: "strict-ok · without TWN" },
+];
 
 let ctx = null;
 
@@ -35,15 +36,22 @@ export function render(container, data) {
     .append("p")
     .attr("class", "chart-subtitle")
     .text(
-      "Country-level associations between each country's own ASMR search trend and context indicators; not evidence about who uses ASMR."
+      "Association between a region's search trend and a context indicator; not evidence about who uses ASMR; Trends indices cannot be compared across regions in level"
     );
-  wrap
-    .append("p")
-    .attr("class", "chart-note")
-    .text(NO_INSOMNIA_NOTE);
+
+  const controls = wrap.append("div").attr("class", "control-row chart-controls");
+  controls.append("span").attr("class", "control-label").text("Frame");
+  const seg = controls.append("div").attr("class", "seg").attr("id", "corr-frame-toggle");
+  FRAME_OPTS.forEach((opt, i) => {
+    seg
+      .append("button")
+      .attr("type", "button")
+      .attr("data-frame", opt.id)
+      .classed("is-active", i === 0)
+      .text(opt.label);
+  });
 
   const tableHost = wrap.append("div").attr("class", "corr-table-host").node();
-  renderCorrTable(tableHost, scatter);
 
   const chrome = wrap.append("div").attr("class", "control-row chart-controls");
   chrome
@@ -66,10 +74,18 @@ export function render(container, data) {
     plotHost,
     rhoEl,
     caveatEl,
-    step: 1,
+    frame: "ok_with_TWN",
     showChart: false,
     tableApi: null,
   };
+
+  seg.selectAll("button").on("click", function () {
+    seg.selectAll("button").classed("is-active", false);
+    d3.select(this).classed("is-active", true);
+    ctx.frame = this.dataset.frame;
+    renderCorrTable(tableHost, scatter, ctx.frame);
+    if (ctx.showChart) drawScatter();
+  });
 
   d3.select("#scatter-view-toggle").on("click", function () {
     ctx.showChart = !ctx.showChart;
@@ -81,174 +97,137 @@ export function render(container, data) {
     if (ctx.showChart) drawScatter();
   });
 
+  renderCorrTable(tableHost, scatter, ctx.frame);
   setCaveat(caveatEl, scatter.meta?.caveats || []);
   return ctx;
 }
 
-function renderCorrTable(host, scatter) {
+function renderCorrTable(host, scatter, frameId) {
   const wrap = d3.select(host);
   wrap.selectAll("*").remove();
-  const correlations = scatter.correlations || {};
-  const descriptive =
-    (scatter.correlations_descriptive || {}).internet_vs_youth || null;
+  const fam = (scatter.families || {})[frameId] || {};
+  const raw = fam.raw || {};
+  const part = fam.partial_noise || {};
 
   const table = wrap.append("table").attr("class", "corr-table");
   table
     .append("thead")
     .append("tr")
     .selectAll("th")
-    .data(["Pair", "n", "ρ", "95% CI", "Holm p"])
+    .data(["Pair", "n", "raw ρ", "95% CI", "Holm p", "partial ρ (noise)", "partial CI", "partial Holm p"])
     .join("th")
     .text((d) => d);
 
   const tbody = table.append("tbody");
-  PAIR_ROWS.forEach((row) => {
-    const c = correlations[row.key] || {};
-    const survive =
-      c.p_holm != null && Number.isFinite(c.p_holm) && c.p_holm < 0.05;
-    const tr = tbody.append("tr").classed("holm-survive", survive);
-    const ci =
-      c.ci95_low == null || c.ci95_high == null
-        ? "—"
-        : `[${fmt(c.ci95_low, 3)}, ${fmt(c.ci95_high, 3)}]`;
-    [
-      row.label,
-      c.n ?? "—",
-      c.rho == null ? "—" : fmt(c.rho, 3),
-      ci,
-      c.p_holm == null ? "—" : fmt(c.p_holm, 4),
-    ].forEach((val, i) => {
-      const td = tr.append("td").text(val);
-      if (survive && i >= 2) td.classed("holm-cell", true);
-    });
+  PAIR_ROWS.forEach((pr) => {
+    const r = raw[pr.key] || {};
+    const p = part[pr.key] || {};
+    const tr = tbody.append("tr");
+    tr.append("td").text(pr.label);
+    tr.append("td").text(r.n ?? "—");
+    tr.append("td").text(r.rho == null ? "—" : fmt(r.rho, 3));
+    tr.append("td").text(
+      r.ci95_low == null ? "—" : `[${fmt(r.ci95_low, 3)}, ${fmt(r.ci95_high, 3)}]`
+    );
+    tr.append("td").text(r.p_holm == null ? "—" : fmt(r.p_holm, 3));
+    tr.append("td").text(p.rho == null ? "—" : fmt(p.rho, 3));
+    tr.append("td").text(
+      p.ci95_low == null ? "—" : `[${fmt(p.ci95_low, 3)}, ${fmt(p.ci95_high, 3)}]`
+    );
+    tr.append("td").text(p.p_holm == null ? "—" : fmt(p.p_holm, 3));
   });
 
-  if (descriptive) {
-    wrap
-      .append("p")
-      .attr("class", "chart-note")
-      .text("Context (not about ASMR; outside Holm family):");
-    const dtable = wrap.append("table").attr("class", "corr-table corr-table-desc");
-    dtable
-      .append("thead")
-      .append("tr")
-      .selectAll("th")
-      .data(["Pair", "n", "ρ", "95% CI", "Note"])
-      .join("th")
-      .text((d) => d);
-    const ci =
-      descriptive.ci95_low == null || descriptive.ci95_high == null
-        ? "—"
-        : `[${fmt(descriptive.ci95_low, 3)}, ${fmt(descriptive.ci95_high, 3)}]`;
-    const tr = dtable.append("tbody").append("tr").classed("descriptive", true);
-    [
-      "Internet users % vs youth share % (15–24)",
-      descriptive.n ?? "—",
-      descriptive.rho == null ? "—" : fmt(descriptive.rho, 3),
-      ci,
-      "not about ASMR",
-    ].forEach((val) => tr.append("td").text(val));
-  }
+  attachTableToggle(host, () => ({
+    columns: [
+      "pair",
+      "n",
+      "raw_rho",
+      "raw_ci",
+      "raw_holm",
+      "partial_rho",
+      "partial_ci",
+      "partial_holm",
+    ],
+    rows: PAIR_ROWS.map((pr) => {
+      const r = raw[pr.key] || {};
+      const p = part[pr.key] || {};
+      return [
+        pr.label,
+        r.n,
+        r.rho,
+        r.ci95_low == null ? null : [r.ci95_low, r.ci95_high],
+        r.p_holm,
+        p.rho,
+        p.ci95_low == null ? null : [p.ci95_low, p.ci95_high],
+        p.p_holm,
+      ];
+    }),
+  }));
 }
 
 function drawScatter() {
-  const { scatter, plotHost, rhoEl } = ctx;
+  if (!ctx) return;
+  const { scatter, plotHost, rhoEl, frame } = ctx;
   clear(plotHost);
+  const points = (scatter.scatter_points || []).filter((d) => {
+    if (d.growth_ratio == null || d.internet == null) return false;
+    if (frame.startsWith("strict_ok") && !d.strict_ok) return false;
+    if (frame.endsWith("excl_TWN") && d.iso3 === "TWN") return false;
+    return true;
+  });
 
-  const corr = scatter.correlations?.change_vs_internet || {};
-  rhoEl.html(
-    `Change in window vs internet users % · n = <strong>${
-      corr.n ?? "—"
-    }</strong> · Spearman ρ = <strong>${
-      corr.rho == null ? "—" : fmt(corr.rho, 3)
-    }</strong> · Holm p = <strong>${
-      corr.p_holm == null ? "—" : fmt(corr.p_holm, 4)
-    }</strong>`
-  );
+  const fam = (scatter.families || {})[frame] || {};
+  const stats = (fam.raw || {}).growth_vs_internet || {};
+  d3.select(rhoEl)
+    .attr("hidden", null)
+    .text(
+      `growth vs internet · n=${stats.n ?? "—"} · ρ=${
+        stats.rho == null ? "—" : fmt(stats.rho, 3)
+      } · Holm p=${stats.p_holm == null ? "—" : fmt(stats.p_holm, 3)}`
+    );
 
-  const tableApi = attachTableToggle(plotHost, () => ({
-    columns: ["iso3", "change_in_window", "internet_users_pct", "indicators_status"],
-    rows: (scatter.countries || []).map((d) => [
-      d.iso3,
-      d.change_in_window,
-      d.internet_users_pct,
-      d.indicators_status,
-    ]),
-  }));
-  ctx.tableApi = tableApi;
-
-  const plot = tableApi.visual;
-  plot.classList.add("chart-plot");
-
-  const { width, height } = sizeOf(plot);
+  const { width } = sizeOf(plotHost);
+  const w = Math.min(width - 8, 560);
+  const h = 320;
   const margin = { top: 16, right: 16, bottom: 40, left: 48 };
-  const w = width - margin.left - margin.right;
-  const h = height - margin.top - margin.bottom;
   const svg = appendSvg(
-    plot,
-    width,
-    height,
-    "Scatter of change in window versus internet users percent"
+    plotHost,
+    w,
+    h,
+    "Scatter of growth ratio versus internet users percent"
   );
-  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-
-  const rows = (scatter.countries || []).map((d) => ({
-    ...d,
-    x: d.change_in_window,
-    y: d.internet_users_pct,
-    missing: d.indicators_status === "missing" || d.internet_users_pct == null,
-  }));
-  const plotted = rows.filter((d) => d.x != null && d.y != null);
-
-  const xExtent = d3.extent(plotted, (d) => d.x);
-  const pad = Math.max(1, (xExtent[1] - xExtent[0]) * 0.08 || 1);
+  const g = svg
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+  const innerW = w - margin.left - margin.right;
+  const innerH = h - margin.top - margin.bottom;
   const x = d3
     .scaleLinear()
-    .domain([xExtent[0] - pad, xExtent[1] + pad])
+    .domain(d3.extent(points, (d) => d.internet))
     .nice()
-    .range([0, w]);
+    .range([0, innerW]);
   const y = d3
     .scaleLinear()
-    .domain([0, (d3.max(plotted, (d) => d.y) || 100) * 1.05])
+    .domain(d3.extent(points, (d) => d.growth_ratio))
     .nice()
-    .range([h, 0]);
-
+    .range([innerH, 0]);
   g.append("g")
-    .attr("transform", `translate(0,${h})`)
-    .call(d3.axisBottom(x).ticks(6));
-  g.append("g").call(d3.axisLeft(y).ticks(6));
-
-  g.append("text")
-    .attr("x", w / 2)
-    .attr("y", h + 32)
-    .attr("text-anchor", "middle")
-    .attr("font-size", 11)
-    .attr("fill", "#5a6b76")
-    .text("Change in window (own-peak points)");
-  g.append("text")
-    .attr("transform", "rotate(-90)")
-    .attr("x", -h / 2)
-    .attr("y", -36)
-    .attr("text-anchor", "middle")
-    .attr("font-size", 11)
-    .attr("fill", "#5a6b76")
-    .text("Internet users %");
-
+    .attr("transform", `translate(0,${innerH})`)
+    .call(d3.axisBottom(x).ticks(5))
+    .attr("aria-hidden", "true");
+  g.append("g").call(d3.axisLeft(y).ticks(5)).attr("aria-hidden", "true");
   g.selectAll("circle")
-    .data(plotted)
+    .data(points)
     .join("circle")
-    .attr("cx", (d) => x(d.x))
-    .attr("cy", (d) => y(d.y))
-    .attr("r", 4)
-    .attr("fill", "#0b6e4f")
+    .attr("cx", (d) => x(d.internet))
+    .attr("cy", (d) => y(d.growth_ratio))
+    .attr("r", 3.5)
+    .attr("fill", "#1b6ca8")
     .attr("fill-opacity", 0.75)
     .append("title")
-    .text(
-      (d) =>
-        `${countryName(d.iso3)}: change ${fmt(d.x, 1)}; internet ${fmt(d.y, 1)}%`
-    );
+    .text((d) => `${countryName(d.iso3)}: growth=${fmt(d.growth_ratio, 3)}, internet=${fmt(d.internet, 1)}`);
 }
 
 export function update() {
-  /* no-op: table is static; chart redrawn on toggle */
+  /* no-op steps */
 }

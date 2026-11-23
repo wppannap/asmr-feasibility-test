@@ -20,9 +20,9 @@ MAX_BYTES = 2 * 1024 * 1024
 # Published payloads only (human-ASMR scope lockdown). Older YouTube/Douyin/TikTok/
 # comment/creator JSONs live under data/unpublished/ until class_check review.
 EXPECTED_FILES = [
-    "trends_country_v2.json",
-    "trends_monthly_v2.json",
-    "insomnia_vs_asmr.json",
+    "trends_country_v3c.json",
+    "trends_monthly_v3c.json",
+    "correlations_v3c.json",
     "wiki_lang.json",
 ]
 TOPO_FILE = "countries-50m.json"
@@ -30,6 +30,11 @@ TOPO_FILE = "countries-50m.json"
 FORBIDDEN_NOISE_PHRASE_RE = re.compile(
     r"white\s*noise|whitenoise|白噪音|brown\s*noise|pink\s*noise|"
     r"binaural|ambient\s*noise",
+    re.I,
+)
+# Removed metrics / fields must not appear anywhere under web/
+FORBIDDEN_METRIC_RE = re.compile(
+    r"recent_vs_peak|take_off|asmr_share",
     re.I,
 )
 
@@ -168,10 +173,32 @@ def collect_iso3(obj) -> set[str]:
     return found
 
 
+def enabled_sections() -> list[str]:
+    """Parse ENABLED_SECTIONS from web/js/sections.js (no JS runtime)."""
+    path = ROOT / "web" / "js" / "sections.js"
+    text = path.read_text(encoding="utf-8")
+    m = re.search(r"ENABLED_SECTIONS\s*=\s*\[(.*?)\]", text, re.S)
+    if not m:
+        return []
+    return re.findall(r'"([^"]+)"', m.group(1))
+
+
 def check_reviewed_by_unset() -> list[tuple[str, bool, str]]:
-    """Fail if any theme check shown on the page has reviewed_by = UNSET."""
-    path = ROOT / "config" / "verified_themes.json"
+    """Fail if check texts shown by ENABLED comment section have reviewed_by=UNSET.
+
+    Hidden comment / YouTube sections must not block the push.
+    """
     out: list[tuple[str, bool, str]] = []
+    enabled = enabled_sections()
+    comments_on = "scrolly-8" in enabled
+    out.append((
+        "reviewed_by gate (comments section enabled?)",
+        True,
+        f"scrolly-8={'on' if comments_on else 'off'}; skip UNSET fail when off",
+    ))
+    if not comments_on:
+        return out
+    path = ROOT / "config" / "verified_themes.json"
     if not path.exists():
         out.append(("verified_themes.json exists", False, "missing"))
         return out
@@ -186,7 +213,7 @@ def check_reviewed_by_unset() -> list[tuple[str, bool, str]]:
         if rb is None or str(rb).strip().upper() == "UNSET":
             unset.append(theme)
     out.append((
-        "verified_themes reviewed_by not UNSET",
+        "verified_themes reviewed_by not UNSET (comments enabled)",
         len(unset) == 0,
         f"UNSET themes: {unset}" if unset else "ok",
     ))
@@ -238,9 +265,10 @@ def check_privacy(obj, name: str) -> list[str]:
 
 
 def check_no_noise_phrases_in_web() -> list[tuple[str, bool, str]]:
-    """Fail if any published file under web/ contains ambient/white-noise phrases."""
+    """Fail if web/ contains ambient/white-noise phrases or removed metric names."""
     rows = []
-    hits = []
+    noise_hits = []
+    metric_hits = []
     for path in sorted((ROOT / "web").rglob("*")):
         if not path.is_file():
             continue
@@ -252,112 +280,79 @@ def check_no_noise_phrases_in_web() -> list[tuple[str, bool, str]]:
             continue
         for i, line in enumerate(text.splitlines(), 1):
             if FORBIDDEN_NOISE_PHRASE_RE.search(line):
-                hits.append(f"{path.relative_to(ROOT)}:{i}")
-                if len(hits) >= 20:
-                    break
-        if len(hits) >= 20:
-            break
+                noise_hits.append(f"{path.relative_to(ROOT)}:{i}")
+            if FORBIDDEN_METRIC_RE.search(line):
+                metric_hits.append(f"{path.relative_to(ROOT)}:{i}")
+            if len(noise_hits) >= 20 and len(metric_hits) >= 20:
+                break
     rows.append((
         "no white/brown/pink/binaural/ambient-noise phrases in web/",
-        len(hits) == 0,
-        "ok" if not hits else f"hits={hits[:8]}",
+        len(noise_hits) == 0,
+        "ok" if not noise_hits else f"hits={noise_hits[:8]}",
+    ))
+    rows.append((
+        "no recent_vs_peak/take_off/asmr_share in web/",
+        len(metric_hits) == 0,
+        "ok" if not metric_hits else f"hits={metric_hits[:8]}",
     ))
     return rows
 
 
 def totals_checks(loaded: dict[str, dict]) -> list[tuple[str, bool, str]]:
-    """Checks for currently published payloads only."""
+    """Checks for currently published v3c payloads only."""
     rows = []
-
-    # Taiwan filled from official Taiwan stats (not World Bank)
-    inv = loaded["insomnia_vs_asmr.json"]
-    tw = [c for c in inv["countries"] if c["iso3"] == "TWN"]
-    tw_ok = (
-        bool(tw)
-        and tw[0].get("indicators_status") == "ok_tw_official"
-        and tw[0].get("internet_users_pct") == 87.6
-        and tw[0].get("youth_share_pct") == 11.796
-    )
-    rows.append(("Taiwan indicators from official TW stats", tw_ok, tw[0] if tw else "TWN absent"))
-    rows.append(("Taiwan kept in insomnia_vs_asmr", bool(tw), f"n_TWN={len(tw)}"))
-
-    excl = inv.get("correlations_excluding_twn") or {}
-    corr = inv.get("correlations") or {}
+    v3c = loaded.get("trends_country_v3c.json") or {}
+    v3c_rows = v3c.get("rows") or []
+    meta = v3c.get("meta") or {}
     rows.append((
-        "correlations_excluding_twn present",
-        isinstance(excl, dict) and "change_vs_internet" in excl,
-        list(excl.keys())[:3],
+        "trends_country_v3c has growth_ratio + mk_class",
+        len(v3c_rows) >= 100
+        and "growth_ratio" in (v3c_rows[0] or {})
+        and "mk_class" in (v3c_rows[0] or {}),
+        f"n={len(v3c_rows)} keys={sorted((v3c_rows[0] or {}).keys())[:10]}",
     ))
-    sample_pair = corr.get("change_vs_internet") or {}
-    spearman_fields = {"rho", "n", "p", "ci95_low", "ci95_high", "p_holm"}
-    rows.append((
-        "spearman pair has rho/n/p/ci95/p_holm",
-        spearman_fields <= set(sample_pair.keys()),
-        sorted(sample_pair.keys()),
-    ))
-    rows.append((
-        "insomnia_vs_asmr uses own-peak change metrics",
-        (inv.get("meta") or {}).get("metric") == "change_in_window_and_recent_vs_peak",
-        (inv.get("meta") or {}).get("metric"),
-    ))
-    v2 = loaded.get("trends_country_v2.json") or {}
-    v2_rows = v2.get("rows") or []
-    rows.append((
-        "trends_country_v2 has change_in_window",
-        len(v2_rows) >= 30 and "change_in_window" in (v2_rows[0] or {}),
-        f"keys={sorted((v2_rows[0] or {}).keys())[:8]}",
-    ))
-    rows.append((
-        "asmr_share_of_batch not in trends_country_v2 rows",
-        all("asmr_share_of_batch" not in (r or {}) for r in v2_rows),
-        "ok" if v2_rows else "no rows",
-    ))
-    rows.append((
-        "take_off / threshold_disagree not in published rows",
-        all(
-            "take_off_year" not in (r or {})
-            and "flag_threshold_disagree" not in (r or {})
-            and "flag_peak_before_2010" not in (r or {})
-            for r in v2_rows
-        ),
-        "ok" if v2_rows else "no rows",
-    ))
-    need = {
-        "change_vs_internet",
-        "change_vs_youth",
-        "recent_vs_internet",
-        "recent_vs_youth",
+    forbidden_fields = {
+        "recent_vs_peak", "take_off_year", "asmr_share_of_batch", "insomnia_index",
+        "change_in_window", "within_noise",
     }
     rows.append((
-        "Holm family has exactly 4 ASMR pairs",
-        set(corr.keys()) == need,
-        f"keys={sorted(corr.keys())}",
-    ))
-    corr_ns = {k: (corr.get(k) or {}).get("n") for k in need}
-    excl_ns = {k: (excl.get(k) or {}).get("n") for k in need}
-    rows.append((
-        "Holm correlations include TWN (n=31)",
-        all(n == 31 for n in corr_ns.values()) and bool(tw),
-        f"corr_n={corr_ns}",
+        "v3c rows lack removed metrics",
+        all(not (forbidden_fields & set((r or {}).keys())) for r in v3c_rows),
+        "ok",
     ))
     rows.append((
-        "Holm correlations_excluding_twn n=30",
-        all(n == 30 for n in excl_ns.values()),
-        f"excl_n={excl_ns}",
+        "v3c meta has counts + mk_class counts",
+        isinstance(meta.get("counts"), dict) and isinstance(meta.get("counts_by_mk_class"), dict),
+        str(meta.get("counts")),
     ))
-    desc = inv.get("correlations_descriptive") or {}
+    corr = loaded.get("correlations_v3c.json") or {}
+    fam = corr.get("families") or {}
+    need_frames = {
+        "ok_with_TWN", "ok_excl_TWN", "strict_ok_with_TWN", "strict_ok_excl_TWN",
+    }
     rows.append((
-        "descriptive internet_vs_youth outside Holm",
-        "internet_vs_youth" in desc
-        and (desc.get("internet_vs_youth") or {}).get("holm_family") is False
-        and (desc.get("internet_vs_youth") or {}).get("label") == "not about ASMR",
-        list(desc.keys()),
+        "correlations_v3c has 4 frames",
+        need_frames <= set(fam.keys()),
+        sorted(fam.keys()),
     ))
-    inv_row0 = (inv.get("countries") or [{}])[0]
+    sample = ((fam.get("ok_with_TWN") or {}).get("raw") or {}).get("growth_vs_internet") or {}
+    spearman_fields = {"rho", "n", "p", "ci95_low", "ci95_high", "p_holm"}
     rows.append((
-        "published countries lack share/insomnia fields",
-        "asmr_share_of_batch" not in inv_row0 and "insomnia_index" not in inv_row0,
-        sorted(inv_row0.keys())[:10],
+        "correlations_v3c spearman fields",
+        spearman_fields <= set(sample.keys()),
+        sorted(sample.keys()),
+    ))
+    blob = json.dumps(corr)
+    rows.append((
+        "correlations_v3c omits removed fields",
+        not FORBIDDEN_METRIC_RE.search(blob) and "insomnia" not in blob.lower(),
+        "ok",
+    ))
+    monthly = loaded.get("trends_monthly_v3c.json") or {}
+    rows.append((
+        "monthly v3c has 60 months",
+        len(monthly.get("months") or []) == 60,
+        f"n_months={len(monthly.get('months') or [])}",
     ))
     wiki = loaded.get("wiki_lang.json") or {}
     rows.append((
@@ -370,18 +365,21 @@ def totals_checks(loaded: dict[str, dict]) -> list[tuple[str, bool, str]]:
         wiki.get("concepts") == ["ASMR"],
         repr(wiki.get("concepts")),
     ))
-    # Unpublished payload files must not remain under web/data/
     for stale in (
+        "trends_country_v2.json",
+        "trends_monthly_v2.json",
+        "insomnia_vs_asmr.json",
         "youtube_yearly.json",
         "creator_country.json",
         "comment_themes.json",
         "douyin_keywords.json",
         "tiktok_origin.json",
     ):
+        p = WEB / stale
         rows.append((
-            f"unpublished not in web/data: {stale}",
-            not (WEB / stale).exists(),
-            "absent" if not (WEB / stale).exists() else "STILL PRESENT",
+            f"stale {stale} absent from web/data",
+            not p.exists(),
+            "gone" if not p.exists() else "PRESENT",
         ))
     rows.extend(check_no_noise_phrases_in_web())
     return rows
@@ -390,34 +388,30 @@ def totals_checks(loaded: dict[str, dict]) -> list[tuple[str, bool, str]]:
 def spot_checks(rng: random.Random) -> None:
     print("\n=== Spot checks (published payloads only) ===\n")
 
-    web, _ = load_json("trends_country_v2.json")
+    web, _ = load_json("trends_country_v3c.json")
     samples = rng.sample(web["rows"], min(3, len(web["rows"])))
-    print("— trends_country_v2.json —")
+    print("— trends_country_v3c.json —")
     for row in samples:
-        print(f"  WEB: { {k: row.get(k) for k in ('iso3','change_in_window','recent_vs_peak','within_noise','flag_low_volume')} }")
+        print(
+            "  WEB:",
+            {k: row.get(k) for k in ("iso3", "growth_ratio", "mk_class", "quality", "strict_ok")},
+        )
     print()
 
-    web, _ = load_json("insomnia_vs_asmr.json")
-    samples = rng.sample(web["countries"], min(3, len(web["countries"])))
-    print("— insomnia_vs_asmr.json —")
-    for row in samples:
-        print(f"  WEB iso3={row.get('iso3')} change={row.get('change_in_window')} recent={row.get('recent_vs_peak')}")
+    web, _ = load_json("correlations_v3c.json")
+    fam = (web.get("families") or {}).get("ok_with_TWN") or {}
+    print("— correlations_v3c.json ok_with_TWN —")
+    print("  raw keys", list((fam.get("raw") or {}).keys()))
     print()
 
-    web, _ = load_json("wiki_lang.json")
-    concept = (web.get("concepts") or ["ASMR"])[0]
-    langs = list((web.get("series") or {}).get(concept, {}).keys())
-    lang = rng.choice(langs) if langs else None
-    print("— wiki_lang.json —")
-    print(f"  concepts={web.get('concepts')} sample_lang={lang}")
+    web, _ = load_json("trends_monthly_v3c.json")
+    print("— trends_monthly_v3c.json —")
+    print(f"  months={len(web.get('months') or [])} countries={len(web.get('countries') or [])}")
     print()
-
-    web, _ = load_json("trends_monthly_v2.json")
-    country = rng.choice(web["countries"])
-    print("— trends_monthly_v2.json —")
-    print(f"  sample iso3={country} months={len(web.get('months') or [])}")
-    print()
-    print("SKIPPED spot checks for unpublished: youtube_yearly, creator_country, comment_themes, douyin_keywords, tiktok_origin")
+    print(
+        "SKIPPED spot checks for unpublished: "
+        "youtube_yearly, creator_country, comment_themes, douyin_keywords, tiktok_origin"
+    )
     print()
 
 

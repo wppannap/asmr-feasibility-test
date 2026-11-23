@@ -31,23 +31,27 @@ export const VERIFIED_THEME_META = {
     },
     caveat:
       "keyword hits; includes a few sarcastic or joking uses (e.g. 'so good I can't sleep')",
+    reviewed_by: "UNSET",
   },
   gratitude: {
     verified_langs: ["pooled"],
     check: "n=20, 20/20 judged relevant",
     caveat: "keyword hits",
+    reviewed_by: "UNSET",
   },
   anxiety_stress: {
     verified_langs: ["pooled"],
     check: "n=20 pooled, 17/20 judged relevant",
     caveat:
       "keyword hits; includes some product names (anti-stress toys) and timestamp noise",
+    reviewed_by: "UNSET",
   },
   sleep_aid_effectiveness: {
     verified_langs: ["pooled"],
     check: "n=20 pooled, 19/20 judged relevant",
     caveat:
       "keyword hits of self-reported falling asleep; includes a few unrelated uses",
+    reviewed_by: "UNSET",
   },
 };
 
@@ -73,16 +77,28 @@ export function themeVisible(theme, metaVerified) {
   return verifiedThemeIds(metaVerified).includes(theme);
 }
 
+/** Append review provenance, e.g. "(human review)" / "(AI-assisted review)". */
+export function reviewSuffix(reviewedBy) {
+  if (!reviewedBy || String(reviewedBy).toUpperCase() === "UNSET") {
+    return " (review UNSET)";
+  }
+  const rb = String(reviewedBy).toLowerCase();
+  if (rb === "human") return " (human review)";
+  if (rb === "ai-assisted" || rb === "ai_assisted") return " (AI-assisted review)";
+  return ` (${reviewedBy})`;
+}
+
 /** Format check field: string or per-language object → display string(s). */
-export function formatCheck(check) {
-  if (!check) return "—";
-  if (typeof check === "string") return check;
+export function formatCheck(check, reviewedBy) {
+  const suf = reviewSuffix(reviewedBy);
+  if (!check) return "—" + suf;
+  if (typeof check === "string") return check + suf;
   if (typeof check === "object") {
     return Object.entries(check)
-      .map(([lang, text]) => `${lang}: ${text}`)
+      .map(([lang, text]) => `${lang}: ${text}${suf}`)
       .join(" · ");
   }
-  return String(check);
+  return String(check) + suf;
 }
 
 export function checkForLang(check, lang) {

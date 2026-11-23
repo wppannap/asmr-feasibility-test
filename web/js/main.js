@@ -41,20 +41,15 @@ async function loadChartModules() {
   }
 }
 
-const METRIC_LABEL = {
-  change_in_window:
-    "Change in ASMR search interest, latest 12 months vs first 12 months of the window (points, relative to each country's own peak)",
-  recent_vs_peak:
-    "Mean ASMR search interest in the latest 12 months of the window (points, relative to each country's own peak)",
-};
+const GROWTH_LABEL = "ASMR search growth (latest 12 months ÷ first 12 months − 1)";
+const GROWTH_DOMAIN_PCT = [-50, 150]; // colour only; values clipped
 
 // Color-blind–safe sequential (cividis via d3.interpolateCividis)
 const colorSeq = d3.interpolateCividis;
-// Diverging for change_in_window (centred on 0)
+// Diverging for growth (centred on 0)
 const colorDiv = d3.interpolateRdBu;
 
 const state = {
-  choroplethMetric: "change_in_window", // default; recent_vs_peak secondary
   layerMode: "trends", // trends | creators | compare
   monthIndex: 0,
   playing: false,
@@ -70,6 +65,7 @@ const state = {
   maps: {},
   tween: null,
   extra: null,
+  undrawableGeos: [],
 };
 
 const tooltip = d3.select("#tooltip");
@@ -113,6 +109,31 @@ async function loadAll() {
     (trends.rows || []).forEach((r) => {
       if (r.iso3) state.countryV2ByIso.set(r.iso3, r);
     });
+    // geos present in payload but missing from countries-50m
+    const topoIso = new Set(
+      countries.features.map((f) => f.properties.iso3).filter(Boolean)
+    );
+    state.undrawableGeos = [];
+    state.countryV2ByIso.forEach((row, iso) => {
+      if (!topoIso.has(iso)) {
+        state.undrawableGeos.push({
+          iso3: iso,
+          geo: row.geo,
+          name: row.name,
+          quality: row.quality,
+        });
+      }
+    });
+    (trends.meta?.not_in_v3 || []).forEach((g) => {
+      const iso = g.iso3 || g.geo;
+      if (iso && !topoIso.has(iso)) {
+        state.undrawableGeos.push({ ...g, quality: "not_in_v3" });
+      }
+    });
+    console.info(
+      "Trends geos not drawable on countries-50m:",
+      state.undrawableGeos.map((g) => g.iso3 || g.geo)
+    );
 
     state.creatorMeta = null;
     state.creatorRows = [];
@@ -141,7 +162,9 @@ async function loadAll() {
 
     const monthCap = document.getElementById("month-caption");
     if (monthCap) {
-      monthCap.textContent = `Relative to each country's own peak · ${win}`;
+      const m2 =
+        monthlyMeta?.map2_caption || "each region relative to its own peak";
+      monthCap.textContent = `${m2} · ${win}`;
     }
 
     const c1 = document.getElementById("caveat-1");
@@ -194,73 +217,96 @@ async function loadAll() {
 
   function anyLowVolumeFlag() {
     for (const row of state.countryV2ByIso.values()) {
-      if (row?.flag_low_volume) return true;
+      if (row?.quality === "low_volume") return true;
     }
     return false;
   }
 
-  function anyWithinNoiseFlag() {
-    for (const row of state.countryV2ByIso.values()) {
-      if (row?.within_noise) return true;
-    }
-    return false;
+  function shouldHatchFlat(row) {
+    return row && row.quality === "ok" && row.mk_class === "flat";
   }
 
-  function shouldHatch(row) {
-    if (!row) return false;
-    if (state.choroplethMetric === "change_in_window" && row.within_noise) return true;
-    if (row.flag_low_volume) return true;
-    return false;
+  function growthPctForColour(row) {
+    if (!row || row.quality !== "ok") return null;
+    const clipped =
+      row.growth_ratio_clipped != null ? row.growth_ratio_clipped : row.growth_ratio;
+    if (clipped == null || !Number.isFinite(clipped)) return null;
+    return clipped * 100; // percent for colour domain
   }
 
-  function drawLegend(el, scaleInfo, label, { hatchNote, showMiss, showLowVolume } = {}) {
+  function drawLegend(el, scaleInfo, label, opts = {}) {
+    const {
+      hatchNote,
+      showMiss,
+      showLowVolume,
+      showChina,
+      clipNote,
+      growthTicks,
+    } = opts;
     const root = d3.select(el);
     root.selectAll("*").remove();
     root.append("span").attr("class", "legend-title").text(label);
-    const w = 160;
+    const w = 180;
     const h = 10;
     const block = root.append("div").attr("class", "legend-scale");
-    const svg = block.append("svg").attr("width", w).attr("height", h + 16);
+    const svg = block.append("svg").attr("width", w).attr("height", h + 18);
     const defs = svg.append("defs");
     const id = `lg-${Math.random().toString(36).slice(2, 8)}`;
     const grad = defs.append("linearGradient").attr("id", id);
     d3.range(0, 1.01, 0.05).forEach((t) => {
-      const x = scaleInfo.log
-        ? scaleInfo.domain[0] * Math.pow(scaleInfo.domain[1] / scaleInfo.domain[0], t)
-        : scaleInfo.domain[0] + t * (scaleInfo.domain[1] - scaleInfo.domain[0]);
+      const x = scaleInfo.domain[0] + t * (scaleInfo.domain[1] - scaleInfo.domain[0]);
       grad.append("stop").attr("offset", `${t * 100}%`).attr("stop-color", scaleInfo.scale(x));
     });
     svg.append("rect").attr("width", w).attr("height", h).attr("fill", `url(#${id})`).attr("rx", 2);
-    const digits = scaleInfo.diverging ? 1 : scaleInfo.log ? 0 : 1;
-    if (scaleInfo.diverging) {
-      const lo = formatNum(scaleInfo.domain[0], digits);
-      const hi = formatNum(scaleInfo.domain[1], digits);
-      const tickY = h + 11;
-      svg.append("text").attr("x", 0).attr("y", tickY).attr("class", "legend-tick").attr("text-anchor", "start").text(lo);
-      svg.append("text").attr("x", w / 2).attr("y", tickY).attr("class", "legend-tick").attr("text-anchor", "middle").text("0");
-      svg.append("text").attr("x", w).attr("y", tickY).attr("class", "legend-tick").attr("text-anchor", "end").text(hi);
+    if (scaleInfo.diverging || growthTicks) {
+      const ticks = growthTicks || [
+        scaleInfo.domain[0],
+        0,
+        scaleInfo.domain[1],
+      ];
+      const tickY = h + 12;
+      ticks.forEach((tv) => {
+        const x =
+          ((tv - scaleInfo.domain[0]) / (scaleInfo.domain[1] - scaleInfo.domain[0])) * w;
+        const anchor = tv <= scaleInfo.domain[0] + 1e-9 ? "start" : tv >= scaleInfo.domain[1] - 1e-9 ? "end" : "middle";
+        svg
+          .append("text")
+          .attr("x", x)
+          .attr("y", tickY)
+          .attr("class", "legend-tick")
+          .attr("text-anchor", anchor)
+          .text(`${tv > 0 ? "+" : ""}${tv}%`);
+      });
     } else {
       block
         .append("span")
         .attr("class", "legend-range")
-        .text(
-          scaleInfo.log
-            ? `${formatNum(scaleInfo.domain[0], 0)} – ${formatNum(scaleInfo.domain[1], 0)} (log)`
-            : `${formatNum(scaleInfo.domain[0], digits)} – ${formatNum(scaleInfo.domain[1], digits)}`
-        );
+        .text(`${formatNum(scaleInfo.domain[0], 0)} – ${formatNum(scaleInfo.domain[1], 0)}`);
     }
+    const legendCopy = state.trendsMeta?.map1_legend || {};
     if (showMiss) {
       const row = root.append("div").attr("class", "legend-swatch-row");
       row.append("span").attr("class", "legend-swatch legend-swatch-miss");
-      row.append("span").text("No data (not measured)");
+      row.append("span").text(legendCopy.no_data || "No data");
     }
     if (showLowVolume) {
       const row = root.append("div").attr("class", "legend-swatch-row");
       row.append("span").attr("class", "legend-swatch legend-swatch-lowvol");
-      row.append("span").text("Low volume");
+      row.append("span").text(legendCopy.low_volume || "Too few searches to measure");
+    }
+    if (showChina) {
+      const row = root.append("div").attr("class", "legend-swatch-row");
+      row.append("span").attr("class", "legend-swatch legend-swatch-miss");
+      row.append("span").text(legendCopy.china || "Not measured: Google is not accessible there");
     }
     if (hatchNote) {
       root.append("span").attr("class", "legend-hatch-note").text(hatchNote);
+    }
+    if (clipNote || legendCopy.clip_note) {
+      root
+        .append("span")
+        .attr("class", "legend-hatch-note")
+        .text(clipNote || legendCopy.clip_note);
     }
   }
 
@@ -358,21 +404,22 @@ async function loadAll() {
     const kind = tipKind(mapKey);
     let html = `<strong>${countryName(iso3)}</strong>`;
     if (kind === "trends") {
-      const v = state.displayValues.trends[iso3];
       const row = state.countryV2ByIso.get(iso3);
-      if (v == null || !Number.isFinite(v)) {
-        html += `<b>無資料</b>`;
-      } else if (state.choroplethMetric === "change_in_window") {
-        html += `Change in window: <b>${formatNum(v, 1)}</b> own-peak points`;
+      if (!row) {
+        html += `<br>No data`;
+      } else if (row.quality === "low_volume") {
+        html += `<br>Too few searches to measure`;
+      } else if (row.quality === "ok") {
+        const g =
+          row.growth_ratio != null && Number.isFinite(row.growth_ratio)
+            ? `${(row.growth_ratio * 100).toFixed(1)}%`
+            : "—";
+        html += `<br>Growth: <b>${g}</b>`;
+        html += `<br>MK class: <b>${row.mk_class || "—"}</b>`;
+        html += `<br>First-12-month mean: <b>${formatNum(row.mean_first_12, 1)}</b>`;
+        html += `<br>Quality: <b>${row.quality}</b>`;
       } else {
-        html += `Recent vs peak: <b>${formatNum(v, 1)}</b>`;
-      }
-      if (row?.within_noise && state.choroplethMetric === "change_in_window") {
-        html += `<br>flag: within_noise (hatched)`;
-      }
-      if (row?.flag_low_volume) html += `<br>flag: low_volume (hatched)`;
-      if (row?.change_se != null && state.choroplethMetric === "change_in_window") {
-        html += `<br>change SE ≈ ${formatNum(row.change_se, 2)}`;
+        html += `<br>No data`;
       }
     } else if (kind === "creators") {
       const row = state.creatorsByIso.get(iso3);
@@ -403,13 +450,23 @@ async function loadAll() {
     map.paths
       .attr("class", (d) => {
         const iso = d.properties.iso3;
+        const row = iso ? state.countryV2ByIso.get(iso) : null;
+        if (mapKey === "trends") {
+          if (row?.quality === "low_volume") return "country is-lowvol";
+          const v = iso ? valueMap[iso] : null;
+          return v == null || !Number.isFinite(v) ? "country is-miss" : "country";
+        }
         const v = iso ? valueMap[iso] : null;
+        if (row?.quality === "low_volume") return "country is-lowvol";
         return v == null || !Number.isFinite(v) ? "country is-miss" : "country";
       })
       .attr("fill", (d) => {
         const iso = d.properties.iso3;
+        const row = iso ? state.countryV2ByIso.get(iso) : null;
+        if (mapKey === "trends" && row?.quality === "low_volume") return "#c5cdd4";
+        if (mapKey === "monthly" && row?.quality === "low_volume") return "#c5cdd4";
         const v = iso ? valueMap[iso] : null;
-        if (v == null || !Number.isFinite(v)) return "#aebbc6";
+        if (v == null || !Number.isFinite(v)) return "#dce3e8";
         if (scaleInfo.log && v <= 0) return scaleInfo.scale(scaleInfo.domain[0]);
         return scaleInfo.scale(v);
       });
@@ -421,7 +478,7 @@ async function loadAll() {
           const v = iso ? valueMap[iso] : null;
           if (
             mapKey === "trends" &&
-            shouldHatch(row) &&
+            shouldHatchFlat(row) &&
             v != null &&
             Number.isFinite(v)
           ) {
@@ -434,7 +491,7 @@ async function loadAll() {
           const row = iso ? state.countryV2ByIso.get(iso) : null;
           const v = iso ? valueMap[iso] : null;
           return mapKey === "trends" &&
-            shouldHatch(row) &&
+            shouldHatchFlat(row) &&
             v != null &&
             Number.isFinite(v)
             ? 1
@@ -445,9 +502,8 @@ async function loadAll() {
 
   function collectTrendsValues() {
     const out = {};
-    const key = state.choroplethMetric;
     state.countryV2ByIso.forEach((row, iso) => {
-      const v = row[key];
+      const v = growthPctForColour(row);
       if (v != null && Number.isFinite(v)) out[iso] = v;
     });
     return out;
@@ -461,28 +517,11 @@ async function loadAll() {
     return out;
   }
 
-  function updateNoiseCaption() {
-    const el = document.getElementById("trends-noise-caption");
+  function updateMap1Caption() {
+    const el = document.getElementById("trends-map-caption");
     if (!el) return;
-    const fc = state.trendsMeta?.flag_counts;
-    if (!fc || state.choroplethMetric !== "change_in_window") {
-      el.hidden = true;
-      el.textContent = "";
-      return;
-    }
-    const rise = fc.rise_beyond_noise;
-    const within = fc.within_noise;
-    const fall = fc.fall_beyond_noise;
-    if (rise == null || within == null || fall == null) {
-      el.hidden = true;
-      return;
-    }
-    const auto =
-      (state.trendsMeta?.caveats || []).find((c) => /autocorrelat/i.test(c)) ||
-      "Monthly values are autocorrelated, so standard errors are optimistic.";
-    el.hidden = false;
-    el.textContent =
-      `${rise} countries rising beyond noise · ${within} within noise · ${fall} falling beyond noise. ${auto}`;
+    const cap = state.trendsMeta?.map1_caption;
+    el.textContent = cap || "";
   }
 
   function collectMonthlyValues(idx, fromMap) {
@@ -512,35 +551,65 @@ async function loadAll() {
     if (trendsPanel) trendsPanel.classList.remove("is-hidden");
     if (creatorsPanel) creatorsPanel.classList.add("is-hidden");
 
-    if (titleEl) {
-      titleEl.textContent = METRIC_LABEL[state.choroplethMetric] || METRIC_LABEL.change_in_window;
-    }
+    if (titleEl) titleEl.textContent = GROWTH_LABEL;
 
     state.displayValues.trends = collectTrendsValues();
     state.displayValues.creators = {};
 
-    const isChange = state.choroplethMetric === "change_in_window";
-    const tScale = makeScale(Object.values(state.displayValues.trends), {
+    const tScale = {
+      scale: d3
+        .scaleSequential((t) => colorDiv(1 - t))
+        .domain(GROWTH_DOMAIN_PCT)
+        .clamp(true),
+      domain: GROWTH_DOMAIN_PCT.slice(),
       log: false,
-      diverging: isChange,
-    });
+      diverging: true,
+    };
 
     if (!state.maps.trends) return;
     paintMap("trends", state.displayValues.trends, tScale);
-    const legendLabel = METRIC_LABEL[state.choroplethMetric] || METRIC_LABEL.change_in_window;
-    let hatchNote = null;
-    if (state.choroplethMetric === "change_in_window" && anyWithinNoiseFlag()) {
-      hatchNote =
-        "Change is within noise (smaller than about 2 standard errors of monthly values; Google Trends is a sample)";
-    } else if (anyLowVolumeFlag()) {
-      hatchNote = "hatched = low_volume";
-    }
-    drawLegend(document.getElementById("legend-trends"), tScale, legendLabel, {
-      hatchNote,
+    const legendCopy = state.trendsMeta?.map1_legend || {};
+    drawLegend(document.getElementById("legend-trends"), tScale, GROWTH_LABEL, {
+      hatchNote: legendCopy.hatch_flat || null,
       showMiss: true,
       showLowVolume: anyLowVolumeFlag(),
+      showChina: true,
+      growthTicks: [-50, 0, 50, 150],
     });
-    updateNoiseCaption();
+    updateMap1Caption();
+    renderTrendsTable();
+  }
+
+  function renderTrendsTable() {
+    const host = document.getElementById("trends-table-host");
+    if (!host) return;
+    const rows = [];
+    state.countryV2ByIso.forEach((row) => {
+      rows.push([
+        row.name || row.iso3,
+        row.iso3,
+        row.growth_ratio != null ? (row.growth_ratio * 100).toFixed(1) + "%" : "—",
+        row.mk_class || "—",
+        row.mean_first_12 != null ? formatNum(row.mean_first_12, 1) : "—",
+        row.quality || "—",
+      ]);
+    });
+    // undrawable geos (in payload but not on topo)
+    (state.undrawableGeos || []).forEach((g) => {
+      rows.push([
+        g.name || g.iso3 || g.geo,
+        g.iso3 || g.geo || "—",
+        "—",
+        "—",
+        "—",
+        "not on map (topo)",
+      ]);
+    });
+    rows.sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+    attachTableToggle(host, () => ({
+      columns: ["region", "iso3", "growth", "mk_class", "mean_first_12", "quality"],
+      rows,
+    }));
   }
 
   function updateStage2(immediate) {
@@ -565,11 +634,17 @@ async function loadAll() {
       if (state.tween) state.tween.kill();
       state.displayValues.monthly = target;
       paintMap("monthly", state.displayValues.monthly, fixed);
+      const cap =
+        state.monthlyMeta?.map2_caption ||
+        state.trendsMeta?.map2_caption ||
+        "each region relative to its own peak";
+      const capEl = document.getElementById("month-caption");
+      if (capEl) capEl.textContent = cap;
       drawLegend(
         document.getElementById("legend-monthly"),
         fixed,
-        "Relative to each country's own peak",
-        { showMiss: true }
+        cap,
+        { showMiss: true, showLowVolume: anyLowVolumeFlag() }
       );
       return;
     }
@@ -618,17 +693,10 @@ async function loadAll() {
       });
     });
 
-    document.querySelectorAll("#metric-toggle button").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll("#metric-toggle button").forEach((b) => b.classList.remove("is-active"));
-        btn.classList.add("is-active");
-        state.choroplethMetric = btn.dataset.metric;
-        updateStage1();
-      });
-    });
-
     const scrubber = document.getElementById("month-scrubber");
     scrubber.max = String(state.monthly.months.length - 1);
+    // start at first complete month (2021-11)
+    state.monthIndex = 0;
     scrubber.value = String(state.monthIndex);
     scrubber.removeAttribute("readonly");
     scrubber.readOnly = false;
@@ -803,25 +871,27 @@ function initExtraCharts() {
 
   function mapTableRows(key) {
     if (key === "trends") {
+      const rows = [...state.countryV2ByIso.values()].map((r) => [
+        r.name || r.iso3,
+        r.iso3,
+        r.growth_ratio != null ? `${(r.growth_ratio * 100).toFixed(1)}%` : "—",
+        r.mk_class || "—",
+        r.mean_first_12,
+        r.quality || "—",
+      ]);
+      (state.undrawableGeos || []).forEach((g) => {
+        rows.push([
+          g.name || g.iso3 || g.geo,
+          g.iso3 || g.geo || "—",
+          "—",
+          "—",
+          "—",
+          "not on map",
+        ]);
+      });
       return {
-        columns: [
-          "iso3",
-          "change_in_window",
-          "change_se",
-          "within_noise",
-          "recent_vs_peak",
-          "peak_month",
-          "flag_low_volume",
-        ],
-        rows: [...state.countryV2ByIso.values()].map((r) => [
-          r.iso3,
-          r.change_in_window,
-          r.change_se,
-          r.within_noise ? "yes" : "",
-          r.recent_vs_peak,
-          r.peak_month,
-          r.flag_low_volume ? "yes" : "",
-        ]),
+        columns: ["region", "iso3", "growth", "mk_class", "mean_first_12", "quality"],
+        rows,
       };
     }
     if (key === "creators") {

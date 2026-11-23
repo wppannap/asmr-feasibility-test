@@ -429,6 +429,12 @@ input[type="range"] {
   background: #aebbc6;
 }
 
+.country.is-lowvol {
+  fill: #c5cdd4;
+  stroke: #8a96a1;
+  stroke-width: 0.6;
+  stroke-dasharray: 2 1.5;
+}
 .legend-swatch-lowvol {
   background:
     repeating-linear-gradient(

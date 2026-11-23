@@ -14,9 +14,9 @@ export const ENABLED_SECTIONS = [
 /** Data files required by enabled sections only. */
 export const ENABLED_DATA = {
   topo: "data/countries-50m.json",
-  trends: "data/trends_country_v2.json",
-  monthly: "data/trends_monthly_v2.json",
-  scatter: "data/insomnia_vs_asmr.json",
+  trends: "data/trends_country_v3c.json",
+  monthly: "data/trends_monthly_v3c.json",
+  scatter: "data/correlations_v3c.json",
   wiki: "data/wiki_lang.json",
 };
 
@@ -52,5 +52,13 @@ export function applySectionVisibility(doc = document) {
       btn.style.display = "none";
       btn.disabled = true;
     });
+  }
+  const metric = doc.getElementById("metric-toggle");
+  if (metric) {
+    const row = metric.closest(".control-row");
+    if (row) {
+      row.hidden = true;
+      row.style.display = "none";
+    }
   }
 }

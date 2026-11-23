@@ -1,16 +1,9 @@
-# DATA FREEZE
+# DATA_FREEZE
 
-Generated: 2026-11-22T15:05:20Z
-Pre-commit HEAD: `f45f86c1f9b0bb46cbcd6573a6fa66347e8cb84f` (update after publish commit via `git rev-parse HEAD`).
+SHA-256 of files under `web/data/` at publish time.
 
-History was reset for privacy. Published `web/data/` only (human-ASMR scope lockdown).
-SHA-256 hashes below cover current `web/data/` files.
-
-| file | bytes | sha256 |
-|------|------:|--------|
-| `web/data/countries-50m.json` | 756,420 | `04342cdc1e3016bcd7db1630de95684d67b79fe3c8c460321e87aef469502394` |
-| `web/data/insomnia_vs_asmr.json` | 10,050 | `932796cc1d1f69f11e19910607e2d3cff15c2fef6180d829104ec393d3afd7bf` |
-| `web/data/trends_country_v2.json` | 13,172 | `1238c68def3e796d6a771692206eb7a55e223a990b28cdeba64625903b2697f0` |
-| `web/data/trends_monthly_v2.json` | 15,631 | `fb16346fc55b15d01d721d1600791b1ca332be3fa6833f5ed42c2a19afbb09be` |
-| `web/data/wiki_lang.json` | 26,726 | `007357aa1c096bee9e46218e9b51e0c3a895c958a7cf28e50179fc7efaed8e1f` |
-
+- `data/correlations_v3c.json`: `61e142c7f6ce1984fda19ce13b7c715ee2389d36e06eaa3a2c8125a388c8669e`
+- `data/countries-50m.json`: `04342cdc1e3016bcd7db1630de95684d67b79fe3c8c460321e87aef469502394`
+- `data/trends_country_v3c.json`: `92f3c3e7ab8ef5602c19a44b20055e981457d4d7b8dde8f5b26c9add526a5d57`
+- `data/trends_monthly_v3c.json`: `5ba3650fdc7bd46f0cf1cfbc12b5543be0efb425f4d46eecd3f93df20325a7fe`
+- `data/wiki_lang.json`: `007357aa1c096bee9e46218e9b51e0c3a895c958a7cf28e50179fc7efaed8e1f`

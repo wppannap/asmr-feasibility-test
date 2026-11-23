@@ -1,6 +1,10 @@
 # Trends v3 trend test
 
-_Generated 2026-11-23T03:13:02Z. Payloads: `data/unpublished/v3/trends_country_v3b.json`, `trends_monthly_v3b.json` (not published)._
+_Generated 2026-11-23T06:23:39Z. Payloads: `data/unpublished/v3/trends_country_v3b.json`, `trends_monthly_v3b.json` (not published)._
+
+## Changelog (canonical strict-ok)
+
+Recomputed with canonical `strict_ok` (no `float(zw or 1)` bug). **strict-ok n = 82** (was wrongly 22 in an earlier TREND.md). MK counts and correlation tables below use this definition. See `docs/TRENDS_V3C.md` for the 22-vs-82 explanation.
 
 ## 1. Mann-Kendall / Theil-Sen / growth_ratio
 
@@ -9,7 +13,7 @@ Complete months used: **60** (2021-11 … 2026-10).
 | set | n | rising | flat | falling |
 |---|---:|---:|---:|---:|
 | ok | 104 | 74 | 27 | 3 |
-| strict-ok | 22 | 16 | 6 | 0 |
+| strict-ok | 82 | 63 | 18 | 1 |
 
 ### growth_ratio distribution (ok)
 
@@ -77,15 +81,15 @@ Docs-only: Spearman(recent_vs_peak, noise) on ok = n=104 ρ=-0.7687 p=0.0
 
 | pair | raw | partial (control noise) |
 |---|---|---|
-| growth_vs_internet | n=22 ρ=0.144 p=0.5226 CI=[-0.3929, 0.6832] p_holm=0.9804 | n=22 ρ=0.1293 p=0.5663 CI=[-0.3849, 0.6669] p_holm=0.9804 |
-| growth_vs_youth | n=22 ρ=0.1553 p=0.4902 CI=[-0.3368, 0.5657] p_holm=0.9804 | n=22 ρ=0.1553 p=0.4902 CI=[-0.341, 0.5773] p_holm=0.9804 |
+| growth_vs_internet | n=82 ρ=-0.1098 p=0.3263 CI=[-0.3449, 0.1446] p_holm=0.6526 | n=82 ρ=-0.0159 p=0.8876 CI=[-0.2513, 0.2155] p_holm=1.0 |
+| growth_vs_youth | n=82 ρ=0.0836 p=0.4551 CI=[-0.1579, 0.3168] p_holm=0.6526 | n=82 ρ=0.0401 p=0.7202 CI=[-0.1635, 0.2607] p_holm=1.0 |
 
 ### strict_ok_excl_TWN
 
 | pair | raw | partial (control noise) |
 |---|---|---|
-| growth_vs_internet | n=22 ρ=0.144 p=0.5226 CI=[-0.3732, 0.6664] p_holm=0.9804 | n=22 ρ=0.1293 p=0.5663 CI=[-0.4057, 0.6644] p_holm=0.9804 |
-| growth_vs_youth | n=22 ρ=0.1553 p=0.4902 CI=[-0.3399, 0.5748] p_holm=0.9804 | n=22 ρ=0.1553 p=0.4902 CI=[-0.3506, 0.5739] p_holm=0.9804 |
+| growth_vs_internet | n=81 ρ=-0.114 p=0.3109 CI=[-0.3388, 0.1543] p_holm=0.6218 | n=81 ρ=-0.0232 p=0.8373 CI=[-0.253, 0.225] p_holm=1.0 |
+| growth_vs_youth | n=81 ρ=0.0808 p=0.4735 CI=[-0.1412, 0.3098] p_holm=0.6218 | n=81 ρ=0.0394 p=0.7267 CI=[-0.1726, 0.2568] p_holm=1.0 |
 
 ## 3. Outputs
 

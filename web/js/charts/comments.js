@@ -167,6 +167,7 @@ export function render(container, data) {
     if (!m) return;
     const block = notes.append("p").attr("class", "theme-verify-note");
     block.append("strong").text(theme.replace(/_/g, " "));
+    const rb = m.reviewed_by;
     if (m.check && typeof m.check === "object") {
       block.append("span").text(" — check by language:");
       block.append("br");
@@ -174,11 +175,11 @@ export function render(container, data) {
         block
           .append("span")
           .attr("class", "theme-langs")
-          .text(`${lang}: ${text}`);
+          .text(`${lang}: ${formatCheck(text, rb)}`);
         block.append("br");
       });
     } else {
-      block.append("span").text(` — check: ${formatCheck(m.check)}`);
+      block.append("span").text(` — check: ${formatCheck(m.check, rb)}`);
     }
     if (m.caveat) {
       block.append("span").attr("class", "theme-caveat").text(`caveat: ${m.caveat}`);
