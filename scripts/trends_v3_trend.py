@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Trends v3 trend test (Theil-Sen + Hamed-Rao MK + BH) → docs/TRENDS_V3_TREND.md
-and unpublished v3b payloads. Local only.
+"""Trends v3 trend test (Theil-Sen + modified Mann-Kendall + BH).
+Writes docs/TRENDS_V3_TREND.md and data/unpublished/v3/trends_*_v3b.json.
 """
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pymannkendall as mk
+from scipy import stats
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -24,42 +25,44 @@ UNPUB = DATA / "unpublished" / "v3"
 DOCS = ROOT / "docs"
 SEED = 42
 BOOT_N = 2000
-Q_BH = 0.05
+BH_Q = 0.05
 
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def bh_adjust(pvals: list[float | None], q: float = Q_BH) -> list[float | None]:
-    """Benjamini-Hochberg adjusted p-values (same order)."""
-    m = len(pvals)
-    indexed = [(i, p) for i, p in enumerate(pvals) if p is not None and np.isfinite(p)]
-    indexed.sort(key=lambda t: t[1])
-    adj = [None] * m
-    prev = 1.0
-    # from largest rank to smallest for monotone
-    running = []
-    for rank_desc, (i, p) in enumerate(reversed(indexed), start=0):
-        k = m - rank_desc  # 1-based rank among valid? use original n valid
-        pass
-    n = len(indexed)
-    raw_adj = {}
-    for rank0, (i, p) in enumerate(indexed):
-        rank = rank0 + 1
-        raw_adj[i] = min(1.0, p * n / rank)
-    # enforce monotonicity from largest p-rank down
-    running = 1.0
-    for rank0 in range(n - 1, -1, -1):
-        i, _ = indexed[rank0]
-        running = min(running, raw_adj[i])
-        adj[i] = running
-    return adj
+def dump(path: Path, obj) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(obj, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    print(f"  wrote {path.relative_to(ROOT)}", flush=True)
 
 
-def partial_spearman(x, y, z, seed=SEED):
+def theil_sen_slope(y: np.ndarray) -> float:
+    """Slope vs time index 0..n-1 (months)."""
+    n = len(y)
+    x = np.arange(n, dtype=float)
+    slope, _, _, _ = stats.theilslopes(y, x)
+    return float(slope)
+
+
+def bh_adjust(p_values: list[float], q: float = BH_Q) -> list[bool]:
+    """Return significance flags at FDR q (Benjamini-Hochberg)."""
+    m = len(p_values)
+    order = np.argsort(p_values)
+    ranked = np.asarray(p_values, dtype=float)[order]
+    thresh = q * (np.arange(1, m + 1) / m)
+    # largest k with p_(k) <= thresh_k
+    below = ranked <= thresh
+    sig = np.zeros(m, dtype=bool)
+    if below.any():
+        kmax = np.where(below)[0].max()
+        sig[order[: kmax + 1]] = True
+    return sig.tolist()
+
+
+def partial_spearman(x, y, z, seed: int) -> dict:
     B.require_scipy()
-    from scipy import stats
     mask = x.notna() & y.notna() & z.notna()
     n = int(mask.sum())
     if n < 5:
@@ -91,11 +94,10 @@ def partial_spearman(x, y, z, seed=SEED):
     }
 
 
-def noise_of(complete_raw: pd.Series) -> float:
-    diffs = complete_raw.diff().abs().dropna()
-    med_abs = float(diffs.median()) if len(diffs) else float("nan")
-    med_val = float(complete_raw.median())
-    return med_abs / med_val if med_val > 0 else float("nan")
+def holm2(block: dict, keys: list[str]) -> None:
+    holm = B.holm_adjust([block[k].get("p") for k in keys])
+    for k, hp in zip(keys, holm):
+        block[k]["p_holm"] = hp
 
 
 def main() -> int:
@@ -104,154 +106,205 @@ def main() -> int:
     weekly = V3.load_weekly()
     v3 = json.loads((UNPUB / "trends_country_v3.json").read_text())
     v3_rows = {r["geo"]: r for r in v3["rows"]}
+    monthly_v3 = json.loads((UNPUB / "trends_monthly_v3.json").read_text())
 
+    # indicators
     ind = pd.read_csv(DATA / "indicators_country_v3.csv", encoding="utf-8-sig")
     ind["iso3"] = ind["iso3"].astype(str).str.upper()
 
-    def pick(iso3, code):
+    def pick(iso3: str, code: str):
         hit = ind[(ind["iso3"] == iso3) & (ind["indicator_code"] == code)]
         if hit.empty:
             return None
         v = hit.iloc[0]["value"]
-        return None if pd.isna(v) or v == "" else float(v)
+        if pd.isna(v) or v == "":
+            return None
+        return float(v)
 
     complete_months = [
         m for m in sorted(
-            {str(m) for m in weekly["month"].unique()} - set(B.TRENDS_PARTIAL_MONTHS)
+            set(weekly["month"].unique()) - set(B.TRENDS_PARTIAL_MONTHS)
         )
         if "2021-11" <= m <= "2026-10"
     ]
-    # prefer exact 60
-    complete_months = [m for m in complete_months if m >= "2021-11" and m <= "2026-10"]
+    # prefer exactly the 60 months covering windows
+    if len(complete_months) > 60:
+        # keep those in first..recent span
+        complete_months = [m for m in complete_months if B.WINDOW_FIRST_12[0] <= m <= B.WINDOW_RECENT_12[-1]]
     print(f"complete months n={len(complete_months)} {complete_months[0]}..{complete_months[-1]}", flush=True)
 
-    records = []
-    own_peak_series = {}
+    results = []
+    own_peak_ok = {}
     low_volume_flags = []
 
     for geo, g in weekly.groupby("geo"):
-        r0 = v3_rows.get(geo)
-        if not r0:
+        if geo not in v3_rows:
             continue
-        iso = r0["iso3"]
+        meta = v3_rows[geo]
         asmr_m = g.groupby("month", sort=True)["value"].mean()
-        # align to complete months
-        raw = pd.Series({m: float(asmr_m[m]) if m in asmr_m.index else np.nan for m in complete_months})
-        raw = raw.dropna()
-        if len(raw) < 24:
-            continue
-        vals = raw.to_numpy(dtype=float)
-        # Hamed-Rao MK
-        try:
-            trend, h, p, z, tau, s, var_s, slope, intercept = mk.hamed_rao_modification_test(vals, alpha=0.05)
-            p = float(p)
-            slope = float(slope)
-        except Exception as e:
-            print(f"  MK fail {geo}: {e}", flush=True)
+        # raw monthly series aligned to complete_months
+        y = []
+        for m in complete_months:
+            if m in asmr_m.index and pd.notna(asmr_m.loc[m]):
+                y.append(float(asmr_m.loc[m]))
+            else:
+                y.append(np.nan)
+        y = np.asarray(y, dtype=float)
+        if np.isnan(y).sum() > 5:
+            # fill remaining gaps with 0 for MK only if mostly present
+            pass
+        if np.isfinite(y).sum() < 24:
             continue
 
-        first12 = [float(raw[m]) for m in B.WINDOW_FIRST_12 if m in raw.index]
-        recent12 = [float(raw[m]) for m in B.WINDOW_RECENT_12 if m in raw.index]
-        if len(first12) < 12 or len(recent12) < 12:
-            continue
-        mean_first = float(np.mean(first12))
-        growth = float(np.mean(recent12) / mean_first - 1.0) if mean_first > 0 else float("nan")
-        rel_slope = (slope * 12.0 / mean_first * 100.0) if mean_first > 0 else float("nan")
+        # growth_ratio on raw
+        first = [float(asmr_m.loc[m]) for m in B.WINDOW_FIRST_12 if m in asmr_m.index]
+        recent = [float(asmr_m.loc[m]) for m in B.WINDOW_RECENT_12 if m in asmr_m.index]
+        if len(first) < 12 or len(recent) < 12 or np.mean(first) <= 0:
+            growth = None
+        else:
+            growth = float(np.mean(recent) / np.mean(first) - 1.0)
 
+        # own_peak for time-lapse
         peak = float(asmr_m.max()) if len(asmr_m) else 0.0
         own = (asmr_m / peak * 100.0) if peak > 0 else asmr_m * 0.0
-        own_complete = {m: float(own[m]) if m in own.index else None for m in complete_months}
 
-        zws = float(r0["zero_week_share"]) if r0.get("zero_week_share") is not None else 1.0
-        ndv = int(r0["n_distinct_values"]) if r0.get("n_distinct_values") is not None else 0
-        quality = r0["quality"]
-        strict_ok = bool(quality == "ok" and zws < 0.2 and ndv >= 30)
-        noise = noise_of(raw)
+        # noise (same as fix doc)
+        complete_raw = asmr_m.reindex(complete_months).astype(float)
+        diffs = complete_raw.diff().abs().dropna()
+        med_abs = float(diffs.median()) if len(diffs) else np.nan
+        med_val = float(complete_raw.median()) if complete_raw.notna().any() else np.nan
+        noise = med_abs / med_val if med_val and med_val > 0 else np.nan
 
-        records.append({
+        strict_ok = (
+            meta.get("quality") == "ok"
+            and float(meta.get("zero_week_share") or 1) < 0.2
+            and int(meta.get("n_distinct_values") or 0) >= 30
+        )
+
+        if meta.get("quality") == "low_volume":
+            low_volume_flags.append({
+                "geo": geo,
+                "iso3": meta["iso3"],
+                "name": iso2_to_name.get(geo, ""),
+                "flag": "low_volume",
+            })
+
+        if meta.get("quality") != "ok":
+            continue
+
+        y_filled = np.where(np.isfinite(y), y, np.nanmedian(y[np.isfinite(y)]))
+        slope = theil_sen_slope(y_filled)
+        mk_res = mk.hamed_rao_modification_test(y_filled)
+        p = float(mk_res.p)
+        mean_first = float(np.mean(first)) if first else np.nan
+        rel_slope = (slope * 12.0 / mean_first * 100.0) if mean_first and mean_first > 0 else np.nan
+
+        iso3 = meta["iso3"]
+        results.append({
             "geo": geo,
-            "iso3": iso,
-            "name": iso2_to_name.get(geo, geo),
-            "quality": quality,
-            "strict_ok": strict_ok,
-            "slope": B.clean_num(slope),
-            "p_mk": B.clean_num(p),
-            "growth_ratio": B.clean_num(growth),
-            "relative_slope_pct_per_year": B.clean_num(rel_slope),
-            "noise": B.clean_num(noise),
-            "within_noise_se": bool(r0.get("within_noise")),
-            "change_in_window": r0.get("change_in_window"),
-            "recent_vs_peak": r0.get("recent_vs_peak"),
-            "zero_week_share": zws,
-            "n_distinct_values": ndv,
-            "internet": pick(iso, "IT.NET.USER.ZS"),
-            "youth": pick(iso, "DERIVED.POP.1524.ZS"),
+            "iso3": iso3,
+            "name": iso2_to_name.get(geo, ""),
+            "quality": "ok",
+            "strict_ok": bool(strict_ok),
+            "growth_ratio": B.clean_num(growth) if growth is not None else None,
+            "theil_sen_slope_per_month": B.clean_num(slope),
+            "relative_slope_pct_per_year": B.clean_num(rel_slope) if np.isfinite(rel_slope) else None,
+            "mk_p": B.clean_num(p),
+            "mk_tau": B.clean_num(float(mk_res.Tau)),
+            "noise": B.clean_num(noise) if np.isfinite(noise) else None,
+            "change_in_window": meta.get("change_in_window"),
+            "within_noise_se": bool(meta.get("within_noise")),
+            "recent_vs_peak": meta.get("recent_vs_peak"),  # docs only
+            "internet": pick(iso3, "IT.NET.USER.ZS"),
+            "youth": pick(iso3, "DERIVED.POP.1524.ZS"),
+            "zero_week_share": meta.get("zero_week_share"),
+            "n_distinct_values": meta.get("n_distinct_values"),
         })
-        if quality == "ok":
-            own_peak_series[iso] = [B.clean_num(own_complete[m]) for m in complete_months]
-        else:
-            low_volume_flags.append({"geo": geo, "iso3": iso, "quality": quality})
+        own_peak_ok[iso3] = {str(m): B.clean_num(float(own.loc[m])) if m in own.index else None
+                             for m in complete_months}
 
-    df = pd.DataFrame(records)
-    ok = df[df["quality"] == "ok"].copy()
-    # BH on ok geos only
-    p_adj = bh_adjust(ok["p_mk"].tolist(), Q_BH)
-    ok = ok.copy()
-    ok["p_bh"] = p_adj
-    classes = []
-    for _, r in ok.iterrows():
-        sig = r["p_bh"] is not None and r["p_bh"] <= Q_BH
-        if not sig:
-            classes.append("flat")
-        elif float(r["slope"]) > 0:
-            classes.append("rising")
-        elif float(r["slope"]) < 0:
-            classes.append("falling")
-        else:
-            classes.append("flat")
-    ok["trend_class"] = classes
-    # merge class back
-    df = df.merge(ok[["geo", "p_bh", "trend_class"]], on="geo", how="left")
-    df.loc[df["quality"] != "ok", "trend_class"] = None
+    rdf = pd.DataFrame(results)
+    # BH across ok geos
+    sig = bh_adjust(rdf["mk_p"].astype(float).tolist(), BH_Q)
+    rdf["bh_sig"] = sig
 
-    strict = ok[ok["strict_ok"]]
+    def trend_class(row) -> str:
+        if not row["bh_sig"]:
+            return "flat"
+        slope = row["theil_sen_slope_per_month"]
+        if slope is None:
+            return "flat"
+        if float(slope) > 0:
+            return "rising"
+        if float(slope) < 0:
+            return "falling"
+        return "flat"
 
-    def counts(frame):
+    rdf["class"] = rdf.apply(trend_class, axis=1)
+
+    # counts
+    def count_classes(frame):
         return {
             "n": int(len(frame)),
-            "rising": int((frame["trend_class"] == "rising").sum()),
-            "flat": int((frame["trend_class"] == "flat").sum()),
-            "falling": int((frame["trend_class"] == "falling").sum()),
+            "rising": int((frame["class"] == "rising").sum()),
+            "flat": int((frame["class"] == "flat").sum()),
+            "falling": int((frame["class"] == "falling").sum()),
         }
 
-    gr = ok["growth_ratio"].astype(float)
-    dist = {
+    counts_ok = count_classes(rdf)
+    counts_strict = count_classes(rdf[rdf["strict_ok"]])
+
+    gr = rdf["growth_ratio"].dropna().astype(float)
+    gr_dist = {
         "min": B.clean_num(float(gr.min())),
         "p25": B.clean_num(float(gr.quantile(0.25))),
         "median": B.clean_num(float(gr.median())),
         "p75": B.clean_num(float(gr.quantile(0.75))),
         "max": B.clean_num(float(gr.max())),
     }
-    top5 = ok.nlargest(5, "growth_ratio")[["geo", "iso3", "name", "growth_ratio", "trend_class"]]
-    bot5 = ok.nsmallest(5, "growth_ratio")[["geo", "iso3", "name", "growth_ratio", "trend_class"]]
-    sp_gr_slope = B.spearman(ok["growth_ratio"], ok["relative_slope_pct_per_year"], seed=SEED)
-    sign_disagree = ok[
-        ((ok["growth_ratio"] > 0) & (ok["relative_slope_pct_per_year"] < 0))
-        | ((ok["growth_ratio"] < 0) & (ok["relative_slope_pct_per_year"] > 0))
-    ]
+    top5 = rdf.nlargest(5, "growth_ratio")[["geo", "iso3", "name", "growth_ratio", "class"]]
+    bot5 = rdf.nsmallest(5, "growth_ratio")[["geo", "iso3", "name", "growth_ratio", "class"]]
 
-    mk_rise_se_within = ok[(ok["trend_class"] == "rising") & (ok["within_noise_se"] == True)]
-    se_rise_mk_flat = ok[
-        (ok["within_noise_se"] == False)
-        & (ok["change_in_window"].astype(float) > 0)
-        & (ok["trend_class"] != "rising")
-    ]
-    # also: MK rising but SE within_noise; and SE beyond-noise rise but MK flat
-    se_beyond_rise = ok[(ok["within_noise_se"] == False) & (ok["change_in_window"].astype(float) > 0)]
-    mk_flat_se_rise = se_beyond_rise[se_beyond_rise["trend_class"] != "rising"]
+    sp_gr_slope = B.spearman(
+        rdf["growth_ratio"].astype(float),
+        rdf["relative_slope_pct_per_year"].astype(float),
+        seed=SEED,
+    )
+    # sign disagreements growth vs relative slope
+    sign_dis = []
+    for _, r in rdf.iterrows():
+        a, b = r["growth_ratio"], r["relative_slope_pct_per_year"]
+        if a is None or b is None or not np.isfinite(a) or not np.isfinite(b):
+            continue
+        if (a > 0 and b < 0) or (a < 0 and b > 0):
+            sign_dis.append({"geo": r["geo"], "iso3": r["iso3"], "name": r["name"],
+                             "growth_ratio": a, "relative_slope_pct_per_year": b})
 
-    # correlations family: growth_ratio x {internet, youth}
-    def family(frame, seed0):
+    # MK rising vs SE within_noise cross
+    mk_rise_se_within = rdf[(rdf["class"] == "rising") & (rdf["within_noise_se"])]
+    se_beyond_mk_flat = rdf[(rdf["class"] == "flat") & (~rdf["within_noise_se"]) &
+                            (rdf["change_in_window"].notna()) &
+                            (rdf["change_in_window"].astype(float) != 0)]
+    # also falling SE beyond
+    mk_fall_se_within = rdf[(rdf["class"] == "falling") & (rdf["within_noise_se"])]
+    se_rise_mk_flat = rdf[(~rdf["within_noise_se"]) & (rdf["change_in_window"].astype(float) > 0) &
+                          (rdf["class"] == "flat")]
+    se_fall_mk_flat = rdf[(~rdf["within_noise_se"]) & (rdf["change_in_window"].astype(float) < 0) &
+                          (rdf["class"] == "flat")]
+
+    cross = {
+        "mk_rising_but_SE_within_noise": int(len(mk_rise_se_within)),
+        "mk_falling_but_SE_within_noise": int(len(mk_fall_se_within)),
+        "SE_beyond_noise_but_MK_flat_positive_change": int(len(se_rise_mk_flat)),
+        "SE_beyond_noise_but_MK_flat_negative_change": int(len(se_fall_mk_flat)),
+        "examples_mk_rising_SE_within": mk_rise_se_within[["geo", "name", "growth_ratio", "change_in_window"]].head(8).to_dict("records"),
+        "examples_SE_beyond_MK_flat": pd.concat([se_rise_mk_flat, se_fall_mk_flat]).head(8)[
+            ["geo", "name", "change_in_window", "class"]
+        ].to_dict("records"),
+    }
+
+    # correlations family growth x internet/youth
+    def family(frame: pd.DataFrame, seed0: int) -> dict:
         raw = {
             "growth_vs_internet": B.spearman(frame["growth_ratio"], frame["internet"], seed=seed0),
             "growth_vs_youth": B.spearman(frame["growth_ratio"], frame["youth"], seed=seed0 + 1),
@@ -260,98 +313,102 @@ def main() -> int:
             "growth_vs_internet": partial_spearman(frame["growth_ratio"], frame["internet"], frame["noise"], seed0 + 10),
             "growth_vs_youth": partial_spearman(frame["growth_ratio"], frame["youth"], frame["noise"], seed0 + 11),
         }
-        keys = list(raw.keys())
-        for block in (raw, part):
-            holm = B.holm_adjust([block[k].get("p") for k in keys])
-            for k, hp in zip(keys, holm):
-                block[k]["p_holm"] = hp
+        keys = ["growth_vs_internet", "growth_vs_youth"]
+        holm2(raw, keys)
+        holm2(part, keys)
         return {"raw": raw, "partial_noise": part}
 
     families = {
-        "ok_with_TWN": family(ok, SEED),
-        "ok_excl_TWN": family(ok[ok["iso3"] != "TWN"], SEED + 100),
-        "strict_ok_with_TWN": family(strict, SEED + 200),
-        "strict_ok_excl_TWN": family(strict[strict["iso3"] != "TWN"], SEED + 300),
+        "ok_with_TWN": family(rdf, SEED + 100),
+        "ok_excl_TWN": family(rdf[rdf["iso3"] != "TWN"], SEED + 200),
+        "strict_ok_with_TWN": family(rdf[rdf["strict_ok"]], SEED + 300),
+        "strict_ok_excl_TWN": family(rdf[rdf["strict_ok"] & (rdf["iso3"] != "TWN")], SEED + 400),
     }
-    # recent_vs_peak vs noise — docs only
-    rvp_noise = B.spearman(ok["recent_vs_peak"], ok["noise"], seed=SEED + 50)
 
-    def clean_cell(v):
-        if v is None or (isinstance(v, float) and not np.isfinite(v)):
-            return None
-        if isinstance(v, (np.floating,)):
-            v = float(v)
-            return None if not np.isfinite(v) else B.clean_num(v)
-        if pd.isna(v):
-            return None
-        return v
+    # recent_vs_peak vs noise — docs table only
+    rvp_noise = B.spearman(rdf["recent_vs_peak"].astype(float), rdf["noise"].astype(float), seed=SEED + 50)
 
-    # write v3b country
+    # ── write v3b JSON ──
     country_rows = []
-    for _, r in df.iterrows():
-        if r["quality"] not in ("ok", "low_volume"):
-            continue
-        pbh = r.get("p_bh")
+    for _, r in rdf.iterrows():
         country_rows.append({
             "iso3": r["iso3"],
             "geo": r["geo"],
-            "growth_ratio": clean_cell(r["growth_ratio"]),
-            "relative_slope_pct_per_year": clean_cell(r["relative_slope_pct_per_year"]),
-            "trend_class": None if pd.isna(r.get("trend_class")) else r["trend_class"],
+            "growth_ratio": r["growth_ratio"],
+            "relative_slope_pct_per_year": r["relative_slope_pct_per_year"],
+            "class": r["class"],
             "quality": r["quality"],
-            "strict_ok": bool(r["strict_ok"]) if r["quality"] == "ok" else False,
-            "noise": clean_cell(r["noise"]),
-            "p_mk": clean_cell(r.get("p_mk")),
-            "p_bh": clean_cell(pbh),
+            "strict_ok": bool(r["strict_ok"]),
+            "noise": r["noise"],
+            "bh_sig": bool(r["bh_sig"]),
+            "mk_p": r["mk_p"],
         })
-    country_payload = {
+    dump(UNPUB / "trends_country_v3b.json", {
         "meta": {
             "generated_at": now_iso(),
-            "version": "v3b",
-            "n_ok": int(len(ok)),
-            "n_strict_ok": int(len(strict)),
-            "bh_q": Q_BH,
-            "mk": "hamed_rao_modification_test",
-            "complete_months": complete_months,
+            "n_ok": counts_ok["n"],
+            "n_strict_ok": counts_strict["n"],
+            "bh_q": BH_Q,
+            "trend_test": "Theil-Sen slope + Hamed-Rao modified Mann-Kendall; BH FDR across ok geos",
+            "growth_ratio": "mean(raw monthly latest 12 complete)/mean(first 12)-1",
+            "relative_slope_pct_per_year": "theil_sen_slope*12/mean(first12)*100",
+            "class_rule": "rising/falling if BH-significant and slope sign; else flat",
             "caveats": [
-                "growth_ratio is the displayed level change; trend_class from MK+BH on monthly raw series.",
+                "Displayed value on charts should be growth_ratio; class from MK+BH.",
                 "Not published.",
             ],
+            "counts_ok": counts_ok,
+            "counts_strict_ok": counts_strict,
         },
         "rows": country_rows,
-    }
-    B.dump_json(UNPUB / "trends_country_v3b.json", country_payload)
+    })
 
-    monthly_payload = {
+    # monthly own_peak ok only
+    months = complete_months
+    countries = sorted(own_peak_ok.keys())
+    dump(UNPUB / "trends_monthly_v3b.json", {
         "meta": {
             "generated_at": now_iso(),
-            "version": "v3b",
-            "n_countries_ok": len(own_peak_series),
-            "n_months": len(complete_months),
+            "n_months": len(months),
+            "n_countries_ok": len(countries),
             "series_keys": ["own_peak_asmr"],
             "low_volume_geos": low_volume_flags,
-            "caveats": ["ok geos only in series; low_volume listed with flag"],
+            "note": "ok geos only in series; low_volume listed with flag",
+            "version": "v3b",
         },
-        "months": complete_months,
-        "countries": sorted(own_peak_series.keys()),
-        "series": {"own_peak_asmr": own_peak_series},
-    }
-    B.dump_json(UNPUB / "trends_monthly_v3b.json", monthly_payload)
+        "months": months,
+        "countries": countries,
+        "series": {
+            "own_peak_asmr": {
+                c: [own_peak_ok[c].get(m) for m in months] for c in countries
+            }
+        },
+    })
 
-    def fmt(d):
-        return f"n={d.get('n')} ρ={d.get('rho')} p={d.get('p')} CI=[{d.get('ci95_low')},{d.get('ci95_high')}] p_holm={d.get('p_holm')}"
+    # ── markdown ──
+    def fmt_sp(d):
+        return (f"n={d.get('n')} ρ={d.get('rho')} p={d.get('p')} "
+                f"CI=[{d.get('ci95_low')}, {d.get('ci95_high')}] p_holm={d.get('p_holm')}")
 
     lines = [
         "# Trends v3 trend test",
         "",
-        f"_Generated {now_iso()}. Payloads: `data/unpublished/v3/trends_*_v3b.json` (not published)._",
+        f"_Generated {now_iso()}. Payloads: `data/unpublished/v3/trends_country_v3b.json`, `trends_monthly_v3b.json` (not published)._",
         "",
-        "## 1. Mann–Kendall / Theil–Sen on ok geos",
+        "## 1. Mann-Kendall / Theil-Sen / growth_ratio",
         "",
-        f"Complete months: **{len(complete_months)}** ({complete_months[0]} … {complete_months[-1]}).",
-        f"ok counts: {counts(ok)}; strict-ok: {counts(strict)}.",
+        f"Complete months used: **{len(complete_months)}** ({complete_months[0]} … {complete_months[-1]}).",
         "",
-        f"growth_ratio distribution (ok): {dist}",
+        f"| set | n | rising | flat | falling |",
+        f"|---|---:|---:|---:|---:|",
+        f"| ok | {counts_ok['n']} | {counts_ok['rising']} | {counts_ok['flat']} | {counts_ok['falling']} |",
+        f"| strict-ok | {counts_strict['n']} | {counts_strict['rising']} | {counts_strict['flat']} | {counts_strict['falling']} |",
+        "",
+        "### growth_ratio distribution (ok)",
+        "",
+        f"| min | p25 | median | p75 | max |",
+        f"|---:|---:|---:|---:|---:|",
+        f"| {gr_dist['min']} | {gr_dist['p25']} | {gr_dist['median']} | {gr_dist['p75']} | {gr_dist['max']} |",
         "",
         "### 5 highest growth_ratio",
         "",
@@ -359,32 +416,35 @@ def main() -> int:
         "|---|---|---|---:|---|",
     ]
     for _, r in top5.iterrows():
-        lines.append(f"| {r['geo']} | {r['iso3']} | {r['name']} | {r['growth_ratio']} | {r['trend_class']} |")
+        lines.append(f"| {r['geo']} | {r['iso3']} | {r['name']} | {r['growth_ratio']} | {r['class']} |")
     lines += ["", "### 5 lowest growth_ratio", "",
               "| geo | iso3 | name | growth_ratio | class |", "|---|---|---|---:|---|"]
     for _, r in bot5.iterrows():
-        lines.append(f"| {r['geo']} | {r['iso3']} | {r['name']} | {r['growth_ratio']} | {r['trend_class']} |")
+        lines.append(f"| {r['geo']} | {r['iso3']} | {r['name']} | {r['growth_ratio']} | {r['class']} |")
 
     lines += [
         "",
-        f"Spearman(growth_ratio, relative_slope_pct_per_year): {fmt(sp_gr_slope)}",
-        f"Sign disagreements growth vs relative slope: **{len(sign_disagree)}**",
-    ]
-    mk_list = ", ".join(f"{r.geo}({r.name})" for r in mk_rise_se_within.itertuples())
-    se_list = ", ".join(f"{r.geo}({r.name})" for r in list(mk_flat_se_rise.itertuples())[:15])
-    lines += [
-        f"MK rising ∩ SE within_noise: **{len(mk_rise_se_within)}** → [{mk_list}]",
-        f"SE beyond-noise rise ∩ not MK rising: **{len(mk_flat_se_rise)}** → [{se_list}]",
+        f"Spearman(growth_ratio, relative_slope_pct_per_year): {fmt_sp({**sp_gr_slope, 'p_holm': None})}".replace(" p_holm=None", ""),
+        f"Sign disagreements growth vs relative slope: **{len(sign_dis)}**",
         "",
-        "### Why block-bootstrap said 0/104 and SE ignored autocorrelation",
+        "### MK vs SE within_noise cross-counts",
         "",
-        "1. The earlier moving-block bootstrap rebuilt `growth_ratio` from **only 24 monthly points** (first12∥recent12) with **block length 3 → ~8 draws of 3**, so each resample still mixes early and late windows weakly and CIs were wide enough to cover 0 for every geo.",
-        "2. With so few blocks, between-block variance dominates; the test had almost no power to declare a non-zero 12-vs-12 mean shift.",
-        "3. The SE `within_noise` rule uses the variance of 12 own-peak months in each window as if months were independent; it does **not** inflate the SE for lag-1+ serial correlation, so persistent runs look “precise” and more geos look beyond noise than MK+BH allows.",
+        f"- MK rising but SE within_noise: **{cross['mk_rising_but_SE_within_noise']}**",
+        f"- MK falling but SE within_noise: **{cross['mk_falling_but_SE_within_noise']}**",
+        f"- SE beyond noise (Δ>0) but MK flat: **{cross['SE_beyond_noise_but_MK_flat_positive_change']}**",
+        f"- SE beyond noise (Δ<0) but MK flat: **{cross['SE_beyond_noise_but_MK_flat_negative_change']}**",
         "",
-        "## 2. Correlations (growth_ratio family)",
+        "### Why block-bootstrap said 0/104 and why SE ignored autocorrelation",
         "",
-        f"recent_vs_peak vs noise (ok, docs-only): {fmt(rvp_noise)}",
+        "1. The earlier moving-block bootstrap used block length 3 on a **24-point** series (first12‖recent12), i.e. only **~8 blocks** (and effectively ~4 independent 12-month windows if thinking in half-years)—resamples are highly dependent and variance of the ratio estimator is large, so 95% CIs almost always covered 0.",
+        "2. That procedure tests a **two-window mean ratio**, not a monotonic trend across 60 months; wide CIs are expected with few effective blocks.",
+        "3. The v2/v3 `change_se` treats the 12 first and 12 recent monthly own-peak points as **iid** when forming `sqrt(s1²/12+s2²/12)`; Google Trends series are autocorrelated, so the SE is typically **too small** (over-rejects “within noise”) and does not implement an HAC/Hamed–Rao correction—unlike the modified Mann-Kendall used here.",
+        "",
+        "## 2. Correlations (growth_ratio × internet / youth)",
+        "",
+        "Holm over the **2** pairs within each block. `recent_vs_peak` is **not** written to v3b page payloads.",
+        "",
+        f"Docs-only: Spearman(recent_vs_peak, noise) on ok = n={rvp_noise.get('n')} ρ={rvp_noise.get('rho')} p={rvp_noise.get('p')}",
         "",
     ]
     for fam, block in families.items():
@@ -393,22 +453,22 @@ def main() -> int:
         lines.append("| pair | raw | partial (control noise) |")
         lines.append("|---|---|---|")
         for k in ("growth_vs_internet", "growth_vs_youth"):
-            lines.append(f"| {k} | {fmt(block['raw'][k])} | {fmt(block['partial_noise'][k])} |")
+            lines.append(f"| {k} | {fmt_sp(block['raw'][k])} | {fmt_sp(block['partial_noise'][k])} |")
         lines.append("")
 
     lines += [
         "## 3. Outputs",
         "",
-        "- `trends_country_v3b.json`: growth_ratio, relative slope, trend_class, quality, strict_ok, noise",
-        "- `trends_monthly_v3b.json`: own_peak series for ok geos only; low_volume listed with flag",
+        "- `data/unpublished/v3/trends_country_v3b.json` — growth_ratio, relative slope, class, quality, strict_ok, noise",
+        "- `data/unpublished/v3/trends_monthly_v3b.json` — own_peak time-lapse for **ok** geos; low_volume listed with flag",
         "",
         "_Do not publish._",
         "",
     ]
     path = DOCS / "TRENDS_V3_TREND.md"
     path.write_text("\n".join(lines), encoding="utf-8")
-    print(f"wrote {path} ({len(lines)} lines)", flush=True)
-    print("ok counts", counts(ok), "strict", counts(strict), flush=True)
+    print(f"  wrote {path.relative_to(ROOT)}", flush=True)
+    print("counts_ok", counts_ok, "strict", counts_strict, flush=True)
     return 0
 
 
