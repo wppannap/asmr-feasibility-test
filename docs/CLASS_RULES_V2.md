@@ -14,7 +14,7 @@ Generic nature words only in tags/description no longer make a video ambient.
 
 ## Before / after counts
 
-v1: {'other': 168888, 'human_asmr': 145110, 'noise_not_asmr': 20115, 'ambient_labelled_asmr': 8310}
+v1: {'other': 168888, 'videos labelled as ASMR (excluding ambient-noise content)': 145110, 'noise_not_asmr': 20115, 'ambient_labelled_asmr': 8310}
 v2: {'other': 190210, 'asmr_labelled': 146377, 'ambient_labelled_asmr': 16886, 'noise_not_asmr': 14553}
 asmr_labelled tiers: {'A': 87945, 'B': 51074, 'C': 7358}
 
@@ -33,23 +33,23 @@ asmr_labelled tiers: {'A': 87945, 'B': 51074, 'C': 7358}
 | 지붕에 떨어지는 빗소리는 긴장을 풀고 천천히 깊은 잠에 빠지도록 도와줍니다. 🛌🛌 | ambient_labelled_asmr→asmr_labelled | B | 86400.0 |
 | 빗소리 - 천둥소리와 함께 창가에 내리는 비ㅣ수면과 공부, 휴식을 위한 폭우 🌧️🌧️ | ambient_labelled_asmr→asmr_labelled | B | 86400.0 |
 | 빗소리 asmr - 잠시도 쉬지 않고 쏟아지는 폭우 ⚡ 불면증에 좋은 최고의 빗소리 ⚡ 천둥 번개 빗소리 ⛈ 시원한 빗소리 ASMR | ambient_labelled_asmr→asmr_labelled | B | 86400.0 |
-| Deep Sleep White Noise Sounds, Ocean Waves Whispering ASMR For Sleeping at Carrapateira Beach | human_asmr→ambient_labelled_asmr |  | 43329.0 |
-| White Noise - Vacuum Cleaner - Baby Sound for Sleep - No Ads During video - ASMR - 12H  👶😴🔉 | human_asmr→ambient_labelled_asmr |  | 43282.0 |
-| ⨀ Windmill Sounds for Deep Sleep / 12 Hours of Relaxing Windmill Ambience / No Music ⨀ | human_asmr→ambient_labelled_asmr |  | 43200.0 |
-| ⨀ OV-10 Bronco Steady Flight Sounds ✈️ / Twin Turboprop Engine Ambience for Sleep / 12 Hours ⨀ | human_asmr→ambient_labelled_asmr |  | 43200.0 |
-| ⨀ Model Train Sounds for Sleep 🚂 Relaxing Railway Ambience & Rhythmic Track Sounds / 12 Hours ⨀ | human_asmr→ambient_labelled_asmr |  | 43200.0 |
-| ⨀ Old School Bus Idling Sounds for Sleep / Relaxing Diesel Engine Ambience – 12 Hours ⨀ | human_asmr→ambient_labelled_asmr |  | 43200.0 |
-| ⨀ The Heartbeat of the Universe / Black Hole Merger Sounds Transformed into a Cosmic Heartbeat ⨀ | human_asmr→ambient_labelled_asmr |  | 43200.0 |
-| ⨀ ALCO S4 Locomotive Idle Sounds for Sleep 🚂 / Vintage Diesel Engine Ambience / 12 Hours ⨀ | human_asmr→ambient_labelled_asmr |  | 43200.0 |
-| ⨀ Large Raindrops Hitting Window 🌧️ / Cozy Rain Ambience for Sleep & Relaxation ⨀ | human_asmr→ambient_labelled_asmr |  | 43200.0 |
-| ⨀ Navy Sleep Sounds ⚓ Ship Engines, Ocean Waves & Sonar Ambience / Relaxing Military Bunk Audio ⨀ | human_asmr→ambient_labelled_asmr |  | 43200.0 |
-| ⨀ Flag Flapping in the Breeze + Gentle Metal Clanging / Wind Ambience for Deep Sleep & Relaxation ⨀ | human_asmr→ambient_labelled_asmr |  | 43200.0 |
-| ⨀ Rain on a Metal Roof for Deep Sleep 🌧️ Relaxing Storm Sounds for Insomnia, Stress Relief & Focus ⨀ | human_asmr→ambient_labelled_asmr |  | 43200.0 |
-| ⨀ Gargantua: Ambient Supermassive Black Hole Music for Deep Sleep / Interstellar Space Ambience ⨀ | human_asmr→ambient_labelled_asmr |  | 43200.0 |
-| ⨀ Morse Code Radio Static for Sleep / Distant Signals in the Night / Vintage Shortwave Ambience ⨀ | human_asmr→ambient_labelled_asmr |  | 43200.0 |
-| ⨀ jupiter & saturn sonifications / deep space ambient sleep soundscape ⨀ | human_asmr→ambient_labelled_asmr |  | 43200.0 |
-| Panzer Tank on the Move ⨀ Authentic WWII Tank Engine & Track Sounds for Sleep, Study & Immersion | human_asmr→ambient_labelled_asmr |  | 43200.0 |
-| Forest Ambience White Noise / Deep Sleep, Study, Relax / 12 Hours | human_asmr→ambient_labelled_asmr |  | 43200.0 |
+| Deep Sleep White Noise Sounds, Ocean Waves Whispering ASMR For Sleeping at Carrapateira Beach | videos labelled as ASMR (excluding ambient-noise content)→ambient_labelled_asmr |  | 43329.0 |
+| White Noise - Vacuum Cleaner - Baby Sound for Sleep - No Ads During video - ASMR - 12H  👶😴🔉 | videos labelled as ASMR (excluding ambient-noise content)→ambient_labelled_asmr |  | 43282.0 |
+| ⨀ Windmill Sounds for Deep Sleep / 12 Hours of Relaxing Windmill Ambience / No Music ⨀ | videos labelled as ASMR (excluding ambient-noise content)→ambient_labelled_asmr |  | 43200.0 |
+| ⨀ OV-10 Bronco Steady Flight Sounds ✈️ / Twin Turboprop Engine Ambience for Sleep / 12 Hours ⨀ | videos labelled as ASMR (excluding ambient-noise content)→ambient_labelled_asmr |  | 43200.0 |
+| ⨀ Model Train Sounds for Sleep 🚂 Relaxing Railway Ambience & Rhythmic Track Sounds / 12 Hours ⨀ | videos labelled as ASMR (excluding ambient-noise content)→ambient_labelled_asmr |  | 43200.0 |
+| ⨀ Old School Bus Idling Sounds for Sleep / Relaxing Diesel Engine Ambience – 12 Hours ⨀ | videos labelled as ASMR (excluding ambient-noise content)→ambient_labelled_asmr |  | 43200.0 |
+| ⨀ The Heartbeat of the Universe / Black Hole Merger Sounds Transformed into a Cosmic Heartbeat ⨀ | videos labelled as ASMR (excluding ambient-noise content)→ambient_labelled_asmr |  | 43200.0 |
+| ⨀ ALCO S4 Locomotive Idle Sounds for Sleep 🚂 / Vintage Diesel Engine Ambience / 12 Hours ⨀ | videos labelled as ASMR (excluding ambient-noise content)→ambient_labelled_asmr |  | 43200.0 |
+| ⨀ Large Raindrops Hitting Window 🌧️ / Cozy Rain Ambience for Sleep & Relaxation ⨀ | videos labelled as ASMR (excluding ambient-noise content)→ambient_labelled_asmr |  | 43200.0 |
+| ⨀ Navy Sleep Sounds ⚓ Ship Engines, Ocean Waves & Sonar Ambience / Relaxing Military Bunk Audio ⨀ | videos labelled as ASMR (excluding ambient-noise content)→ambient_labelled_asmr |  | 43200.0 |
+| ⨀ Flag Flapping in the Breeze + Gentle Metal Clanging / Wind Ambience for Deep Sleep & Relaxation ⨀ | videos labelled as ASMR (excluding ambient-noise content)→ambient_labelled_asmr |  | 43200.0 |
+| ⨀ Rain on a Metal Roof for Deep Sleep 🌧️ Relaxing Storm Sounds for Insomnia, Stress Relief & Focus ⨀ | videos labelled as ASMR (excluding ambient-noise content)→ambient_labelled_asmr |  | 43200.0 |
+| ⨀ Gargantua: Ambient Supermassive Black Hole Music for Deep Sleep / Interstellar Space Ambience ⨀ | videos labelled as ASMR (excluding ambient-noise content)→ambient_labelled_asmr |  | 43200.0 |
+| ⨀ Morse Code Radio Static for Sleep / Distant Signals in the Night / Vintage Shortwave Ambience ⨀ | videos labelled as ASMR (excluding ambient-noise content)→ambient_labelled_asmr |  | 43200.0 |
+| ⨀ jupiter & saturn sonifications / deep space ambient sleep soundscape ⨀ | videos labelled as ASMR (excluding ambient-noise content)→ambient_labelled_asmr |  | 43200.0 |
+| Panzer Tank on the Move ⨀ Authentic WWII Tank Engine & Track Sounds for Sleep, Study & Immersion | videos labelled as ASMR (excluding ambient-noise content)→ambient_labelled_asmr |  | 43200.0 |
+| Forest Ambience White Noise / Deep Sleep, Study, Relax / 12 Hours | videos labelled as ASMR (excluding ambient-noise content)→ambient_labelled_asmr |  | 43200.0 |
 
 ## Sleep share v1 vs v2 by language
 

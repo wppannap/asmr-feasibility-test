@@ -1,11 +1,11 @@
-/* Duration: sleep_title vs not by title-script group (unpublished module). */
+/* Duration: log-axis overlaid densities + ratio table (unpublished). */
 import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js";
 import { renderReviewBanner } from "./review.js";
 
 const WEIGHTS = [
   { id: "video", label: "video" },
   { id: "channel_equal", label: "channel-equal" },
-  { id: "capped_20", label: "capped-20" },
+  { id: "capped20", label: "capped-20" },
 ];
 const TIERS = [
   { id: "tier_A", label: "tier A" },
@@ -23,6 +23,7 @@ export function render(container, data) {
   const payload = data.duration || data;
   const meta = payload.meta || {};
   const rows = payload.rows || [];
+  const histograms = payload.histograms || [];
   const caveatEl = data.caveatEl;
 
   const wrap = d3.select(container);
@@ -31,13 +32,22 @@ export function render(container, data) {
   setCaveat(caveatEl, meta.caveats || []);
   if (!ok) return;
 
-  ctx = { rows, weight: "channel_equal", tier: "tier_A", rule: "strict" };
+  ctx = {
+    rows,
+    histograms,
+    markers: meta.markers_sec || [3600, 28800],
+    weight: "channel_equal",
+    tier: "tier_A",
+    rule: "strict",
+    script: null,
+  };
 
   const controls = wrap.append("div").attr("class", "control-row chart-controls");
   addSeg(controls, "Rule", RULES, "rule");
   addSeg(controls, "Tier", TIERS, "tier");
   addSeg(controls, "Weight", WEIGHTS, "weight");
 
+  ctx.ratioEl = wrap.append("p").attr("class", "chart-note").node();
   const tableApi = attachTableToggle(wrap.node(), () => tableRows());
   ctx.mount = tableApi.visual;
   draw();
@@ -46,13 +56,11 @@ export function render(container, data) {
 function addSeg(parent, label, opts, key) {
   parent.append("span").attr("class", "control-label").text(label);
   const seg = parent.append("div").attr("class", "seg");
-  opts.forEach((o, i) => {
+  opts.forEach((o) => {
     seg
       .append("button")
       .attr("type", "button")
-      .attr("data-key", key)
-      .attr("data-val", o.id)
-      .classed("is-active", ctx[key] === o.id || (i === 0 && ctx[key] == null))
+      .classed("is-active", ctx[key] === o.id)
       .text(o.label)
       .on("click", function () {
         ctx[key] = o.id;
@@ -63,83 +71,143 @@ function addSeg(parent, label, opts, key) {
   });
 }
 
-function filtered() {
-  return ctx.rows.filter(
-    (r) => r.rule === ctx.rule && r.series === ctx.tier
-  );
+function filteredRows() {
+  return ctx.rows.filter((r) => r.rule === ctx.rule && r.series === ctx.tier);
+}
+
+function filteredHists() {
+  return ctx.histograms.filter((h) => h.rule === ctx.rule && h.series === ctx.tier);
 }
 
 function ratioOf(r) {
   const w = r.weightings || {};
-  if (ctx.weight === "video") return w.video_ratio ?? r.video_ratio;
-  if (ctx.weight === "capped_20") return w.cap20_ratio ?? w.capped_20_ratio ?? r.cap20_ratio;
-  return w.channel_equal_ratio ?? w.ch_eq_ratio ?? r.ch_eq_ratio;
+  const key =
+    ctx.weight === "video" ? "video" : ctx.weight === "capped20" ? "capped20" : "channel_equal";
+  const block = w[key] || {};
+  return block.ratio;
 }
 
 function tableRows() {
-  const cols = ["script_group", "n_ch_sleep", "n_ch_not", "ratio", "boot_CI", "order_holds"];
-  const rows = filtered().map((r) => {
-    const ci = r.ratio_channel_boot_ci95;
-    return [
-      r.script_group,
-      r.n_ch_sleep,
-      r.n_ch_not,
-      ratioOf(r) != null ? fmt(ratioOf(r), 3) : "—",
-      Array.isArray(ci) ? `[${fmt(ci[0], 3)}, ${fmt(ci[1], 3)}]` : "—",
-      String(r.order_holds_all_weightings ?? r.ordering ?? ""),
-    ];
-  });
-  return { columns: cols, rows };
+  return {
+    columns: ["script_group", "n_ch_sleep", "n_ch_not", "ratio", "boot_CI", "order_holds"],
+    rows: filteredRows().map((r) => {
+      const ci = r.ratio_channel_boot_ci95;
+      return [
+        r.script_group,
+        r.n_ch_sleep,
+        r.n_ch_not,
+        ratioOf(r) != null ? fmt(ratioOf(r), 3) : "—",
+        Array.isArray(ci) ? `[${fmt(ci[0], 3)}, ${fmt(ci[1], 3)}]` : "—",
+        String(!!r.order_holds_all_weightings),
+      ];
+    }),
+  };
 }
 
 function draw() {
   const mount = ctx.mount;
   clear(mount);
-  const data = filtered();
-  const w = Math.max(320, mount.clientWidth || 480);
-  const h = 280;
+  const hists = filteredHists();
+  const rows = filteredRows();
+  if (ctx.ratioEl) {
+    const bits = rows.map((r) => {
+      const ci = r.ratio_channel_boot_ci95;
+      const ratio = ratioOf(r);
+      return `${r.script_group}: ${ratio != null ? fmt(ratio, 2) : "—"}×${
+        Array.isArray(ci) ? ` [${fmt(ci[0], 2)}, ${fmt(ci[1], 2)}]` : ""
+      }`;
+    });
+    ctx.ratioEl.textContent = bits.join(" · ");
+  }
+
+  const w = Math.max(320, mount.clientWidth || 560);
+  const ridgeH = 56;
+  const h = 40 + hists.length * ridgeH;
   const svg = d3
     .select(mount)
     .append("svg")
     .attr("viewBox", `0 0 ${w} ${h}`)
     .attr("width", "100%")
     .attr("role", "img")
-    .attr("aria-label", "Duration ratios by script group");
-
-  const margin = { top: 16, right: 16, bottom: 48, left: 48 };
+    .attr("aria-label", "Duration log densites by script group");
+  const margin = { top: 12, right: 16, bottom: 28, left: 120 };
   const iw = w - margin.left - margin.right;
-  const ih = h - margin.top - margin.bottom;
   const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-  const x = d3
-    .scaleBand()
-    .domain(data.map((d) => d.script_group))
-    .range([0, iw])
-    .padding(0.25);
-  const vals = data.map(ratioOf).filter((v) => v != null && Number.isFinite(+v));
-  const y = d3
-    .scaleLinear()
-    .domain([0, Math.max(2, d3.max(vals) || 1)])
-    .nice()
-    .range([ih, 0]);
-  g.append("g").attr("transform", `translate(0,${ih})`).call(d3.axisBottom(x)).selectAll("text")
-    .attr("transform", "rotate(-18)").style("text-anchor", "end");
-  g.append("g").call(d3.axisLeft(y));
-  g.selectAll("rect")
-    .data(data)
-    .join("rect")
-    .attr("x", (d) => x(d.script_group))
-    .attr("width", x.bandwidth())
-    .attr("y", (d) => y(ratioOf(d) || 0))
-    .attr("height", (d) => ih - y(ratioOf(d) || 0))
-    .attr("fill", "#3d8b6e");
-  g.append("line")
-    .attr("x1", 0)
-    .attr("x2", iw)
-    .attr("y1", y(1))
-    .attr("y2", y(1))
-    .attr("stroke", "#1a242c")
-    .attr("stroke-dasharray", "4 3")
-    .attr("opacity", 0.5);
+
+  const allBins = (hists[0]?.sleep?.bins || hists[0]?.not?.bins || [30, 3600]).map(Number);
+  const x = d3.scaleLog().domain([allBins[0], allBins[allBins.length - 1]]).range([0, iw]);
+  g.append("g")
+    .attr("transform", `translate(0,${hists.length * ridgeH})`)
+    .call(d3.axisBottom(x).ticks(6, "~s"));
+
+  ctx.markers.forEach((sec) => {
+    g.append("line")
+      .attr("x1", x(sec))
+      .attr("x2", x(sec))
+      .attr("y1", 0)
+      .attr("y2", hists.length * ridgeH)
+      .attr("stroke", "#1a242c")
+      .attr("stroke-dasharray", "3 3")
+      .attr("opacity", 0.35);
+    g.append("text")
+      .attr("x", x(sec) + 2)
+      .attr("y", 10)
+      .attr("font-size", 10)
+      .text(sec === 3600 ? "1 h" : sec === 28800 ? "8 h" : `${sec}s`);
+  });
+
+  hists.forEach((hist, i) => {
+    const y0 = i * ridgeH;
+    g.append("text")
+      .attr("x", -8)
+      .attr("y", y0 + ridgeH / 2)
+      .attr("text-anchor", "end")
+      .attr("dominant-baseline", "middle")
+      .attr("font-size", 11)
+      .text(hist.script_group.replace(" script", "").replace(" (mostly Chinese)", ""));
+    drawArea(g, hist.sleep, x, y0, ridgeH, "#3d6b8b", 0.45);
+    drawArea(g, hist.not, x, y0, ridgeH, "#8a6b4a", 0.35);
+    if (hist.sleep?.median) {
+      g.append("line")
+        .attr("x1", x(hist.sleep.median))
+        .attr("x2", x(hist.sleep.median))
+        .attr("y1", y0 + 8)
+        .attr("y2", y0 + ridgeH - 8)
+        .attr("stroke", "#3d6b8b")
+        .attr("stroke-width", 1.5);
+    }
+    if (hist.not?.median) {
+      g.append("line")
+        .attr("x1", x(hist.not.median))
+        .attr("x2", x(hist.not.median))
+        .attr("y1", y0 + 8)
+        .attr("y2", y0 + ridgeH - 8)
+        .attr("stroke", "#8a6b4a")
+        .attr("stroke-width", 1.5)
+        .attr("stroke-dasharray", "2 2");
+    }
+  });
+}
+
+function drawArea(g, arm, x, y0, ridgeH, color, opacity) {
+  if (!arm?.bins || !arm?.density) return;
+  const bins = arm.bins.map(Number);
+  const dens = arm.density.map(Number);
+  const maxD = d3.max(dens) || 1;
+  const y = d3.scaleLinear().domain([0, maxD]).range([ridgeH - 6, 6]);
+  const pts = dens.map((d, i) => {
+    const mid = Math.sqrt(bins[i] * bins[i + 1]);
+    return [x(mid), y0 + y(d)];
+  });
+  const line = d3.line().curve(d3.curveBasis);
+  const area = d3
+    .area()
+    .curve(d3.curveBasis)
+    .x((p) => p[0])
+    .y0(y0 + ridgeH - 6)
+    .y1((p) => p[1]);
+  g.append("path").attr("d", area(pts)).attr("fill", color).attr("opacity", opacity);
+  g.append("path").attr("d", line(pts)).attr("fill", "none").attr("stroke", color).attr("stroke-width", 1);
 }
 
 export function update() {}

@@ -32,8 +32,8 @@ def small_base_threshold() -> float:
     p = ROOT / "config" / "trends_display.yaml"
     if p.exists():
         cfg = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
-        return float(cfg.get("small_base_mean_first_12", 10))
-    return 10.0
+        return float(cfg.get("small_base_mean_first_12", 15))
+    return 15.0
 
 
 def now_iso() -> str:
@@ -211,8 +211,8 @@ def main() -> int:
         "map1_caption": (
             f"Measured: {meta_src['counts']['ok']}; "
             f"too few searches: {meta_src['counts']['low_volume']}; "
-            f"no data: {meta_src['counts']['not_in_v3'] + meta_src['counts']['china_not_measured']}; "
-            f"China not measured. "
+            f"No data: {meta_src['counts']['not_in_v3'] + meta_src['counts']['china_not_measured']} "
+            f"(including mainland China). "
             f"Among measured regions: rising {mk['rising']}, "
             f"no significant trend {mk['flat']}, falling {mk['falling']}. "
             f"Median growth {gr['median'] * 100:.1f}% "
@@ -225,7 +225,10 @@ def main() -> int:
             "hatch_flat": "Estimated growth shown; no statistically significant trend",
             "low_volume": "Too few searches to measure",
             "no_data": "No data (including mainland China: Google is not accessible there)",
-            "small_base": "Small base: first-12-month average below 10 on Trends' 0–100 scale (growth ratio unstable)",
+            "small_base": (
+                f"Small base: first-12-month average below {thr:g} on Trends' 0–100 scale "
+                "(growth ratio unstable)"
+            ),
             "clip_note": "Values outside −50% … +150% are clipped for colour only.",
         },
         "caveats": [

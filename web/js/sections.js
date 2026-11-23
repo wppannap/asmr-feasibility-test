@@ -18,6 +18,17 @@ export const ENABLED_DATA = {
   monthly: "data/trends_monthly_v3c.json",
   scatter: "data/correlations_v3c.json",
   wiki: "data/wiki_lang.json",
+  // Populated by scripts/enable_yt_charts.py when a YouTube section is enabled:
+  // yt_creators / yt_duration / yt_upload_clock
+};
+
+/** Chart module paths loaded only when the matching section id is enabled. */
+export const SECTION_CHART_MODULES = {
+  "scrolly-3": "./charts_yt/creators.js",
+  "scrolly-4": "./charts/scatter.js",
+  "scrolly-5": "./charts_yt/duration.js",
+  "scrolly-6": "./charts/wiki.js",
+  "scrolly-9": "./charts_yt/upload_clock.js",
 };
 
 /** Map caption notes (not hardcoded in HTML). */

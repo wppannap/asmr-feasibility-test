@@ -26,3 +26,7 @@ lang_check_extra.csv,120,"3/120 labels OK (da 0/40, tl 0/40, und 3/40)",AI-assis
 class_check_v31_rain_word.csv,20,18/20 true Latin FPs (brain/train/rainbow/drain),AI-assisted,2/20 are Rainfall/Rainy — whole-word drops real rain words
 class_check_v31_vacuum.csv,10,9/10 moves appropriate,AI-assisted,1 miss: Vacuum Cleaner Sound sleep track needs phrase coverage
 class_check_v31_heartbeat.csv,10,10/10 moves appropriate,AI-assisted,Bare heartbeat was product-name + human-RP FP into ambient
+class_check_v32_ambient_tag_only.csv,,,UNSET,
+class_check_v32_inflect.csv,,,UNSET,
+script_check.csv,,,UNSET,
+comment_precision_check_8.csv,,,UNSET,

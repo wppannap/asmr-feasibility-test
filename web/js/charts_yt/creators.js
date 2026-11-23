@@ -1,4 +1,4 @@
-/* Creators by declared country (unpublished module). */
+/* Creators by declared country + unknown (unpublished). */
 import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js";
 import { renderReviewBanner } from "./review.js";
 
@@ -49,7 +49,11 @@ function filtered() {
   return ctx.rows
     .filter((r) => r.rule === ctx.rule)
     .slice()
-    .sort((a, b) => (b.n_channels || 0) - (a.n_channels || 0));
+    .sort((a, b) => {
+      if (a.country === "unknown") return 1;
+      if (b.country === "unknown") return -1;
+      return (b.n_channels || 0) - (a.n_channels || 0);
+    });
 }
 
 function tableRows() {
@@ -81,7 +85,7 @@ function draw() {
     .attr("width", "100%")
     .attr("role", "img")
     .attr("aria-label", "Channels by declared country");
-  const margin = { top: 8, right: 64, bottom: 8, left: 48 };
+  const margin = { top: 8, right: 72, bottom: 8, left: 56 };
   const iw = w - margin.left - margin.right;
   const ih = h - margin.top - margin.bottom;
   const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
@@ -104,7 +108,7 @@ function draw() {
     .attr("height", y.bandwidth())
     .attr("x", 0)
     .attr("width", (d) => x(d.n_channels || 0))
-    .attr("fill", "#6b5b4a");
+    .attr("fill", (d) => (d.country === "unknown" ? "#9aa7b2" : "#6b5b4a"));
   g.selectAll("text.share")
     .data(data)
     .join("text")

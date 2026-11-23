@@ -4,40 +4,19 @@ import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
+  SECTION_CHART_MODULES,
   applySectionVisibility,
 } from "./sections.js";
 
-/** Populated by loadChartModules() — sequential imports avoid dropped parallel ESM fetches on single-threaded static servers. */
-const ChartModules = {
-  creatorSymbols: null,
-  scatter: null,
-  duration: null,
-  wiki: null,
-  douyin: null,
-  comments: null,
-};
+/** Populated by loadChartModules() — sequential imports for enabled sections only. */
+const ChartModules = {};
 
 const sectionOn = (id) => ENABLED_SECTIONS.includes(id);
 
 async function loadChartModules() {
-  // Only import modules for enabled sections (absent payloads must not be fetched).
-  if (sectionOn("scrolly-3")) {
-    ChartModules.creatorSymbols = await import("./charts/creator_symbols.js");
-  }
-  if (sectionOn("scrolly-4")) {
-    ChartModules.scatter = await import("./charts/scatter.js");
-  }
-  if (sectionOn("scrolly-5")) {
-    ChartModules.duration = await import("./charts/duration.js");
-  }
-  if (sectionOn("scrolly-6")) {
-    ChartModules.wiki = await import("./charts/wiki.js");
-  }
-  if (sectionOn("scrolly-7")) {
-    ChartModules.douyin = await import("./charts/douyin.js");
-  }
-  if (sectionOn("scrolly-8")) {
-    ChartModules.comments = await import("./charts/comments.js");
+  for (const [sid, path] of Object.entries(SECTION_CHART_MODULES)) {
+    if (!sectionOn(sid)) continue;
+    ChartModules[sid] = await import(path);
   }
 }
 
@@ -86,6 +65,15 @@ async function loadAll() {
     const monthly = await d3.json(ENABLED_DATA.monthly);
     const scatterData = sectionOn("scrolly-4") ? await d3.json(ENABLED_DATA.scatter) : null;
     const wikiData = sectionOn("scrolly-6") ? await d3.json(ENABLED_DATA.wiki) : null;
+    const ytCreators = sectionOn("scrolly-3") && ENABLED_DATA.yt_creators
+      ? await d3.json(ENABLED_DATA.yt_creators)
+      : null;
+    const ytDuration = sectionOn("scrolly-5") && ENABLED_DATA.yt_duration
+      ? await d3.json(ENABLED_DATA.yt_duration)
+      : null;
+    const ytUpload = sectionOn("scrolly-9") && ENABLED_DATA.yt_upload_clock
+      ? await d3.json(ENABLED_DATA.yt_upload_clock)
+      : null;
 
     // Unpublished / disabled payloads — never fetch while sections are off.
     const creators = null;
@@ -94,7 +82,17 @@ async function loadAll() {
     const douyinData = null;
     const commentsData = null;
 
-    state.extra = { tiktok, scatterData, youtube, wikiData, douyinData, commentsData };
+    state.extra = {
+      tiktok,
+      scatterData,
+      youtube,
+      wikiData,
+      douyinData,
+      commentsData,
+      ytCreators,
+      ytDuration,
+      ytUpload,
+    };
 
     const countries = topojson.feature(topo, topo.objects.countries);
     countries.features.forEach((f) => {
@@ -294,11 +292,25 @@ async function loadAll() {
       if (legendCopy.ramp) {
         root.append("span").attr("class", "legend-hatch-note").text(legendCopy.ramp);
       }
+      // Mid-ramp colour (0% growth) so swatches match the map ramp, not a fixed green.
+      const midRamp =
+        scaleInfo?.scale && Number.isFinite(scaleInfo.scale(0))
+          ? scaleInfo.scale(0)
+          : "#f7f7f7";
       const solid = root.append("div").attr("class", "legend-swatch-row");
-      solid.append("span").attr("class", "legend-swatch legend-swatch-solid");
+      solid
+        .append("span")
+        .attr("class", "legend-swatch legend-swatch-solid")
+        .style("background", midRamp);
       solid.append("span").text(legendCopy.solid || "Statistically significant trend");
       const hatch = root.append("div").attr("class", "legend-swatch-row");
-      hatch.append("span").attr("class", "legend-swatch legend-swatch-hatch");
+      hatch
+        .append("span")
+        .attr("class", "legend-swatch legend-swatch-hatch")
+        .style(
+          "background",
+          `repeating-linear-gradient(45deg, ${midRamp}, ${midRamp} 2px, #1a242c 2px, #1a242c 3.2px)`
+        );
       hatch.append("span").text(
         legendCopy.hatch_flat || "Estimated growth shown; no statistically significant trend"
       );
@@ -586,7 +598,7 @@ async function loadAll() {
   }
 
   function updateStage1() {
-    // Creator-country payload is unpublished until human_asmr classes are verified.
+    // Creator-country payload is unpublished until videos labelled as ASMR (excluding ambient-noise content) are verified.
     state.layerMode = "trends";
     const panels = document.getElementById("map-panels-1");
     if (!panels) return;
@@ -785,49 +797,37 @@ async function loadAll() {
   }
 
 function initExtraCharts() {
-  const { tiktok, scatterData, youtube, wikiData, douyinData, commentsData } = state.extra;
-  const { creatorSymbols, scatter, duration, wiki, douyin, comments } = ChartModules;
+  const { scatterData, wikiData, ytCreators, ytDuration, ytUpload } = state.extra;
 
-  if (sectionOn("scrolly-3") && creatorSymbols && state.creatorMeta) {
-    chartApi.creatorSymbols = creatorSymbols.render(
-      document.getElementById("chart-creator-symbols"),
-      {
-        creators: { meta: state.creatorMeta, countries: state.creatorRows },
-        lands: state.lands,
-        tiktok,
-        caveatEl: document.getElementById("caveat-3"),
-      }
+  if (sectionOn("scrolly-3") && ChartModules["scrolly-3"] && ytCreators) {
+    chartApi.creatorsYt = ChartModules["scrolly-3"].render(
+      document.getElementById("chart-creators-yt"),
+      { creators: ytCreators, caveatEl: document.getElementById("caveat-3") }
     );
   }
-  if (sectionOn("scrolly-4") && scatter && scatterData) {
-    chartApi.scatter = scatter.render(document.getElementById("chart-scatter"), {
-      scatter: scatterData,
-      caveatEl: document.getElementById("caveat-4"),
-    });
+  if (sectionOn("scrolly-4") && ChartModules["scrolly-4"] && scatterData) {
+    chartApi.scatter = ChartModules["scrolly-4"].render(
+      document.getElementById("chart-scatter"),
+      { scatter: scatterData, caveatEl: document.getElementById("caveat-4") }
+    );
   }
-  if (sectionOn("scrolly-5") && duration && youtube) {
-    chartApi.duration = duration.render(document.getElementById("chart-duration"), {
-      youtube,
-      caveatEl: document.getElementById("caveat-5"),
-    });
+  if (sectionOn("scrolly-5") && ChartModules["scrolly-5"] && ytDuration) {
+    chartApi.durationYt = ChartModules["scrolly-5"].render(
+      document.getElementById("chart-duration-yt"),
+      { duration: ytDuration, caveatEl: document.getElementById("caveat-5") }
+    );
   }
-  if (sectionOn("scrolly-6") && wiki && wikiData) {
-    chartApi.wiki = wiki.render(document.getElementById("chart-wiki"), {
-      wiki: wikiData,
-      caveatEl: document.getElementById("caveat-6"),
-    });
+  if (sectionOn("scrolly-6") && ChartModules["scrolly-6"] && wikiData) {
+    chartApi.wiki = ChartModules["scrolly-6"].render(
+      document.getElementById("chart-wiki"),
+      { wiki: wikiData, caveatEl: document.getElementById("caveat-6") }
+    );
   }
-  if (sectionOn("scrolly-7") && douyin && douyinData) {
-    chartApi.douyin = douyin.render(document.getElementById("chart-douyin"), {
-      douyin: douyinData,
-      caveatEl: document.getElementById("caveat-7"),
-    });
-  }
-  if (sectionOn("scrolly-8") && comments && commentsData) {
-    chartApi.comments = comments.render(document.getElementById("chart-comments"), {
-      comments: commentsData,
-      caveatEl: document.getElementById("caveat-8"),
-    });
+  if (sectionOn("scrolly-9") && ChartModules["scrolly-9"] && ytUpload) {
+    chartApi.uploadClock = ChartModules["scrolly-9"].render(
+      document.getElementById("chart-upload-clock"),
+      { upload_clock: ytUpload, caveatEl: document.getElementById("caveat-9") }
+    );
   }
 }
 
@@ -847,8 +847,11 @@ function initExtraCharts() {
         .onStepEnter((response) => {
           section.querySelectorAll(".step").forEach((el) => el.classList.remove("is-active"));
           response.element.classList.add("is-active");
-          if (chartKey && ChartModules[chartKey]?.update) {
-            ChartModules[chartKey].update(response.element.dataset.step || response.index + 1);
+          const mod =
+            ChartModules[section.id] ||
+            (chartKey ? ChartModules[chartKey] : null);
+          if (mod?.update) {
+            mod.update(response.element.dataset.step || response.index + 1);
           }
         });
 

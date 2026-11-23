@@ -1,4 +1,4 @@
-# Editable video class keyword lists for human-performed/recorded ASMR scope.
+# Editable video class keyword lists for videos labelled as ASMR (excluding ambient-noise content).
 # Matching uses the same haystack as expand_by_channel.py::classify:
 #   title + tags + description_short + topicCategories (lowercased).
 # Latin sleep_strict terms use word-boundary regex; other lists are substrings.

@@ -4,7 +4,7 @@ Paste this into a new chat to resume. No privacy incident log; no raw rows or cr
 
 ## Scope
 
-Public site is **aggregated Google Trends + indicators + Wikipedia ASMR pageviews** for human-performed ASMR interest. YouTube / Douyin / TikTok / comment charts stay **unpublished** until review gates clear. Keep every `TODO: my text` untouched; do not invent story copy.
+Public site is **aggregated Google Trends + indicators + Wikipedia ASMR pageviews** for interest in videos labelled as ASMR (excluding ambient-noise content). YouTube / Douyin / TikTok / comment charts stay **unpublished** until review gates clear. Keep every `TODO: my text` untouched; do not invent story copy.
 
 ## Published sections
 
@@ -37,7 +37,7 @@ Re-enable: copy fragment into `web/index.html` + add id to `ENABLED_SECTIONS` (s
 
 - Measured (quality ok): **103**; too few searches: **97**; no data: **30** (29 not_in_v3 + mainland China); **China not measured**
 - Among measured: rising **74**, no significant trend **26**, falling **3** (Mann–Kendall, BH q = 0.05)
-- Median growth **25.4%** (IQR **9.6%** to **43.0%**); Small base (mean first-12 &lt; 10): **6**
+- Median growth **25.4%** (IQR **9.6%** to **43.0%**); Small base (mean first-12 &lt; 15): **10** (adds CYP, GHA, NIC, SYR vs threshold 10)
 - Strict-ok (additional criteria): **82**
 - Caption / legend copy live in JSON `meta.map1_caption` / `meta.map1_legend` (no visible word “ok”)
 

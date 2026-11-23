@@ -442,15 +442,16 @@ input[type="range"] {
 }
 
 .legend-swatch-solid {
-  background: #3d8b6e;
+  /* fallback; Map 1 sets mid-ramp colour inline from the growth scale */
+  background: #f7f7f7;
 }
 
 .legend-swatch-hatch {
   background:
     repeating-linear-gradient(
       45deg,
-      #6aa88f,
-      #6aa88f 2px,
+      #f7f7f7,
+      #f7f7f7 2px,
       #1a242c 2px,
       #1a242c 3.2px
     );

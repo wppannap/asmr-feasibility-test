@@ -2,15 +2,19 @@
 
 These files live **outside** `web/` so GitHub Pages does not publish them.
 
-Re-enable a section by either:
+Re-enable via `scripts/enable_yt_charts.py --section {creators|duration|upload_clock}`
+(fails closed unless dependent `config/review_log.csv` rows are non-UNSET), or manually:
 
-1. Manually copying the HTML fragment into `web/index.html` and adding the section id to `ENABLED_SECTIONS` in `web/js/sections.js`, or
-2. Running a small build/copy step that injects the fragment before publish (not automated yet).
+1. Copy the HTML fragment into `web/index.html`
+2. Add the section id to `ENABLED_SECTIONS` and the payload path to `ENABLED_DATA` in `web/js/sections.js`
+3. Copy the payload from `data/unpublished/web_ready/` into `web/data/`
+4. Run `scripts/verify_web_data.py`
 
 Fragments:
 
-- `scrolly-3.html` — duration / YouTube charts (disabled)
-- `scrolly-5.html` — comments (disabled)
-- `scrolly-7.html` — Douyin (disabled)
-- `scrolly-8.html` — upload clock / extras (disabled)
-- `creator_layer.html` — Map 1 creator overlay (disabled)
+- `scrolly-3.html` — creators (`charts_yt/creators.js`)
+- `scrolly-5.html` — duration (`charts_yt/duration.js`)
+- `scrolly-7.html` — Douyin (legacy)
+- `scrolly-8.html` — comments (legacy)
+- `scrolly-9.html` — upload clock (`charts_yt/upload_clock.js`)
+- `creator_layer.html` — Map 1 creator overlay (legacy)

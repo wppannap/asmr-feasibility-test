@@ -1,4 +1,4 @@
-/* Upload clock: JP/KR/TW/HK night profile (unpublished module). */
+/* Upload clock: 24h radial profiles JP/KR/TW/HK (unpublished). */
 import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js";
 import { renderReviewBanner } from "./review.js";
 
@@ -6,6 +6,7 @@ const RULES = [
   { id: "strict", label: "strict" },
   { id: "title_only", label: "title_only" },
 ];
+const REGIONS = ["JP", "KR", "TW", "HK"];
 
 let ctx = null;
 
@@ -14,17 +15,15 @@ export function render(container, data) {
   const payload = data.upload_clock || data;
   const meta = payload.meta || {};
   const rows = payload.rows || [];
+  const profiles = payload.hourly_profiles || [];
   const caveatEl = data.caveatEl;
 
   const wrap = d3.select(container);
-  wrap.append("h3").attr("class", "chart-section-title").text("Upload clock · declared country");
+  wrap.append("h3").attr("class", "chart-section-title").text("Upload clock · local hour");
   const ok = renderReviewBanner(wrap, meta);
   setCaveat(caveatEl, meta.caveats || []);
   if (meta.jp_depends_on_rule) {
-    wrap
-      .append("p")
-      .attr("class", "chart-note")
-      .text("JP result depends on the rule");
+    wrap.append("p").attr("class", "chart-note").text("JP result depends on the rule");
   }
   wrap
     .append("p")
@@ -32,7 +31,7 @@ export function render(container, data) {
     .text("Exact :00/:30 times often mean scheduled publishing.");
   if (!ok) return;
 
-  ctx = { rows, rule: "strict", meta };
+  ctx = { rows, profiles, rule: "strict", meta };
   const controls = wrap.append("div").attr("class", "control-row chart-controls");
   controls.append("span").attr("class", "control-label").text("Rule");
   const seg = controls.append("div").attr("class", "seg");
@@ -55,10 +54,6 @@ export function render(container, data) {
   draw();
 }
 
-function filtered() {
-  return ctx.rows.filter((r) => r.rule === ctx.rule);
-}
-
 function tableRows() {
   return {
     columns: [
@@ -71,16 +66,18 @@ function tableRows() {
       "diff_CI",
       "sleep_gt_not",
     ],
-    rows: filtered().map((r) => [
-      r.region,
-      r.script_group,
-      r.n_ch_sleep ?? r.n_ch_s,
-      r.n_ch_not ?? r.n_ch_n,
-      fmtCI(r.night_sleep_ci || r.night_sleep_CI),
-      fmtCI(r.night_not_ci || r.night_not_CI),
-      fmtCI(r.diff_ci || r.diff_sleep_minus_not_CI),
-      String(r.sleep_gt_not ?? r.direction_sleep_gt_not ?? ""),
-    ]),
+    rows: ctx.rows
+      .filter((r) => r.rule === ctx.rule)
+      .map((r) => [
+        r.region,
+        r.script_group,
+        r.n_ch_sleep,
+        r.n_ch_not,
+        fmtCI(r.night_sleep?.ci95 || r.night_sleep_CI),
+        fmtCI(r.night_not?.ci95 || r.night_not_CI),
+        fmtCI(r.night_diff_sleep_minus_not?.ci95 || r.diff_ci),
+        String(r.direction_sleep_gt_not ?? ""),
+      ]),
   };
 }
 
@@ -92,50 +89,79 @@ function fmtCI(ci) {
 function draw() {
   const mount = ctx.mount;
   clear(mount);
-  const data = filtered();
-  // Aggregate night midpoint by region for a simple linear profile bars
-  const byRegion = d3.rollups(
-    data,
-    (v) => {
-      const mids = v
-        .map((r) => {
-          const ci = r.night_sleep_ci || r.night_sleep_CI;
-          return Array.isArray(ci) ? (ci[0] + ci[1]) / 2 : null;
-        })
-        .filter((x) => x != null);
-      return d3.mean(mids);
-    },
-    (d) => d.region
-  );
-  const w = Math.max(320, mount.clientWidth || 480);
-  const h = 260;
+  const w = Math.max(320, mount.clientWidth || 640);
+  const cell = Math.min(280, Math.floor(w / 2) - 8);
   const svg = d3
     .select(mount)
     .append("svg")
-    .attr("viewBox", `0 0 ${w} ${h}`)
+    .attr("viewBox", `0 0 ${w} ${cell * 2 + 16}`)
     .attr("width", "100%")
     .attr("role", "img")
-    .attr("aria-label", "Night upload share by region");
-  const margin = { top: 16, right: 16, bottom: 36, left: 48 };
-  const iw = w - margin.left - margin.right;
-  const ih = h - margin.top - margin.bottom;
-  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-  const x = d3
-    .scaleBand()
-    .domain(byRegion.map((d) => d[0]))
-    .range([0, iw])
-    .padding(0.3);
-  const y = d3.scaleLinear().domain([0, 1]).range([ih, 0]);
-  g.append("g").attr("transform", `translate(0,${ih})`).call(d3.axisBottom(x));
-  g.append("g").call(d3.axisLeft(y).ticks(5, "~%"));
-  g.selectAll("rect")
-    .data(byRegion)
-    .join("rect")
-    .attr("x", (d) => x(d[0]))
-    .attr("width", x.bandwidth())
-    .attr("y", (d) => y(d[1] || 0))
-    .attr("height", (d) => ih - y(d[1] || 0))
-    .attr("fill", "#4a6fa5");
+    .attr("aria-label", "24-hour upload radial profiles");
+
+  REGIONS.forEach((region, i) => {
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    const g = svg
+      .append("g")
+      .attr("transform", `translate(${col * cell + cell / 2},${row * cell + cell / 2 + 8})`);
+    g.append("text")
+      .attr("text-anchor", "middle")
+      .attr("y", -cell / 2 + 14)
+      .attr("font-size", 12)
+      .attr("font-weight", 700)
+      .text(region);
+    const sleep = ctx.profiles.find(
+      (p) => p.rule === ctx.rule && p.region === region && p.arm === "sleep"
+    );
+    const not = ctx.profiles.find(
+      (p) => p.rule === ctx.rule && p.region === region && p.arm === "not"
+    );
+    drawRadial(g, sleep?.profile, cell * 0.38, "#3d6b8b");
+    drawRadial(g, not?.profile, cell * 0.38, "#8a6b4a", true);
+  });
+}
+
+function drawRadial(g, profile, R, color, dashed = false) {
+  if (!profile?.mean) return;
+  const angle = d3.scaleLinear().domain([0, 24]).range([0, 2 * Math.PI]);
+  const max = d3.max(profile.mean) || 0.1;
+  const r = d3.scaleLinear().domain([0, max]).range([0, R]);
+  const line = d3
+    .lineRadial()
+    .angle((d, i) => angle(i))
+    .radius((d) => r(d))
+    .curve(d3.curveCardinalClosed);
+  // band
+  if (profile.ci95_low && profile.ci95_high) {
+    const area = d3
+      .areaRadial()
+      .angle((d, i) => angle(i))
+      .innerRadius((d, i) => r(profile.ci95_low[i]))
+      .outerRadius((d, i) => r(profile.ci95_high[i]))
+      .curve(d3.curveCardinalClosed);
+    g.append("path")
+      .attr("d", area(profile.mean))
+      .attr("fill", color)
+      .attr("opacity", 0.15);
+  }
+  g.append("path")
+    .attr("d", line(profile.mean))
+    .attr("fill", "none")
+    .attr("stroke", color)
+    .attr("stroke-width", 1.5)
+    .attr("stroke-dasharray", dashed ? "3 2" : null);
+  // hour ticks
+  for (let h = 0; h < 24; h += 6) {
+    const a = angle(h) - Math.PI / 2;
+    g.append("text")
+      .attr("x", Math.cos(a) * (R + 10))
+      .attr("y", Math.sin(a) * (R + 10))
+      .attr("text-anchor", "middle")
+      .attr("dominant-baseline", "middle")
+      .attr("font-size", 9)
+      .text(`${h}`);
+  }
 }
 
 export function update() {}
