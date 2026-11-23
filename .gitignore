@@ -5,6 +5,7 @@
 /trial_scrapers/
 .env*
 *.csv
+!config/*.csv
 *.log
 browser_data/
 .DS_Store

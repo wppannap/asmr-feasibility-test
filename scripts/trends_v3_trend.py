@@ -175,10 +175,23 @@ def main() -> int:
         med_val = float(complete_raw.median()) if complete_raw.notna().any() else np.nan
         noise = med_abs / med_val if med_val and med_val > 0 else np.nan
 
+        # Canonical strict_ok (same as trends_v3_fix / build_trends_v3c):
+        # do NOT use `float(zero_week_share or 1)` — 0.0 is a valid share.
+        zw = meta.get("zero_week_share")
+        try:
+            zw_f = float(zw) if zw is not None else None
+        except (TypeError, ValueError):
+            zw_f = None
+        nd = meta.get("n_distinct_values")
+        try:
+            nd_i = int(nd) if nd is not None else 0
+        except (TypeError, ValueError):
+            nd_i = 0
         strict_ok = (
             meta.get("quality") == "ok"
-            and float(meta.get("zero_week_share") or 1) < 0.2
-            and int(meta.get("n_distinct_values") or 0) >= 30
+            and zw_f is not None
+            and zw_f < 0.2
+            and nd_i >= 30
         )
 
         if meta.get("quality") == "low_volume":
