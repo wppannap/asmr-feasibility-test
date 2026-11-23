@@ -1,0 +1,225 @@
+# Classification v2 keyword lists.
+# Haystack: title + tags + description_short + topicCategories (lowercased),
+# except nature_title_only which matches TITLE only.
+
+asmr_label:
+  - asmr
+  - 耳かき
+  - 耳そうじ
+  - 耳垢
+  - 耳掃除
+  - 耳夾
+  - 耳用
+  - 挖耳
+  - 採耳
+  - 采耳
+  - 掏耳
+  - 擦耳
+  - 耳揉み
+  - 耳检査
+  - ear cleaning
+  - ear pick
+  - earwax
+  - ear spa
+  - ear message
+  - ear candl
+  - ear candle
+  - ear whisk
+  - ear brush
+  - ear muff
+  - ear lamp
+  - ear simulator
+  - earphone asmr
+  - 귀청소
+  - 귀스파
+  - limpieza de oídos
+  - "nettoyage d'oreilles"
+  - ohrenreinigung
+
+human_trigger:
+  - tapping
+  - 敲擊
+  - 敲打
+  - 敲敲
+  - gentle tapping
+  - soft tapping
+  - whisper
+  - whispers
+  - 耳語
+  - 耳语
+  - susurro
+  - susurros
+  - flüstern
+  - fluisteren
+  - sussurro
+  - sussurri
+  - ear cleaning
+  - 採耳
+  - 采耳
+  - 耳かき
+  - 掏耳
+  - 挖耳
+  - brushing
+  - hair brushing
+  - 刷毛
+  - 梳理
+  - brush
+  - massage
+  - 按摩
+  - 揉
+  - kneading
+  - scratching
+  - scratch
+  - mouth sounds
+  - 口腔音
+  - chewing
+  - 咀嚼
+  - 咀嚼音
+  - munching
+  - eating sound
+  - mukbang
+  - 吃播
+  - slime
+  - asmr slime
+  - slimy
+  - 黏液
+  - roleplay
+  - role play
+  - role-play
+  - 角色扮演
+  - personal attention
+  - 個人關注
+  - 个人关注
+  - crinkle
+  - squelch
+  - soap cutting
+  - 切皂
+  - unboxing
+  - 開箱
+  - page turn
+  - 翻書
+  - 翻頁
+  - typing
+  - 鍵盤
+  - keyboard
+  - mic
+  - 麥克風
+  - 麦克风
+
+# Object/action triggers (also block nature-title-only ambient).
+object_action_trigger:
+  - tapping
+  - brushing
+  - brush
+  - scratching
+  - scratch
+  - crinkle
+  - squelch
+  - slime
+  - soap cutting
+  - unboxing
+  - page turn
+  - typing
+  - keyboard
+  - mic
+  - chewing
+  - 咀嚼
+  - mouth sounds
+  - 口腔音
+  - massage
+  - 按摩
+  - whisper
+  - 耳かき
+  - 掏耳
+  - cracking
+  - shampoo
+  - nape
+  - tracing
+  - barber
+  - 理容
+  - シャンプー
+
+# Strong ambient / white-noise family — match anywhere in haystack.
+strong_ambient:
+  - white noise
+  - whitenoise
+  - 白噪音
+  - 白噪声
+  - brown noise
+  - pink noise
+  - 棕色噪音
+  - 棕噪音
+  - 粉紅噪音
+  - 粉红噪音
+  - binaural
+  - 雙耳
+  - brainwave
+  - 腦波
+  - 脑波
+  - fan noise
+  - fan sounds
+  - vacuum
+  - womb sounds
+  - heartbeat
+
+# Generic nature — TITLE only, and only if no human/object trigger.
+nature_title_only:
+  - rain
+  - thunder
+  - ocean
+  - waves
+  - water
+  - fireplace
+  - forest
+  - nature sounds
+  - ambience
+  - ambient
+  - 雨聲
+  - 雨音
+  - 雷聲
+  - 海浪
+  - 壁爐
+  - 水聲
+
+sleep_strict_latin:
+  - sleep
+  - sleeping
+  - asleep
+  - insomni
+  - dormir
+  - sommeil
+  - schlaf
+sleep_strict_substring:
+  - 助眠
+  - 哄睡
+  - 失眠
+  - 不眠
+  - 睡眠
+  - 入睡
+  - 睡前
+  - 睡觉
+  - 睡覺
+  - 眠
+  - 寝
+  - 수면
+  - 불면
+  - 眠り
+  - 眠る
+  - 不眠症
+  - 深度睡眠
+  - 哄寶
+  - 哄睡神曲
+
+relax_only:
+  - relax
+  - relaxing
+  - relaxation
+  - meditation
+  - 冥想
+  - 放鬆
+  - healing
+  - 療癒
+  - yoga
+  - 瑜伽
+  - stress relief
+  - anxiety
