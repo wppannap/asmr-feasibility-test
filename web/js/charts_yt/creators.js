@@ -1,11 +1,20 @@
-/* Dual-core orbital bubbles — pack layout + spotlight hover. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261125c";
-import { themeColors } from "../theme.js?v=20261125c";
-import { renderReviewBanner } from "./review.js?v=20261125c";
+/* Creators · declared country — constellation star-map on warm paper. */
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126o";
+import { themeColors } from "../theme.js?v=20261126o";
+import { renderReviewBanner } from "./review.js?v=20261126o";
 
 const RULES = [
   { id: "strict", label: "strict" },
   { id: "title_only", label: "title_only" },
+];
+
+/** Display order + muted regional palette (Unknown ignored). */
+const REGIONS = [
+  { id: "HK", color: "#c4785a", label: "Hong Kong" }, // muted terracotta
+  { id: "KR", color: "#7a92a8", label: "South Korea" }, // dusty blue
+  { id: "US", color: "#8a9a7b", label: "United States" }, // muted sage
+  { id: "JP", color: "#9a8fb0", label: "Japan" }, // soft lavender
+  { id: "TW", color: "#c4a35a", label: "Taiwan" }, // muted golden
 ];
 
 let ctx = null;
@@ -22,13 +31,17 @@ export function render(container, data) {
   wrap.append("h3").attr("class", "chart-section-title").text("Creators · declared country");
   wrap
     .append("p")
+    .attr("class", "chart-subtitle chart-subtitle-plain")
+    .text("Top 5% of channels’ share of videos — each region as a quiet constellation.");
+  wrap
+    .append("p")
     .attr("class", "chart-subtitle")
     .text(meta.scope_line || "videos labelled as ASMR (excluding ambient-noise content)");
   const ok = renderReviewBanner(wrap, meta);
   setCaveat(caveatEl, meta.caveats || []);
   if (!ok) return;
 
-  ctx = { rows, rule: "title_only" };
+  ctx = { rows, rule: "title_only", meta };
   const controls = wrap.append("div").attr("class", "control-row chart-controls");
   controls.append("span").attr("class", "control-label").text("Rule");
   const seg = controls.append("div").attr("class", "seg");
@@ -66,13 +79,14 @@ export function render(container, data) {
 }
 
 function filtered() {
+  const allow = new Set(REGIONS.map((r) => r.id));
   return ctx.rows
-    .filter((r) => r.rule === ctx.rule)
+    .filter((r) => r.rule === ctx.rule && allow.has(String(r.country || "").toUpperCase()))
     .slice()
     .sort((a, b) => {
-      if (a.country === "unknown") return 1;
-      if (b.country === "unknown") return -1;
-      return (b.n_channels || 0) - (a.n_channels || 0);
+      const ia = REGIONS.findIndex((r) => r.id === String(a.country).toUpperCase());
+      const ib = REGIONS.findIndex((r) => r.id === String(b.country).toUpperCase());
+      return ia - ib;
     });
 }
 
@@ -91,145 +105,245 @@ function tableRows() {
   };
 }
 
+/** Deterministic PRNG from string seed. */
+function mulberry32(seed) {
+  let t = seed >>> 0;
+  return function () {
+    t += 0x6d2b79f5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function hashSeed(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/** Sparse constellation edges: connect each star to its 1–2 nearest neighbours. */
+function constellationEdges(stars) {
+  const edges = [];
+  const seen = new Set();
+  stars.forEach((a, i) => {
+    const dist = stars
+      .map((b, j) => ({ j, d: (a.x - b.x) ** 2 + (a.y - b.y) ** 2 }))
+      .filter((o) => o.j !== i)
+      .sort((u, v) => u.d - v.d);
+    const k = i % 3 === 0 ? 2 : 1;
+    for (let n = 0; n < k && n < dist.length; n++) {
+      const j = dist[n].j;
+      const key = i < j ? `${i}-${j}` : `${j}-${i}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      edges.push([i, j]);
+    }
+  });
+  return edges;
+}
+
+function sharePct(row) {
+  const s = row?.share_videos_from_top5pct_channels;
+  if (s == null || !Number.isFinite(s)) return null;
+  return Math.round(s * 100);
+}
+
 function draw() {
   const mount = ctx.mount;
   clear(mount);
-  const data = filtered();
-  const w = Math.max(300, mount.clientWidth || 480);
-  const h = Math.max(320, Math.min(520, w * 0.85));
+  const rows = filtered();
   const c = themeColors();
+  const paper = c.bg || "#fdfcfa";
+  const ink = c.ink || "#121622";
+  const muted = c.muted || "#525b70";
 
-  const root = {
-    children: data.map((d) => ({
-      ...d,
-      value: Math.max(1, d.n_channels || 1),
-    })),
-  };
-
-  const pack = d3.pack().size([w - 8, h - 8]).padding(4);
-  const hierarchy = pack(d3.hierarchy(root).sum((d) => d.value));
-  const leaves = hierarchy.leaves();
+  const w = Math.max(320, mount.clientWidth || 640);
+  const mobile = w < 560;
+  const legendH = mobile ? 118 : 96;
+  const skyH = mobile ? 340 : 400;
+  const margin = { top: 12, right: 16, bottom: 8, left: 16 };
+  const iw = w - margin.left - margin.right;
+  const totalH = skyH + legendH + 8;
 
   const svg = d3
     .select(mount)
     .append("svg")
-    .attr("viewBox", `0 0 ${w} ${h}`)
+    .attr("viewBox", `0 0 ${w} ${totalH}`)
     .attr("width", "100%")
     .attr("role", "img")
-    .attr("aria-label", "Orbital bubbles of creators by declared country");
+    .attr("aria-label", "Constellation map of top-5% channel video share by declared country");
 
-  const g = svg.append("g").attr("transform", "translate(4,4)");
-  const nodes = g
-    .selectAll("g.bubble")
-    .data(leaves)
-    .join("g")
-    .attr("class", "bubble")
-    .attr("transform", (d) => `translate(${d.x},${d.y})`);
+  // Soft ivory sky (no dark navy)
+  svg
+    .append("rect")
+    .attr("width", w)
+    .attr("height", skyH)
+    .attr("fill", paper);
 
-  // Subtle outer orbital rings on major bubbles
-  nodes
-    .filter((d) => d.r > 22 && d.data.country !== "unknown")
-    .append("circle")
-    .attr("class", "bubble-orbit")
-    .attr("r", (d) => d.r + 5)
-    .attr("fill", "none")
-    .attr("stroke", c.line)
-    .attr("stroke-width", 0.8)
-    .attr("stroke-dasharray", "2.5 2.5")
-    .attr("opacity", 0.7);
+  const sky = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+  const fieldH = skyH - margin.top - 8;
 
-  nodes
-    .append("circle")
-    .attr("class", "bubble-shell")
-    .attr("r", (d) => d.r)
-    .attr("fill", (d) => (d.data.country === "unknown" ? "transparent" : c.bg2))
-    .attr("stroke", (d) => (d.data.country === "unknown" ? c.muted : c.accent))
-    .attr("stroke-width", (d) => (d.data.country === "unknown" ? 1.2 : 1))
-    .attr("stroke-dasharray", (d) => (d.data.country === "unknown" ? "3 2.5" : null))
-    .attr("opacity", (d) => (d.data.country === "unknown" ? 0.55 : 0.95));
-
-  nodes
-    .append("circle")
-    .attr("class", "bubble-core")
-    .attr("r", (d) => {
-      const share = d.data.share_videos_from_top5pct_channels;
-      if (share == null) return Math.max(2, d.r * 0.15);
-      return Math.max(2.5, d.r * (0.2 + 0.55 * share));
-    })
-    .attr("fill", (d) => (d.data.country === "unknown" ? c.muted : c.accent))
-    .attr("opacity", (d) => (d.data.country === "unknown" ? 0.25 : 0.55));
-
-  // Spotlight ring (hidden until hover)
-  nodes
-    .append("circle")
-    .attr("class", "bubble-spotlight")
-    .attr("r", (d) => d.r + 3)
-    .attr("fill", "none")
-    .attr("stroke", c.accent)
-    .attr("stroke-width", 1.6)
-    .attr("opacity", 0);
-
-  nodes
-    .append("title")
-    .text(
-      (d) =>
-        `${d.data.country}: ${d.data.n_channels} channels` +
-        (d.data.share_videos_from_top5pct_channels != null
-          ? `, top5% share ${fmt(d.data.share_videos_from_top5pct_channels * 100, 1)}%`
-          : "")
-    );
-
-  nodes
-    .filter((d) => d.r > 18)
-    .append("text")
-    .attr("text-anchor", "middle")
-    .attr("dy", "0.35em")
-    .attr("font-size", (d) => Math.min(12, d.r * 0.35))
-    .attr("fill", c.ink)
-    .attr("pointer-events", "none")
-    .text((d) => {
-      const share =
-        d.data.share_videos_from_top5pct_channels != null
-          ? ` ${fmt(d.data.share_videos_from_top5pct_channels * 100, 0)}%`
-          : "";
-      return `${d.data.country}${share}`;
-    });
-
-  // Editorial spotlight hover: highlight + dim others
-  nodes
-    .style("cursor", "pointer")
-    .on("pointerenter", function () {
-      nodes.attr("opacity", 0.35);
-      d3.select(this).attr("opacity", 1);
-      d3.select(this).select(".bubble-spotlight").attr("opacity", 1);
-    })
-    .on("pointerleave", function () {
-      nodes.attr("opacity", 1);
-      nodes.select(".bubble-spotlight").attr("opacity", 0);
-    });
-
-  const known = leaves.filter((d) => d.data.country !== "unknown");
-  const top = known.sort((a, b) => b.data.n_channels - a.data.n_channels)[0];
-  const unk = leaves.find((d) => d.data.country === "unknown");
-  function callout(node, text) {
-    if (!node) return;
-    const lx = Math.min(w - 12, node.x + node.r + 18);
-    const ly = Math.max(12, node.y - node.r - 6);
-    g.append("path")
-      .attr("class", "anno-leader")
-      .attr(
-        "d",
-        `M${node.x + node.r * 0.7},${node.y - node.r * 0.7} Q${node.x + node.r + 10},${ly} ${lx},${ly}`
-      );
-    g.append("text")
-      .attr("class", "anno-label")
-      .attr("x", lx + 2)
-      .attr("y", ly + 3)
-      .attr("fill", c.muted)
-      .text(text);
+  // Distant field stars — many, tiny, dim
+  const fieldRand = mulberry32(0x51a7e);
+  const fieldN = Math.round(iw * fieldH * 0.0011);
+  for (let i = 0; i < fieldN; i++) {
+    sky
+      .append("circle")
+      .attr("class", "field-star")
+      .attr("cx", fieldRand() * iw)
+      .attr("cy", fieldRand() * fieldH)
+      .attr("r", 0.4 + fieldRand() * 0.7)
+      .attr("fill", muted)
+      .attr("opacity", 0.08 + fieldRand() * 0.12);
   }
-  if (top) callout(top, top.data.country);
-  if (unk) callout(unk, "unknown");
+
+  // Region anchors across a wide landscape
+  const anchors = REGIONS.map((reg, i) => {
+    const col = i % 3;
+    const row = Math.floor(i / 3);
+    const ax = mobile
+      ? iw * (0.22 + col * 0.32)
+      : iw * (0.12 + i * 0.19);
+    const ay = mobile
+      ? fieldH * (0.28 + row * 0.48)
+      : fieldH * (0.32 + (i % 2) * 0.28 + (i === 4 ? -0.06 : 0));
+    return { ...reg, ax, ay };
+  });
+
+  const byId = new Map(rows.map((r) => [String(r.country).toUpperCase(), r]));
+
+  anchors.forEach((reg) => {
+    const row = byId.get(reg.id);
+    const pct = sharePct(row);
+    const nCh = row?.n_channels || 40;
+    // Star count: modest, scales gently with share (TW denser, still small)
+    const nStars = Math.round(9 + (pct != null ? pct * 0.14 : 8) + Math.min(8, nCh / 80));
+    const spread = mobile ? 42 : 52;
+    const rand = mulberry32(hashSeed(`${ctx.rule}-${reg.id}-const`));
+
+    const stars = [];
+    for (let i = 0; i < nStars; i++) {
+      // Organic jitter — avoid neat polygons
+      const ang = rand() * Math.PI * 2;
+      const rad = spread * (0.25 + rand() * 0.85) * (0.55 + rand() * 0.55);
+      const jx = (rand() - 0.5) * spread * 0.35;
+      const jy = (rand() - 0.5) * spread * 0.35;
+      stars.push({
+        x: reg.ax + Math.cos(ang) * rad + jx,
+        y: reg.ay + Math.sin(ang) * rad * 0.72 + jy,
+        bright: rand() > 0.78,
+      });
+    }
+
+    const g = sky.append("g").attr("class", `constellation c-${reg.id}`);
+    const edges = constellationEdges(stars);
+
+    edges.forEach(([i, j]) => {
+      g.append("line")
+        .attr("class", "constellation-link")
+        .attr("x1", stars[i].x)
+        .attr("y1", stars[i].y)
+        .attr("x2", stars[j].x)
+        .attr("y2", stars[j].y)
+        .attr("stroke", reg.color)
+        .attr("stroke-width", 0.6)
+        .attr("opacity", 0.28);
+    });
+
+    stars.forEach((s) => {
+      g.append("circle")
+        .attr("class", "constellation-star")
+        .attr("cx", s.x)
+        .attr("cy", s.y)
+        .attr("r", s.bright ? 1.65 : 1.05)
+        .attr("fill", reg.color)
+        .attr("opacity", s.bright ? 0.75 : 0.42);
+    });
+
+    // Unobtrusive label near cluster
+    const lx = reg.ax;
+    const ly = Math.min(fieldH - 4, Math.max(...stars.map((s) => s.y)) + 16);
+    const label = pct != null ? `${reg.id}  ${pct}%` : reg.id;
+    g.append("text")
+      .attr("class", "constellation-label")
+      .attr("x", lx)
+      .attr("y", ly)
+      .attr("text-anchor", "middle")
+      .attr("font-size", 11)
+      .attr("font-family", 'Georgia, "Times New Roman", serif')
+      .attr("letter-spacing", "0.04em")
+      .attr("fill", ink)
+      .attr("opacity", reg.id === "TW" ? 0.9 : 0.72)
+      .attr("font-weight", reg.id === "TW" ? 600 : 400)
+      .text(label);
+
+    g.append("title").text(
+      `${reg.label}: top 5% of channels account for ${pct != null ? pct + "%" : "—"} of videos` +
+        (row ? ` (${row.n_channels} channels)` : "")
+    );
+  });
+
+  // Compact horizontal bar legend (share comparison)
+  const leg = svg
+    .append("g")
+    .attr("class", "share-legend")
+    .attr("transform", `translate(${margin.left},${skyH + 4})`);
+
+  leg
+    .append("text")
+    .attr("x", 0)
+    .attr("y", 12)
+    .attr("font-size", 10)
+    .attr("fill", muted)
+    .attr("letter-spacing", "0.03em")
+    .text("Top 5% of channels · share of videos");
+
+  const barMax = iw * (mobile ? 0.55 : 0.62);
+  const barX = mobile ? 78 : 88;
+  const rowH = mobile ? 16 : 14;
+  const maxPct = 50;
+
+  anchors.forEach((reg, i) => {
+    const row = byId.get(reg.id);
+    const pct = sharePct(row) ?? 0;
+    const y0 = 28 + i * rowH;
+    const bw = (pct / maxPct) * barMax;
+    const isTw = reg.id === "TW";
+
+    leg
+      .append("text")
+      .attr("x", 0)
+      .attr("y", y0 + 9)
+      .attr("font-size", 10)
+      .attr("font-variant-numeric", "tabular-nums")
+      .attr("fill", isTw ? ink : muted)
+      .attr("font-weight", isTw ? 600 : 400)
+      .text(reg.id);
+
+    leg
+      .append("rect")
+      .attr("x", barX)
+      .attr("y", y0 + 2)
+      .attr("width", Math.max(1, bw))
+      .attr("height", 7)
+      .attr("rx", 1)
+      .attr("fill", reg.color)
+      .attr("opacity", isTw ? 0.85 : 0.55);
+
+    leg
+      .append("text")
+      .attr("x", barX + bw + 6)
+      .attr("y", y0 + 9)
+      .attr("font-size", 10)
+      .attr("font-variant-numeric", "tabular-nums")
+      .attr("fill", isTw ? ink : muted)
+      .attr("font-weight", isTw ? 600 : 400)
+      .text(`${pct}%`);
+  });
 }
 
 export function update() {
