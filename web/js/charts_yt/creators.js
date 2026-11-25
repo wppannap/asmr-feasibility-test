@@ -1,7 +1,7 @@
 /* Creators · declared country — deep-night starfield constellations. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126s";
-import { themeColors } from "../theme.js?v=20261126s";
-import { renderReviewBanner } from "./review.js?v=20261126s";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126p";
+import { themeColors } from "../theme.js?v=20261126p";
+import { renderReviewBanner } from "./review.js?v=20261126p";
 
 const RULES = [
   { id: "strict", label: "strict" },
@@ -11,8 +11,6 @@ const RULES = [
 /** Harmonious celestial palette; unknown is muted silver. */
 const PALETTE = ["#f4a259", "#66c2cf", "#e88d72", "#b4a7e8", "#8fb8ed", "#95c9a8", "#d4a574", "#7eb8c9", "#c9a0dc", "#a8c686"];
 const UNKNOWN_COLOR = "#8a94a8";
-/** Page canvas — soft edge of the sky blends into this. */
-const PAGE_BG = "#fdfcfa";
 
 let ctx = null;
 let resizeBound = false;
@@ -29,7 +27,9 @@ export function render(container, data) {
   wrap
     .append("p")
     .attr("class", "chart-subtitle chart-subtitle-plain")
-    .text("Top 5% of channels’ share of videos — each country as a constellation in deep night.");
+    .text(
+      "Constellation size & bright stars = top 5% creators’ video share; star count = channels."
+    );
   wrap
     .append("p")
     .attr("class", "chart-subtitle")
@@ -143,8 +143,10 @@ function constellationEdges(stars, rand) {
       .sort((u, v) => u.d - v.d);
     const k = rand() < 0.35 ? 2 : 1;
     for (let n = 0; n < k && n < dist.length; n++) {
-      // occasionally skip nearest for a more broken star-chart look
-      const pick = n === 0 && rand() < 0.22 && dist.length > 2 ? dist[1 + Math.floor(rand() * Math.min(2, dist.length - 1))] : dist[n];
+      const pick =
+        n === 0 && rand() < 0.22 && dist.length > 2
+          ? dist[1 + Math.floor(rand() * Math.min(2, dist.length - 1))]
+          : dist[n];
       const j = pick.j;
       const key = i < j ? `${i}-${j}` : `${j}-${i}`;
       if (used.has(key)) continue;
@@ -156,47 +158,46 @@ function constellationEdges(stars, rand) {
 }
 
 /**
- * Cluster radius driven mainly by top-5% share (percentage),
- * with a lighter n_channels contribution so dense markets still feel full.
+ * Spread strongly tracks top-5% share so ~50% (TW) is ~2.2–2.5× ~23% (DE).
+ * Channel count is only a light densify term.
  */
 function clusterSpread(row, mobile) {
   const share = shareOf(row);
-  const nCh = row.n_channels || 30;
-  // Share dominates size (TW ~50% clearly larger than DE ~23%); channels are a light dense-fill term.
-  const shareTerm = (mobile ? 64 : 86) * Math.pow(Math.max(0.18, share) / 0.5, 1.45);
-  const channelTerm = Math.sqrt(nCh) * (mobile ? 0.3 : 0.4);
-  return (mobile ? 14 : 18) + shareTerm + channelTerm;
+  const t = Math.max(0, Math.min(1, (share - 0.22) / (0.5 - 0.22)));
+  const mul = 1 + Math.pow(t, 0.85) * 1.55; // ~1.0 @22% → ~2.55 @50%
+  const base = mobile ? 30 : 38;
+  const channelTerm = Math.sqrt(row.n_channels || 30) * (mobile ? 0.1 : 0.14);
+  return base * mul + channelTerm;
 }
 
-/** Organic, asymmetric anchors — star-chart scatter, not a lattice. */
+/** Organic anchors kept inside the opaque sky core so labels never sit on the fade. */
 function placeAnchors(rows, iw, ih, mobile) {
-  const rand = mulberry32(hashSeed(`sky-anchors-${ctx.rule}-${rows.length}-v3`));
-  // Hand-jittered celestial slots (deterministic) so the sky never reads as rows/cols
+  const rand = mulberry32(hashSeed(`sky-anchors-${ctx.rule}-${rows.length}-v4`));
   const slots = [
-    [0.18, 0.22],
-    [0.62, 0.14],
-    [0.88, 0.28],
-    [0.34, 0.38],
-    [0.72, 0.44],
-    [0.12, 0.58],
-    [0.48, 0.62],
-    [0.86, 0.68],
-    [0.28, 0.78],
-    [0.58, 0.86],
-    [0.78, 0.78],
+    [0.28, 0.26],
+    [0.58, 0.2],
+    [0.78, 0.3],
+    [0.36, 0.4],
+    [0.68, 0.44],
+    [0.22, 0.54],
+    [0.5, 0.58],
+    [0.76, 0.62],
+    [0.32, 0.72],
+    [0.56, 0.76],
+    [0.72, 0.72],
   ];
   const nodes = rows.map((r, i) => {
     const spread = clusterSpread(r, mobile);
     const slot = slots[i % slots.length];
-    let x = iw * (slot[0] + (rand() - 0.5) * 0.1);
-    let y = ih * (slot[1] + (rand() - 0.5) * 0.1);
-    x = Math.max(iw * 0.1, Math.min(iw * 0.9, x));
-    y = Math.max(ih * 0.12, Math.min(ih * 0.88, y));
-    return { row: r, x, y, r: spread * 0.85 + (mobile ? 10 : 12), spread };
+    let x = iw * (slot[0] + (rand() - 0.5) * 0.08);
+    let y = ih * (slot[1] + (rand() - 0.5) * 0.08);
+    // Stay inside ~central opaque mask (fade begins ~52% radius)
+    x = Math.max(iw * 0.18, Math.min(iw * 0.82, x));
+    y = Math.max(ih * 0.18, Math.min(ih * 0.8, y));
+    return { row: r, x, y, r: spread * 0.82 + (mobile ? 8 : 10), spread };
   });
 
-  // Light separation only — keep the asymmetric scatter
-  for (let iter = 0; iter < 28; iter++) {
+  for (let iter = 0; iter < 32; iter++) {
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const a = nodes[i];
@@ -204,9 +205,9 @@ function placeAnchors(rows, iw, ih, mobile) {
         let dx = b.x - a.x;
         let dy = b.y - a.y;
         let dist = Math.hypot(dx, dy) || 0.01;
-        const minD = (a.r + b.r) * 0.78;
+        const minD = (a.r + b.r) * 0.72;
         if (dist < minD) {
-          const push = ((minD - dist) / dist) * 0.35;
+          const push = ((minD - dist) / dist) * 0.38;
           dx *= push;
           dy *= push;
           a.x -= dx;
@@ -215,14 +216,14 @@ function placeAnchors(rows, iw, ih, mobile) {
           b.y += dy;
         }
       }
-      nodes[i].x = Math.max(iw * 0.09, Math.min(iw * 0.91, nodes[i].x));
-      nodes[i].y = Math.max(ih * 0.11, Math.min(ih * 0.88, nodes[i].y));
+      nodes[i].x = Math.max(iw * 0.18, Math.min(iw * 0.82, nodes[i].x));
+      nodes[i].y = Math.max(ih * 0.18, Math.min(ih * 0.8, nodes[i].y));
     }
   }
   return nodes;
 }
 
-/** Irregular star cloud: clumpy + rim stars so share-scaled radius reads clearly. */
+/** Irregular star cloud with rim stars so share-scaled radius reads clearly. */
 function buildStars(anchor, nStars, spread, share, rand) {
   const stars = [];
   const cx = anchor.x;
@@ -236,7 +237,7 @@ function buildStars(anchor, nStars, spread, share, rand) {
   const nClumps = 2 + (rand() < 0.5 ? 1 : 0);
   for (let c = 0; c < nClumps; c++) {
     const a = rand() * Math.PI * 2;
-    const rr = spread * (0.12 + rand() * 0.5);
+    const rr = spread * (0.12 + rand() * 0.48);
     clumps.push({
       x: cx + Math.cos(a) * rr,
       y: cy + Math.sin(a) * rr * squash,
@@ -244,15 +245,14 @@ function buildStars(anchor, nStars, spread, share, rand) {
     });
   }
 
-  // Reserve ~30% of stars near the outer envelope so larger share = visibly bigger cloud
-  const rimN = Math.max(2, Math.round(nStars * (0.22 + share * 0.25)));
+  const rimN = Math.max(2, Math.round(nStars * (0.24 + share * 0.28)));
 
   for (let i = 0; i < nStars; i++) {
     let x;
     let y;
     if (i < rimN) {
-      const a = (i / rimN) * Math.PI * 2 + rand() * 0.5;
-      const rr = spread * (0.72 + rand() * 0.28);
+      const a = (i / rimN) * Math.PI * 2 + rand() * 0.45;
+      const rr = spread * (0.78 + rand() * 0.22);
       const lx = Math.cos(a) * rr;
       const ly = Math.sin(a) * rr * squash;
       x = cx + lx * cosT - ly * sinT;
@@ -298,6 +298,47 @@ function buildStars(anchor, nStars, spread, share, rand) {
   return stars;
 }
 
+/** Keep labels inside the dark core and separate overlapping boxes. */
+function placeLabels(items, iw, ih, mobile) {
+  const padX = iw * 0.16;
+  const padY = ih * 0.16;
+  const approxW = mobile ? 52 : 58;
+  const approxH = mobile ? 12 : 13;
+  const labels = items.map((it) => ({
+    ...it,
+    lx: Math.max(padX, Math.min(iw - padX, it.cx)),
+    ly: Math.max(padY + 8, Math.min(ih - padY, it.preferY)),
+  }));
+
+  for (let iter = 0; iter < 40; iter++) {
+    for (let i = 0; i < labels.length; i++) {
+      for (let j = i + 1; j < labels.length; j++) {
+        const a = labels[i];
+        const b = labels[j];
+        const dx = b.lx - a.lx;
+        const dy = b.ly - a.ly;
+        const overlapX = approxW - Math.abs(dx);
+        const overlapY = approxH - Math.abs(dy);
+        if (overlapX > 0 && overlapY > 0) {
+          const push = 0.5;
+          if (Math.abs(dy) >= Math.abs(dx)) {
+            const s = (overlapY / 2) * push * (dy === 0 ? (i % 2 ? 1 : -1) : Math.sign(dy) || 1);
+            a.ly -= s;
+            b.ly += s;
+          } else {
+            const s = (overlapX / 2) * push * (dx === 0 ? (i % 2 ? 1 : -1) : Math.sign(dx) || 1);
+            a.lx -= s;
+            b.lx += s;
+          }
+        }
+      }
+      labels[i].lx = Math.max(padX, Math.min(iw - padX, labels[i].lx));
+      labels[i].ly = Math.max(padY + 8, Math.min(ih - padY, labels[i].ly));
+    }
+  }
+  return labels;
+}
+
 function draw() {
   const mount = ctx.mount;
   clear(mount);
@@ -305,7 +346,7 @@ function draw() {
   const w = Math.max(320, mount.clientWidth || 640);
   const mobile = w < 560;
   const h = mobile ? 480 : 540;
-  const pad = 8;
+  const pad = 6;
 
   const svg = d3
     .select(mount)
@@ -314,24 +355,41 @@ function draw() {
     .attr("viewBox", `0 0 ${w} ${h}`)
     .attr("width", "100%")
     .attr("role", "img")
-    .attr("aria-label", "Deep-night starfield of creator constellations by declared country");
+    .attr("aria-label", "Deep-night starfield of creator constellations by declared country")
+    .style("overflow", "visible");
 
   const defs = svg.append("defs");
 
-  // Midnight core → cool dusk → warm page ivory (no hard navy box)
+  // Clean deep midnight indigo — no muddy dusk-to-paper colour mix
   const skyGrad = defs
     .append("radialGradient")
     .attr("id", "creators-midnight-sky")
     .attr("cx", "50%")
-    .attr("cy", "44%")
-    .attr("r", "78%");
-  skyGrad.append("stop").attr("offset", "0%").attr("stop-color", "#18223d");
-  skyGrad.append("stop").attr("offset", "38%").attr("stop-color", "#12192c");
-  skyGrad.append("stop").attr("offset", "58%").attr("stop-color", "#1a2236");
-  skyGrad.append("stop").attr("offset", "72%").attr("stop-color", "#3a4154");
-  skyGrad.append("stop").attr("offset", "84%").attr("stop-color", "#8a877e");
-  skyGrad.append("stop").attr("offset", "93%").attr("stop-color", "#e4e1d9");
-  skyGrad.append("stop").attr("offset", "100%").attr("stop-color", PAGE_BG);
+    .attr("cy", "46%")
+    .attr("r", "70%");
+  skyGrad.append("stop").attr("offset", "0%").attr("stop-color", "#1a2642");
+  skyGrad.append("stop").attr("offset", "100%").attr("stop-color", "#11182b");
+
+  // Alpha mask: fully opaque to 52%, gone by 96% (transparent before SVG edges)
+  const feather = defs
+    .append("radialGradient")
+    .attr("id", "creators-sky-feather-grad")
+    .attr("cx", "50%")
+    .attr("cy", "48%")
+    .attr("r", "72%");
+  feather.append("stop").attr("offset", "0%").attr("stop-color", "#fff").attr("stop-opacity", 1);
+  feather.append("stop").attr("offset", "52%").attr("stop-color", "#fff").attr("stop-opacity", 1);
+  feather.append("stop").attr("offset", "78%").attr("stop-color", "#fff").attr("stop-opacity", 0.45);
+  feather.append("stop").attr("offset", "96%").attr("stop-color", "#000").attr("stop-opacity", 0);
+  feather.append("stop").attr("offset", "100%").attr("stop-color", "#000").attr("stop-opacity", 0);
+  defs
+    .append("mask")
+    .attr("id", "creators-sky-feather")
+    .attr("maskUnits", "userSpaceOnUse")
+    .append("rect")
+    .attr("width", w)
+    .attr("height", h)
+    .attr("fill", "url(#creators-sky-feather-grad)");
 
   const glow = defs
     .append("filter")
@@ -345,7 +403,11 @@ function draw() {
   merge.append("feMergeNode").attr("in", "b");
   merge.append("feMergeNode").attr("in", "SourceGraphic");
 
-  const sky = svg.append("g").attr("class", "starfield-sky");
+  // Borderless masked sky — page ivory shows through via alpha only
+  const sky = svg
+    .append("g")
+    .attr("class", "starfield-sky")
+    .attr("mask", "url(#creators-sky-feather)");
 
   sky
     .append("rect")
@@ -354,8 +416,6 @@ function draw() {
     .attr("y", 0)
     .attr("width", w)
     .attr("height", h)
-    .attr("rx", 8)
-    .attr("ry", 8)
     .attr("fill", "url(#creators-midnight-sky)");
 
   const g = sky.append("g").attr("transform", `translate(${pad},${pad})`);
@@ -375,8 +435,8 @@ function draw() {
   }
 
   [
-    { cx: iw * 0.32, cy: ih * 0.58, r: Math.min(iw, ih) * 0.58 },
-    { cx: iw * 0.74, cy: ih * 0.36, r: Math.min(iw, ih) * 0.4 },
+    { cx: iw * 0.34, cy: ih * 0.55, r: Math.min(iw, ih) * 0.5 },
+    { cx: iw * 0.7, cy: ih * 0.4, r: Math.min(iw, ih) * 0.36 },
   ].forEach((arc, i) => {
     g.append("circle")
       .attr("class", "celestial-arc")
@@ -393,6 +453,7 @@ function draw() {
   const anchors = placeAnchors(rows, iw, ih, mobile);
   const constellations = g.append("g").attr("class", "constellations");
   const groups = [];
+  const labelItems = [];
 
   anchors.forEach((anchor, idx) => {
     const row = anchor.row;
@@ -402,9 +463,8 @@ function draw() {
     const nCh = row.n_channels || 30;
     const share = shareOf(row);
     const spread = anchor.spread;
-    // Star count: channels set the floor; higher share densifies a bit
     const nStars = Math.round(6 + Math.min(26, Math.sqrt(nCh) * 0.95) + share * 10);
-    const rand = mulberry32(hashSeed(`${ctx.rule}-${code}-stars-v3`));
+    const rand = mulberry32(hashSeed(`${ctx.rule}-${code}-stars-v4`));
     const stars = buildStars(anchor, nStars, spread, share, rand);
 
     const xs = stars.map((s) => s.x);
@@ -415,8 +475,7 @@ function draw() {
     const maxY = Math.max(...ys);
     const hitCx = (minX + maxX) / 2;
     const hitCy = (minY + maxY) / 2;
-    // Hit disc tracks share-scaled spread so the whole neighbourhood is hot
-    const hitR = spread + (mobile ? 16 : 20);
+    const hitR = spread * 1.04 + (mobile ? 4 : 6);
 
     const cg = constellations
       .append("g")
@@ -425,7 +484,6 @@ function draw() {
       .style("outline", "none")
       .style("cursor", "pointer");
 
-    // Invisible hit disc — hover anywhere in the constellation neighbourhood
     cg.append("circle")
       .attr("class", "constellation-hit")
       .attr("cx", hitCx)
@@ -455,34 +513,44 @@ function draw() {
         .attr("class", isAnchor ? "constellation-star anchor-star" : "constellation-star")
         .attr("cx", s.x)
         .attr("cy", s.y)
-        .attr("r", isAnchor ? 1.7 + share * 2.2 : 0.85 + rand() * 0.55)
+        .attr("r", isAnchor ? 1.7 + share * 2.4 : 0.85 + rand() * 0.55)
         .attr("fill", color)
         .attr("opacity", isAnchor ? Math.min(0.96, 0.5 + glowBoost * 0.45) : 0.38 + rand() * 0.28)
         .attr("filter", isAnchor ? "url(#star-glow)" : null)
         .attr("pointer-events", "none");
     });
 
-    const labelY = Math.min(ih - 4, maxY + 16);
-    const label = pct != null ? `${code === "UNKNOWN" ? "unknown" : code} ${pct}%` : code;
-    cg.append("text")
+    const label = pct != null ? `${code === "UNKNOWN" ? "unknown" : code} ${pct}%` : code === "UNKNOWN" ? "unknown" : code;
+    labelItems.push({
+      cg,
+      code,
+      label,
+      cx: hitCx,
+      preferY: Math.min(ih * 0.82, maxY + 15),
+      tip:
+        `${row.country}: ${row.n_channels} channels, ${row.n_videos} videos` +
+        (pct != null ? `, top 5% share ${pct}%` : ""),
+    });
+
+    groups.push(cg);
+  });
+
+  const placed = placeLabels(labelItems, iw, ih, mobile);
+  placed.forEach((item) => {
+    item.cg
+      .append("text")
       .attr("class", "constellation-label")
-      .attr("x", hitCx)
-      .attr("y", labelY)
+      .attr("x", item.lx)
+      .attr("y", item.ly)
       .attr("text-anchor", "middle")
       .attr("font-size", mobile ? 10 : 11)
       .attr("font-family", 'Georgia, "Times New Roman", serif')
       .attr("letter-spacing", "0.04em")
       .attr("fill", "#eef1f7")
-      .attr("opacity", 0.9)
+      .attr("opacity", 0.92)
       .attr("pointer-events", "none")
-      .text(label);
-
-    const tip =
-      `${row.country}: ${row.n_channels} channels, ${row.n_videos} videos` +
-      (pct != null ? `, top 5% share ${pct}%` : "");
-    cg.append("title").text(tip);
-
-    groups.push(cg);
+      .text(item.label);
+    item.cg.append("title").text(item.tip);
   });
 
   function setFocus(active) {
