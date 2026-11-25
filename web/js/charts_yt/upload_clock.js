@@ -1,7 +1,7 @@
 /* Midnight-centered 24h upload waves — soft pastel dusk-to-midnight sky. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126e";
-import { themeColors } from "../theme.js?v=20261126e";
-import { renderReviewBanner } from "./review.js?v=20261126e";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126g";
+import { themeColors } from "../theme.js?v=20261126g";
+import { renderReviewBanner } from "./review.js?v=20261126g";
 
 const RULES = [
   { id: "strict", label: "strict" },
@@ -146,31 +146,31 @@ function profileMeans(region, arm) {
   return p?.profile?.mean || [];
 }
 
-/** Decorative 1px stroked sun (no fill). */
-function drawSunIcon(parent, cx, cy, r, stroke) {
+/** Decorative sun (~16px): solid center disk + 1.3px rays. */
+function drawSunIcon(parent, cx, cy, r, color) {
   const g = parent.append("g").attr("class", "sky-icon sky-sun").attr("aria-hidden", "true");
   g.append("circle")
     .attr("cx", cx)
     .attr("cy", cy)
-    .attr("r", r * 0.42)
-    .attr("fill", "none")
-    .attr("stroke", stroke)
-    .attr("stroke-width", 1);
+    .attr("r", r * 0.38)
+    .attr("fill", color)
+    .attr("stroke", color)
+    .attr("stroke-width", 1.3);
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2;
     g.append("line")
-      .attr("x1", cx + Math.cos(a) * r * 0.58)
-      .attr("y1", cy + Math.sin(a) * r * 0.58)
+      .attr("x1", cx + Math.cos(a) * r * 0.55)
+      .attr("y1", cy + Math.sin(a) * r * 0.55)
       .attr("x2", cx + Math.cos(a) * r)
       .attr("y2", cy + Math.sin(a) * r)
-      .attr("stroke", stroke)
-      .attr("stroke-width", 1)
+      .attr("stroke", color)
+      .attr("stroke-width", 1.3)
       .attr("stroke-linecap", "round");
   }
 }
 
-/** Decorative 1px stroked crescent moon (no fill). */
-function drawMoonIcon(parent, cx, cy, r, stroke) {
+/** Decorative crescent moon (~16px): solid warm fill. */
+function drawMoonIcon(parent, cx, cy, r, fill) {
   const g = parent.append("g").attr("class", "sky-icon sky-moon").attr("aria-hidden", "true");
   const d = [
     `M ${cx + r * 0.15} ${cy - r}`,
@@ -180,9 +180,8 @@ function drawMoonIcon(parent, cx, cy, r, stroke) {
   ].join(" ");
   g.append("path")
     .attr("d", d)
-    .attr("fill", "none")
-    .attr("stroke", stroke)
-    .attr("stroke-width", 1)
+    .attr("fill", fill)
+    .attr("stroke", "none")
     .attr("stroke-linejoin", "round");
 }
 
@@ -278,11 +277,13 @@ function draw() {
       .attr("opacity", 0.28);
   });
 
-  // Top time-ruler icons (dark ink — readable on pastel sky)
-  const iconY = -16;
-  drawSunIcon(g, x(0) + 7, iconY, 6, c.muted);
-  drawSunIcon(g, x(24) - 7, iconY, 6, c.muted);
-  drawMoonIcon(g, midX - 2, iconY, 5.5, ink);
+  // Top time-ruler icons (~16px) — solid accent for glanceable sun/moon
+  const iconY = -14;
+  const iconR = 8;
+  const iconColor = c.accent || ink;
+  drawSunIcon(g, x(0) + iconR + 1, iconY, iconR, iconColor);
+  drawSunIcon(g, x(24) - iconR - 1, iconY, iconR, iconColor);
+  drawMoonIcon(g, midX - 2, iconY, iconR, iconColor);
 
   // Midnight rule + label in crisp dark ink over soft twilight
   g.append("line")

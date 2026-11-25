@@ -1,13 +1,13 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126f";
-import { themeColors } from "./theme.js?v=20261126f";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126g";
+import { themeColors } from "./theme.js?v=20261126g";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261126f";
+} from "./sections.js?v=20261126g";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -458,7 +458,7 @@ async function loadAll() {
         .attr("fill", muted)
         .attr("fill-rule", "nonzero")
         .attr("stroke", "none")
-        .attr("opacity", 0.45)
+        .attr("opacity", 0.22)
         .attr("pointer-events", "none");
       // Faint double-barline at far-right edge
       const barX = width - 28;
