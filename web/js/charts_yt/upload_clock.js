@@ -293,15 +293,16 @@ function draw() {
   drawSunIcon(g, x(24) - 2, iconY, iconR, sunColor);
   drawMoonIcon(g, midX, iconY, iconR, moonColor);
 
-  // Midnight rule + label (label sits below the moon, just above the plot)
+  // Midnight rule (soft hairline) + label below the moon
   g.append("line")
+    .attr("class", "midnight-rule")
     .attr("x1", midX)
     .attr("x2", midX)
     .attr("y1", -6)
     .attr("y2", ih + 4)
-    .attr("stroke", ink)
-    .attr("stroke-width", 1.15)
-    .attr("opacity", 0.85);
+    .attr("stroke", c.muted || "#525b70")
+    .attr("stroke-width", 0.9)
+    .attr("opacity", 0.32);
   g.append("text")
     .attr("x", midX + 10)
     .attr("y", -8)
