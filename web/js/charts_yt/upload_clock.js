@@ -474,3 +474,5 @@ function draw() {
 export function update() {
   if (ctx?.mount) draw();
 }
+
+/* pages-redeploy: 20261126g */
