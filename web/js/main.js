@@ -1,13 +1,13 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261125c";
-import { themeColors } from "./theme.js?v=20261125c";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261125d";
+import { themeColors } from "./theme.js?v=20261125d";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261125c";
+} from "./sections.js?v=20261125d";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -55,8 +55,10 @@ function colorDiv(t) {
 const state = {
   layerMode: "trends", // trends | creators | compare
   map1Mode: "growth", // growth | peak
+  map1Filter: "all", // all | east_asia | europe | americas | rising
   monthIndex: 0,
   playing: false,
+  map1Playing: false,
   lands: null,
   countryV2ByIso: new Map(),
   creatorsByIso: new Map(),
@@ -83,6 +85,24 @@ function formatNum(v, digits) {
   if (v == null || Number.isNaN(v)) return "—";
   return d3.format(`,.${digits ?? 1}f`)(v);
 }
+
+/** Editorial spotlight regions from geographic centroid. */
+function spotlightRegion(feature) {
+  const c = d3.geoCentroid(feature);
+  if (!c || !Number.isFinite(c[0])) return "other";
+  const [lon, lat] = c;
+  if (lon <= -25) return "americas";
+  if (lon >= 95 && lat >= 10 && lat <= 55) return "east_asia";
+  if (lon > -25 && lon < 45 && lat >= 34) return "europe";
+  return "other";
+}
+
+function nodeMatchesFilter(node, filter) {
+  if (!filter || filter === "all") return true;
+  if (filter === "rising") return node.row?.mk_class === "rising";
+  return node.region === filter;
+}
+
 
 async function loadAll() {
     const topo = await d3.json(ENABLED_DATA.topo);
@@ -506,9 +526,9 @@ async function loadAll() {
       const row = state.countryV2ByIso.get(iso3);
       if (state.map1Mode === "peak") {
         const series = state.monthly?.series?.own_peak_asmr || {};
-        const lastIdx = (state.monthly?.months || []).length - 1;
-        const v = series[iso3]?.[lastIdx];
-        const month = state.monthly?.months?.[lastIdx] || "—";
+        const idx = state.monthIndex ?? (state.monthly?.months || []).length - 1;
+        const v = series[iso3]?.[idx];
+        const month = state.monthly?.months?.[idx] || "—";
         if (row?.quality === "low_volume") {
           html += `<br>Too few searches to measure`;
         } else if (v == null) {
@@ -527,9 +547,8 @@ async function loadAll() {
             ? `${(row.growth_ratio * 100).toFixed(1)}%`
             : "—";
         html += `<br>Growth: <b>${g}</b>`;
-        html += `<br>MK class: <b>${row.mk_class || "—"}</b>`;
-        html += `<br>First-12-month mean: <b>${formatNum(row.mean_first_12, 1)}</b>`;
-        html += `<br>State: <b>${row.state || "measured"}</b>`;
+        html += `<br>MK trend: <b>${row.mk_class || "—"}</b>`;
+        html += `<br>First-12m base: <b>${formatNum(row.mean_first_12, 1)}</b>`;
         if (row.small_base) html += `<br>Small base`;
       } else {
         html += `<br>No data`;
@@ -596,99 +615,149 @@ async function loadAll() {
       });
   }
 
-  /** Dorling cartogram bubble-world for Map 1. */
-  function paintDorling(map, valueMap) {
+  /** Dorling cartogram — Acoustic Ripple Bubbles for Map 1. */
+  function paintDorling(map, valueMap, opts = {}) {
     const c = themeColors();
     const mode = state.map1Mode || "growth";
-    const lastIdx = (state.monthly?.months || []).length - 1;
     const peakSeries = state.monthly?.series?.own_peak_asmr || {};
+    const peakIdx =
+      mode === "peak"
+        ? state.monthIndex ?? (state.monthly?.months || []).length - 1
+        : (state.monthly?.months || []).length - 1;
+    const reuse = !!(opts.reuseLayout && map.dorlingPositions);
 
-    const nodes = [];
-    state.lands.features.forEach((f) => {
-      const iso = f.properties.iso3;
-      if (!iso) return;
-      const row = state.countryV2ByIso.get(iso);
-      if (!row) return;
-      const pt = map.path.centroid(f);
-      if (!pt || !Number.isFinite(pt[0]) || !Number.isFinite(pt[1])) return;
+    let nodes = [];
+    if (reuse) {
+      nodes = (map.dorlingCache || []).map((prev) => {
+        const row = prev.row;
+        const iso = prev.iso3;
+        let r = prev.r;
+        let kind = prev.kind;
+        let value = prev.value;
+        let labelPct = prev.labelPct;
+        if (mode === "peak") {
+          const v = peakSeries[iso]?.[peakIdx];
+          if (row.quality === "low_volume") {
+            kind = "lowvol";
+            r = 2.2;
+            value = null;
+            labelPct = null;
+          } else if (v == null || !Number.isFinite(v)) {
+            kind = "miss";
+            r = 0;
+            value = null;
+            labelPct = null;
+          } else {
+            kind = "peak";
+            value = v;
+            r = 3.5 + 20 * Math.sqrt(Math.max(0, v) / 100);
+            labelPct = v;
+          }
+        }
+        const pos = map.dorlingPositions.get(iso) || { x: prev.x, y: prev.y };
+        return {
+          ...prev,
+          x: pos.x,
+          y: pos.y,
+          r,
+          kind,
+          value,
+          labelPct,
+        };
+      }).filter((d) => d.kind !== "miss" && d.r > 0);
+    } else {
+      state.lands.features.forEach((f) => {
+        const iso = f.properties.iso3;
+        if (!iso) return;
+        const row = state.countryV2ByIso.get(iso);
+        if (!row) return;
+        const pt = map.path.centroid(f);
+        if (!pt || !Number.isFinite(pt[0]) || !Number.isFinite(pt[1])) return;
 
-      let r = 0;
-      let kind = "miss";
-      let labelPct = null;
-      let value = null;
+        let r = 0;
+        let kind = "miss";
+        let labelPct = null;
+        let value = null;
 
-      if (row.quality === "low_volume") {
-        r = 2.2;
-        kind = "lowvol";
-      } else if (mode === "peak") {
-        const v = peakSeries[iso]?.[lastIdx];
-        if (v == null || !Number.isFinite(v)) {
+        if (row.quality === "low_volume") {
+          r = 2.2;
+          kind = "lowvol";
+        } else if (mode === "peak") {
+          const v = peakSeries[iso]?.[peakIdx];
+          if (v == null || !Number.isFinite(v)) {
+            kind = "miss";
+            r = 0;
+          } else {
+            kind = "peak";
+            value = v;
+            r = 3.5 + 20 * Math.sqrt(Math.max(0, v) / 100);
+            labelPct = v;
+          }
+        } else if (row.quality === "ok") {
+          const g =
+            row.growth_ratio_clipped != null ? row.growth_ratio_clipped : row.growth_ratio;
+          if (g == null || !Number.isFinite(g)) {
+            kind = "miss";
+            r = 0;
+          } else {
+            value = g;
+            const a = Math.abs(g);
+            r = 3.5 + 22 * Math.sqrt(Math.min(1.5, a) / 1.5);
+            kind = row.mk_class || "flat";
+            labelPct = g * 100;
+          }
+        } else {
           kind = "miss";
           r = 0;
-        } else {
-          kind = "peak";
-          value = v;
-          r = 3.5 + 20 * Math.sqrt(Math.max(0, v) / 100);
-          labelPct = v;
         }
-      } else if (row.quality === "ok") {
-        const g =
-          row.growth_ratio_clipped != null ? row.growth_ratio_clipped : row.growth_ratio;
-        if (g == null || !Number.isFinite(g)) {
-          kind = "miss";
-          r = 0;
-        } else {
-          value = g;
-          const a = Math.abs(g);
-          r = 3.5 + 22 * Math.sqrt(Math.min(1.5, a) / 1.5);
-          kind = row.mk_class || "flat";
-          labelPct = g * 100;
-        }
-      } else {
-        kind = "miss";
-        r = 0;
-      }
 
-      if (kind === "miss") return;
-      nodes.push({
-        iso3: iso,
-        feature: f,
-        row,
-        x: pt[0],
-        y: pt[1],
-        x0: pt[0],
-        y0: pt[1],
-        r,
-        kind,
-        value,
-        labelPct,
+        if (kind === "miss") return;
+        nodes.push({
+          iso3: iso,
+          feature: f,
+          row,
+          region: spotlightRegion(f),
+          x: pt[0],
+          y: pt[1],
+          x0: pt[0],
+          y0: pt[1],
+          r,
+          kind,
+          value,
+          labelPct,
+        });
       });
-    });
 
-    // Deterministic force layout — fixed iterations, no live jitter
-    const sim = d3
-      .forceSimulation(nodes)
-      .force("x", d3.forceX((d) => d.x0).strength(0.75))
-      .force("y", d3.forceY((d) => d.y0).strength(0.75))
-      .force("collide", d3.forceCollide((d) => d.r + 1.15).iterations(2))
-      .stop();
-    for (let i = 0; i < 140; i++) sim.tick();
+      // Layout with collision padding for ripple/hover rings
+      const sim = d3
+        .forceSimulation(nodes)
+        .force("x", d3.forceX((d) => d.x0).strength(0.75))
+        .force("y", d3.forceY((d) => d.y0).strength(0.75))
+        .force("collide", d3.forceCollide((d) => d.r + 2.2).iterations(2))
+        .stop();
+      for (let i = 0; i < 140; i++) sim.tick();
 
-    // Soft clamp into viewBox
-    nodes.forEach((d) => {
-      d.x = Math.max(d.r + 4, Math.min(map.width - d.r - 4, d.x));
-      d.y = Math.max(d.r + 4, Math.min(map.height - d.r - 4, d.y));
-    });
+      nodes.forEach((d) => {
+        d.x = Math.max(d.r + 6, Math.min(map.width - d.r - 6, d.x));
+        d.y = Math.max(d.r + 6, Math.min(map.height - d.r - 6, d.y));
+      });
+      map.dorlingPositions = new Map(nodes.map((d) => [d.iso3, { x: d.x, y: d.y }]));
+    }
 
     map.dorlingCache = nodes;
+    const filter = state.map1Filter || "all";
 
     const sel = map.pulseG
       .selectAll("g.dorling-node")
       .data(nodes, (d) => d.iso3)
       .join((enter) => {
         const g = enter.append("g").attr("class", "dorling-node");
+        g.append("circle").attr("class", "dorling-hover-ring");
+        g.append("circle").attr("class", "dorling-focus-ring");
         g.append("circle").attr("class", "dorling-orbit");
         g.append("circle").attr("class", "dorling-bubble");
+        g.append("circle").attr("class", "dorling-ripple1");
+        g.append("circle").attr("class", "dorling-ripple2");
         g.append("text").attr("class", "dorling-label");
         g.append("circle").attr("class", "dorling-hit").attr("fill", "transparent");
         return g;
@@ -700,45 +769,89 @@ async function loadAll() {
       const g = d3.select(this);
       const bubble = g.select(".dorling-bubble");
       const orbit = g.select(".dorling-orbit");
+      const ripple1 = g.select(".dorling-ripple1");
+      const ripple2 = g.select(".dorling-ripple2");
+      const hoverRing = g.select(".dorling-hover-ring");
+      const focusRing = g.select(".dorling-focus-ring");
       const label = g.select(".dorling-label");
       const hit = g.select(".dorling-hit");
+      const match = nodeMatchesFilter(d, filter);
+      const baseOp = match ? 1 : 0.18;
 
+      g.attr("opacity", baseOp);
       orbit.attr("r", 0).attr("fill", "none").attr("stroke", "none");
+      ripple1.attr("r", 0).attr("fill", "none").attr("stroke", "none");
+      ripple2.attr("r", 0).attr("fill", "none").attr("stroke", "none");
+      hoverRing
+        .attr("r", d.r + 5)
+        .attr("fill", "none")
+        .attr("stroke", c.accent)
+        .attr("stroke-width", 1.4)
+        .attr("opacity", 0);
+      focusRing
+        .attr("r", match && filter !== "all" ? d.r + 3.5 : 0)
+        .attr("fill", "none")
+        .attr("stroke", c.ink)
+        .attr("stroke-width", 1.1)
+        .attr("opacity", match && filter !== "all" ? 0.55 : 0);
 
       if (d.kind === "lowvol") {
         bubble
           .attr("r", d.r)
           .attr("fill", c.muted)
           .attr("stroke", "none")
-          .attr("opacity", 0.35);
+          .attr("opacity", 0.4);
         label.text("");
-      } else if (d.kind === "rising" || (d.kind === "peak" && d.value >= 50)) {
+      } else if (d.kind === "rising") {
         bubble
           .attr("r", d.r)
           .attr("fill", c.accent)
           .attr("stroke", "none")
-          .attr("opacity", d.kind === "peak" ? 0.55 + 0.4 * (d.value / 100) : 0.9);
-      } else if (d.kind === "falling" || (d.kind === "peak" && d.value < 50)) {
-        if (d.kind === "falling") {
-          bubble
-            .attr("r", d.r)
-            .attr("fill", c.neg)
-            .attr("stroke", "none")
-            .attr("opacity", 0.88);
-        } else {
-          bubble
-            .attr("r", d.r)
-            .attr("fill", c.accent)
-            .attr("stroke", "none")
-            .attr("opacity", 0.35 + 0.45 * (d.value / 100));
+          .attr("opacity", 0.92);
+        // Acoustic ripple rings (soundwave read)
+        if (d.r >= 6) {
+          ripple1
+            .attr("r", Math.max(2, d.r * 0.55))
+            .attr("fill", "none")
+            .attr("stroke", c.bg)
+            .attr("stroke-width", 1)
+            .attr("opacity", 0.45);
         }
+        if (d.r >= 10) {
+          ripple2
+            .attr("r", Math.max(3, d.r * 0.28))
+            .attr("fill", "none")
+            .attr("stroke", c.bg)
+            .attr("stroke-width", 0.9)
+            .attr("opacity", 0.35);
+        }
+      } else if (d.kind === "falling") {
+        bubble
+          .attr("r", d.r)
+          .attr("fill", c.neg)
+          .attr("stroke", "none")
+          .attr("opacity", 0.9);
       } else if (d.kind === "flat") {
         bubble
           .attr("r", d.r)
           .attr("fill", "none")
-          .attr("stroke", c.muted)
-          .attr("stroke-width", 1.4)
-          .attr("opacity", 0.9);
+          .attr("stroke", c.ink)
+          .attr("stroke-width", 1.15)
+          .attr("opacity", 0.85);
+      } else if (d.kind === "peak") {
+        bubble
+          .attr("r", d.r)
+          .attr("fill", c.accent)
+          .attr("stroke", "none")
+          .attr("opacity", 0.35 + 0.55 * (Math.max(0, d.value || 0) / 100));
+        if (d.r >= 8) {
+          ripple1
+            .attr("r", Math.max(2, d.r * 0.5))
+            .attr("fill", "none")
+            .attr("stroke", c.bg)
+            .attr("stroke-width", 1)
+            .attr("opacity", 0.4);
+        }
       } else {
         bubble
           .attr("r", d.r)
@@ -749,15 +862,14 @@ async function loadAll() {
 
       if (d.row.small_base && d.kind !== "lowvol") {
         orbit
-          .attr("r", d.r + 3)
+          .attr("r", d.r + 3.5)
           .attr("fill", "none")
           .attr("stroke", c.accent)
           .attr("stroke-width", 1)
-          .attr("stroke-dasharray", "2 2")
-          .attr("opacity", 0.65);
+          .attr("stroke-dasharray", "2.5 2")
+          .attr("opacity", 0.7);
       }
 
-      // ISO3 + % inside larger bubbles
       if (d.r >= 14 && d.labelPct != null) {
         const pct =
           mode === "peak"
@@ -770,11 +882,7 @@ async function loadAll() {
           .attr("font-variant-numeric", "tabular-nums")
           .attr("fill", d.kind === "flat" ? c.ink : c.bg)
           .attr("pointer-events", "none")
-          .text(`${d.iso3}`);
-        if (d.r >= 20) {
-          // second line via dy offset — use single line with space for mid sizes
-          label.text(`${d.iso3} ${pct}`);
-        }
+          .text(d.r >= 20 ? `${d.iso3} ${pct}` : d.iso3);
       } else if (d.r >= 10) {
         label
           .attr("text-anchor", "middle")
@@ -788,12 +896,18 @@ async function loadAll() {
       }
 
       hit
-        .attr("r", d.r + 4)
+        .attr("r", d.r + 6)
         .attr("pointer-events", "all")
         .attr("cursor", "pointer")
-        .on("pointerenter", (event) => showTip(event, d.feature, "trends"))
+        .on("pointerenter", (event) => {
+          hoverRing.attr("opacity", 0.85).attr("r", d.r + 6);
+          showTip(event, d.feature, "trends");
+        })
         .on("pointermove", (event) => showTip(event, d.feature, "trends"))
-        .on("pointerleave", () => tooltip.attr("hidden", true))
+        .on("pointerleave", () => {
+          hoverRing.attr("opacity", 0).attr("r", d.r + 5);
+          tooltip.attr("hidden", true);
+        })
         .on("click", (event) => showTip(event, d.feature, "trends"));
     });
   }
@@ -836,28 +950,45 @@ async function loadAll() {
     return out;
   }
 
-  function updateStage1() {
+  function updateStage1(opts = {}) {
     state.layerMode = "trends";
     const panels = document.getElementById("map-panels-1");
     if (!panels) return;
     const trendsPanel = panels.querySelector('[data-panel="trends"]');
     const creatorsPanel = panels.querySelector('[data-panel="creators"]');
     const titleEl = document.getElementById("trends-panel-title");
+    const peakChrome = document.getElementById("map1-peak-controls");
 
     panels.classList.toggle("is-compare", false);
     if (trendsPanel) trendsPanel.classList.remove("is-hidden");
     if (creatorsPanel) creatorsPanel.classList.add("is-hidden");
 
     const peakMode = state.map1Mode === "peak";
+    if (peakChrome) {
+      peakChrome.hidden = !peakMode;
+      peakChrome.style.display = peakMode ? "" : "none";
+    }
+    if (!peakMode) stopMap1Play();
+
     const peakLabel =
       state.monthlyMeta?.map2_caption ||
-      "ASMR relative to each country's own 60-month peak (latest month)";
+      "ASMR relative to each country's own 60-month peak";
     if (titleEl) {
       titleEl.textContent = peakMode ? peakLabel : GROWTH_LABEL;
     }
 
+    if (peakMode && state.monthly?.months) {
+      const scrub = document.getElementById("map1-month-scrubber");
+      const lab = document.getElementById("map1-month-label");
+      if (scrub) {
+        scrub.max = String(state.monthly.months.length - 1);
+        scrub.value = String(state.monthIndex);
+      }
+      if (lab) lab.textContent = state.monthly.months[state.monthIndex] || "—";
+    }
+
     state.displayValues.trends = peakMode
-      ? collectPeakValues()
+      ? collectPeakValues(state.monthIndex)
       : collectTrendsValues();
     state.displayValues.creators = {};
 
@@ -879,11 +1010,12 @@ async function loadAll() {
         };
 
     if (!state.maps.trends) return;
-    paintMap("trends", state.displayValues.trends, tScale);
+    const reuse = !!(peakMode && opts.reuseLayout && state.maps.trends.dorlingPositions);
+    paintDorling(state.maps.trends, state.displayValues.trends, { reuseLayout: reuse });
     drawLegend(
       document.getElementById("legend-trends"),
       tScale,
-      peakMode ? "60-month peak (latest)" : GROWTH_LABEL,
+      peakMode ? "60-month peak" : GROWTH_LABEL,
       {
         map1Full: !peakMode,
         showMiss: peakMode,
@@ -892,15 +1024,16 @@ async function loadAll() {
       }
     );
     updateMap1Caption();
-    renderTrendsTable();
+    if (!opts.skipTable) renderTrendsTable();
   }
 
-  function collectPeakValues() {
+  function collectPeakValues(idx) {
     const out = {};
-    const lastIdx = (state.monthly?.months || []).length - 1;
+    const i =
+      idx != null ? idx : (state.monthly?.months || []).length - 1;
     const series = state.monthly?.series?.own_peak_asmr || {};
     Object.keys(series).forEach((iso) => {
-      const v = series[iso][lastIdx];
+      const v = series[iso][i];
       if (v != null && Number.isFinite(v)) out[iso] = v;
     });
     return out;
@@ -1014,15 +1147,77 @@ async function loadAll() {
     );
   }
 
+  let map1PlayTimer = null;
+  function startMap1Play() {
+    if (!state.monthly?.months?.length) return;
+    state.map1Playing = true;
+    const btn = document.getElementById("map1-play-btn");
+    if (btn) {
+      btn.classList.add("is-playing");
+      btn.textContent = "Pause";
+      btn.setAttribute("aria-pressed", "true");
+      btn.setAttribute("aria-label", "Pause");
+    }
+    const delay = prefersReducedMotion() ? 1100 : 650;
+    map1PlayTimer = setInterval(() => {
+      state.monthIndex = (state.monthIndex + 1) % state.monthly.months.length;
+      updateStage1({ reuseLayout: true, skipTable: true });
+    }, delay);
+  }
+  function stopMap1Play() {
+    state.map1Playing = false;
+    const btn = document.getElementById("map1-play-btn");
+    if (btn) {
+      btn.classList.remove("is-playing");
+      btn.textContent = "Play";
+      btn.setAttribute("aria-pressed", "false");
+      btn.setAttribute("aria-label", "Play");
+    }
+    if (map1PlayTimer) clearInterval(map1PlayTimer);
+    map1PlayTimer = null;
+  }
+
   function wireControls() {
     document.querySelectorAll("#map1-mode button").forEach((btn) => {
       btn.addEventListener("click", () => {
         document.querySelectorAll("#map1-mode button").forEach((b) => b.classList.remove("is-active"));
         btn.classList.add("is-active");
         state.map1Mode = btn.dataset.mode || "growth";
-        updateStage1();
+        if (state.map1Mode === "peak" && state.monthly?.months) {
+          // start at first month so play visibly pulses forward
+          state.monthIndex = 0;
+          // seed layout from growth radii then switch
+        }
+        // Force fresh layout when switching modes
+        if (state.maps.trends) state.maps.trends.dorlingPositions = null;
+        updateStage1({ reuseLayout: false });
       });
     });
+
+    document.querySelectorAll("#map1-filter button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#map1-filter button").forEach((b) => b.classList.remove("is-active"));
+        btn.classList.add("is-active");
+        state.map1Filter = btn.dataset.filter || "all";
+        updateStage1({ reuseLayout: true, skipTable: true });
+      });
+    });
+
+    const map1Scrub = document.getElementById("map1-month-scrubber");
+    if (map1Scrub) {
+      map1Scrub.addEventListener("input", () => {
+        stopMap1Play();
+        state.monthIndex = +map1Scrub.value;
+        updateStage1({ reuseLayout: true, skipTable: true });
+      });
+    }
+    const map1Play = document.getElementById("map1-play-btn");
+    if (map1Play) {
+      map1Play.addEventListener("click", () => {
+        if (state.map1Playing) stopMap1Play();
+        else startMap1Play();
+      });
+    }
 
     document.querySelectorAll("#layer-mode button").forEach((btn) => {
       btn.addEventListener("click", () => {

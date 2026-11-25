@@ -1353,6 +1353,19 @@ input[type="range"] {
   font-family: var(--font-mono);
   font-weight: 500;
 }
+.map-filter-row .seg button {
+  font-size: 0.78rem;
+}
+.map1-peak-row[hidden] {
+  display: none !important;
+}
+.chart-subtitle-plain {
+  color: var(--ink);
+  font-size: 0.95rem;
+  max-width: 46ch;
+  margin: 0.15rem 0 0.55rem;
+  line-height: 1.45;
+}
 
 /* Wiki horizon strips */
 .wiki-horizon-grid { width: 100%; }

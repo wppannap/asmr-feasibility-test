@@ -1,7 +1,7 @@
-/* Midnight-centered 24h upload waves — 4 stacked strips (JP/KR/TW/HK). */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261125c";
-import { themeColors } from "../theme.js?v=20261125c";
-import { renderReviewBanner } from "./review.js?v=20261125c";
+/* Midnight-centered 24h upload waves — night spotlight + peak leaders. */
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261125d";
+import { themeColors } from "../theme.js?v=20261125d";
+import { renderReviewBanner } from "./review.js?v=20261125d";
 
 const RULES = [
   { id: "strict", label: "strict" },
@@ -31,6 +31,12 @@ export function render(container, data) {
 
   const wrap = d3.select(container);
   wrap.append("h3").attr("class", "chart-section-title").text("Upload clock · midnight-centered");
+  wrap
+    .append("p")
+    .attr("class", "chart-subtitle chart-subtitle-plain")
+    .text(
+      "When creators hit publish (local time) — East Asian uploads cluster between 20:00 and 02:00."
+    );
   wrap
     .append("p")
     .attr("class", "chart-subtitle")
@@ -111,6 +117,12 @@ function fmtCI(ci) {
   return `[${fmt(ci[0], 3)}, ${fmt(ci[1], 3)}]`;
 }
 
+function nightShare(region) {
+  const row = ctx.rows.find((r) => r.rule === ctx.rule && r.region === region);
+  const m = row?.night_sleep?.mean;
+  return m != null && Number.isFinite(m) ? m : null;
+}
+
 function bindResize() {
   if (resizeBound) return;
   resizeBound = true;
@@ -139,9 +151,9 @@ function draw() {
   clear(mount);
   const w = Math.max(300, mount.clientWidth || 640);
   const mobile = w < 520;
-  const margin = { top: 28, right: 16, bottom: 36, left: mobile ? 36 : 48 };
-  const stripH = mobile ? 72 : 88;
-  const gap = 10;
+  const margin = { top: 22, right: mobile ? 72 : 110, bottom: 40, left: mobile ? 36 : 48 };
+  const stripH = mobile ? 78 : 94;
+  const gap = 12;
   const n = REGIONS.length;
   const ih = n * stripH + (n - 1) * gap;
   const iw = w - margin.left - margin.right;
@@ -155,23 +167,82 @@ function draw() {
     .attr("role", "img")
     .attr("aria-label", "Midnight-centered 24-hour upload waves by region");
 
+  const defs = svg.append("defs");
+  const glow = defs
+    .append("linearGradient")
+    .attr("id", "night-glow")
+    .attr("gradientUnits", "userSpaceOnUse")
+    .attr("x1", 0)
+    .attr("x2", iw)
+    .attr("y1", 0)
+    .attr("y2", 0);
+  glow.append("stop").attr("offset", "0%").attr("stop-color", c.accent).attr("stop-opacity", 0);
+  glow.append("stop").attr("offset", "33%").attr("stop-color", c.accent).attr("stop-opacity", 0.16);
+  glow.append("stop").attr("offset", "50%").attr("stop-color", c.accent).attr("stop-opacity", 0.22);
+  glow.append("stop").attr("offset", "67%").attr("stop-color", c.accent).attr("stop-opacity", 0.16);
+  glow.append("stop").attr("offset", "100%").attr("stop-color", c.accent).attr("stop-opacity", 0);
+
   const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
   // X: display 0..24 → hours 12..11..12 with midnight at center (12)
   const x = d3.scaleLinear().domain([0, 24]).range([0, iw]);
-  const midX = x(12); // midnight
+  const midX = x(12);
 
-  // Shared axis ticks at noon, 18, midnight, 06, noon
+  // Soft warm spotlight column spanning all strips (20:00–02:00 → display 8..14)
+  const nightX0 = x(8);
+  const nightW = x(14) - x(8);
+  g.append("rect")
+    .attr("class", "night-spotlight")
+    .attr("x", nightX0)
+    .attr("y", -6)
+    .attr("width", nightW)
+    .attr("height", ih + 12)
+    .attr("fill", c.accent)
+    .attr("opacity", 0.08);
+  g.append("rect")
+    .attr("x", nightX0)
+    .attr("y", -6)
+    .attr("width", nightW)
+    .attr("height", ih + 12)
+    .attr("fill", "url(#night-glow)")
+    .attr("opacity", 0.85);
+
+  // Crisp midnight rule across all strips
+  g.append("line")
+    .attr("x1", midX)
+    .attr("x2", midX)
+    .attr("y1", -4)
+    .attr("y2", ih + 4)
+    .attr("stroke", c.ink)
+    .attr("stroke-width", 1.15)
+    .attr("opacity", 0.7);
+  g.append("text")
+    .attr("x", midX + 5)
+    .attr("y", -2)
+    .attr("font-size", 10)
+    .attr("font-variant-numeric", "tabular-nums")
+    .attr("font-weight", 600)
+    .attr("fill", c.ink)
+    .text("00:00 Midnight");
+
+  // Shared hour ticks
   const tickHours = [12, 18, 0, 6, 12];
   const tickDisplay = [0, 6, 12, 18, 24];
-  const axisG = g.append("g").attr("transform", `translate(0,${ih + 8})`);
+  const axisG = g.append("g").attr("transform", `translate(0,${ih + 10})`);
   tickDisplay.forEach((d, i) => {
     const h = tickHours[i];
     const label = h === 0 ? "00:00" : `${String(h).padStart(2, "0")}:00`;
     axisG
+      .append("line")
+      .attr("x1", x(d))
+      .attr("x2", x(d))
+      .attr("y1", 0)
+      .attr("y2", 4)
+      .attr("stroke", c.line);
+    axisG
       .append("text")
       .attr("x", x(d))
-      .attr("y", 14)
+      .attr("y", 16)
       .attr("text-anchor", "middle")
       .attr("font-size", 10)
       .attr("font-variant-numeric", "tabular-nums")
@@ -185,64 +256,28 @@ function draw() {
     const sleep = profileMeans(region, "sleep");
     const not = profileMeans(region, "not");
     const maxY = Math.max(d3.max(sleep) || 0, d3.max(not) || 0, 0.01);
-    const y = d3.scaleLinear().domain([0, maxY]).range([stripH - 6, 8]);
+    const y = d3.scaleLinear().domain([0, maxY]).range([stripH - 8, 10]);
 
     const strip = g.append("g").attr("transform", `translate(0,${y0})`);
 
-    // Night band 20:00–02:00 → display 8..14
-    strip
-      .append("rect")
-      .attr("x", x(8))
-      .attr("y", 0)
-      .attr("width", x(14) - x(8))
-      .attr("height", stripH)
-      .attr("fill", c.accent)
-      .attr("opacity", 0.1);
-
-    // Baseline
     strip
       .append("line")
       .attr("x1", 0)
       .attr("x2", iw)
-      .attr("y1", stripH - 6)
-      .attr("y2", stripH - 6)
+      .attr("y1", stripH - 8)
+      .attr("y2", stripH - 8)
       .attr("stroke", c.line)
       .attr("stroke-width", 0.75);
 
-    // Midnight hairline
-    strip
-      .append("line")
-      .attr("x1", midX)
-      .attr("x2", midX)
-      .attr("y1", 0)
-      .attr("y2", stripH)
-      .attr("stroke", c.ink)
-      .attr("stroke-width", 1)
-      .attr("opacity", 0.55);
-
-    if (i === 0) {
-      strip
-        .append("text")
-        .attr("class", "anno-label")
-        .attr("x", midX + 4)
-        .attr("y", 12)
-        .attr("fill", c.muted)
-        .text("Midnight");
-    }
-
-    // Build series in display order (closed for area)
     const sleepPts = d3.range(0, 25).map((d) => {
       const h = hourAt(d === 24 ? 0 : d);
-      const v = sleep[h] != null ? sleep[h] : 0;
-      return [d, v];
+      return [d, sleep[h] != null ? sleep[h] : 0];
     });
-    // For d===24 use hour 12 again
     sleepPts[24] = [24, sleep[12] != null ? sleep[12] : 0];
 
     const notPts = d3.range(0, 25).map((d) => {
       const h = hourAt(d === 24 ? 0 : d);
-      const v = not[h] != null ? not[h] : 0;
-      return [d, v];
+      return [d, not[h] != null ? not[h] : 0];
     });
     notPts[24] = [24, not[12] != null ? not[12] : 0];
 
@@ -250,7 +285,7 @@ function draw() {
       .area()
       .curve(d3.curveMonotoneX)
       .x((p) => x(p[0]))
-      .y0(stripH - 6)
+      .y0(stripH - 8)
       .y1((p) => y(p[1]));
     const line = d3
       .line()
@@ -262,25 +297,25 @@ function draw() {
       .append("path")
       .attr("d", area(sleepPts))
       .attr("fill", c.accent)
-      .attr("opacity", 0.35);
+      .attr("opacity", 0.32);
 
     strip
       .append("path")
       .attr("d", line(sleepPts))
       .attr("fill", "none")
       .attr("stroke", c.accent)
-      .attr("stroke-width", 1.6);
+      .attr("stroke-width", 1.7);
 
     strip
       .append("path")
       .attr("d", line(notPts))
       .attr("fill", "none")
       .attr("stroke", c.neg)
-      .attr("stroke-width", 1.4)
+      .attr("stroke-width", 1.35)
       .attr("stroke-dasharray", "4 3")
       .attr("opacity", 0.9);
 
-    // Peak annotation for sleep
+    // Peak glowing dot + curved leader
     let peakIdx = 0;
     let peakVal = -1;
     sleepPts.forEach((p, idx) => {
@@ -294,22 +329,49 @@ function draw() {
       const px = x(peakIdx);
       const py = y(peakVal);
       const ph = hourAt(peakIdx);
+      const night = nightShare(region);
+      const nightTxt =
+        night != null ? `night ${fmt(night * 100, 0)}%` : `share ${fmt(peakVal, 3)}`;
+
       strip
         .append("circle")
         .attr("cx", px)
         .attr("cy", py)
-        .attr("r", 3)
-        .attr("fill", c.accent);
+        .attr("r", 7)
+        .attr("fill", c.accent)
+        .attr("opacity", 0.18);
+      strip
+        .append("circle")
+        .attr("cx", px)
+        .attr("cy", py)
+        .attr("r", 3.4)
+        .attr("fill", c.accent)
+        .attr("stroke", c.bg)
+        .attr("stroke-width", 1.2);
+
+      const lx = Math.min(iw + margin.right - 18, px + (mobile ? 36 : 54));
+      const ly = Math.max(10, py - 16);
+      strip
+        .append("path")
+        .attr("class", "anno-leader")
+        .attr(
+          "d",
+          `M${px + 4},${py - 2} Q${px + 18},${ly} ${lx - 4},${ly}`
+        )
+        .attr("fill", "none")
+        .attr("stroke", c.line)
+        .attr("stroke-width", 0.9);
       strip
         .append("text")
         .attr("class", "anno-label")
-        .attr("x", Math.min(iw - 4, px + 6))
-        .attr("y", Math.max(11, py - 6))
+        .attr("x", lx)
+        .attr("y", ly + 3)
+        .attr("font-size", 10)
+        .attr("font-variant-numeric", "tabular-nums")
         .attr("fill", c.muted)
-        .text(`${String(ph).padStart(2, "0")}:00 · ${fmt(peakVal, 3)}`);
+        .text(`${String(ph).padStart(2, "0")}:00 · ${nightTxt}`);
     }
 
-    // Region label
     strip
       .append("text")
       .attr("x", -8)

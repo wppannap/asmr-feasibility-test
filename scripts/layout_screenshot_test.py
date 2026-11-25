@@ -170,7 +170,11 @@ def serve_web(port: int = 8765):
         def log_message(self, fmt, *args):
             pass
 
-    httpd = socketserver.TCPServer(("127.0.0.1", port), Handler)
+    class ThreadingHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+        daemon_threads = True
+        allow_reuse_address = True
+
+    httpd = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     t = threading.Thread(target=httpd.serve_forever, daemon=True)
     t.start()
     return httpd, port
