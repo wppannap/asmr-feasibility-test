@@ -1,13 +1,13 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126c";
-import { themeColors } from "./theme.js?v=20261126c";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126d";
+import { themeColors } from "./theme.js?v=20261126d";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261126c";
+} from "./sections.js?v=20261126d";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -406,8 +406,8 @@ async function loadAll() {
 
     const projection = d3.geoNaturalEarth1().fitExtent(
       [
-        [24, 24],
-        [width - 24, height - 24],
+        [36, 28],
+        [width - 88, height - 32],
       ],
       state.lands
     );
@@ -436,35 +436,29 @@ async function loadAll() {
           .attr("stroke-width", 0.6)
           .attr("opacity", 0.14);
       }
-      // Compact treble clef on far-left Pacific margin (~37% of staff span)
-      const clefH = staffSpan * 0.37;
-      const clefX = 22;
-      const clefY = staffTop + staffSpan * 0.08;
-      // Unit path roughly 0..32 × 0..80; scale to clefH
+      // Compact treble clef (Apple Symbols U+1D11E outline) on far-left Pacific margin
+      const clefH = staffSpan * 0.38;
+      const clefX = 18;
+      const clefY = staffTop + staffSpan * 0.06;
+      const CLEF_PATH =
+        'M0 46.24Q0 42.45 1.15 39.28Q2.29 36.11 4.24 33.39Q6.19 30.67 8.8 28.27Q11.41 25.87 14.4 23.52Q13.76 19.95 13.71 15.84Q13.71 8.8 15.84 4.48Q17.97 0 21.65 0Q24.21 0 25.79 2.85Q27.36 5.71 27.36 11.15Q27.36 18.08 23.84 22.93Q22.61 24.59 21.07 26.24Q19.52 27.89 17.55 29.55Q18.4 33.6 19.15 38.19Q24.11 38.19 27.2 41.28Q30.35 44.43 30.35 49.55Q30.35 53.65 28.35 56.59Q26.35 59.52 22.99 60.91Q23.36 63.41 23.55 65.63Q23.73 67.84 23.73 69.87Q23.73 75.2 21.25 77.6Q18.77 80 14.72 80Q10.77 80 8.43 77.71Q6.08 75.36 6.08 72.64Q6.03 70.24 7.39 68.69Q8.75 67.15 10.99 67.15Q13.23 67.15 14.45 68.53Q15.68 69.92 15.68 71.95Q15.68 73.07 15.25 73.95Q14.83 74.83 14.08 75.39Q13.33 75.95 12.37 76.13Q11.41 76.32 10.29 76.05Q11.68 78.08 14.83 78.08Q18.35 78.08 20.13 76Q21.92 73.92 21.92 69.92Q21.92 68.05 21.73 65.97Q21.55 63.89 21.23 61.49Q19.36 61.97 17.28 61.97Q13.55 61.97 10.4 60.96Q7.25 59.95 4.93 57.95Q2.61 55.95 1.31 53.01Q0 50.08 0 46.24ZM19.73 52.16Q19.15 48.21 18.45 44.37Q16 44.37 14.37 45.87Q12.75 47.36 12.75 49.92Q12.75 51.57 13.57 52.85Q14.4 54.13 15.89 54.88Q15.68 55.47 15.52 55.89Q13.12 55.25 11.36 53.23Q9.6 51.2 9.6 47.63Q9.6 43.73 12.37 40.96Q14.51 38.93 17.39 38.35Q16.37 33.07 15.89 30.88Q13.71 32.64 11.65 34.53Q9.6 36.43 8 38.51Q6.4 40.59 5.44 42.93Q4.48 45.28 4.48 48Q4.48 51.04 5.49 53.25Q6.51 55.47 8.29 56.91Q10.08 58.35 12.48 59.04Q14.88 59.73 17.65 59.73Q19.41 59.73 20.85 59.31Q20.27 55.79 19.73 52.16ZM16.37 22.19Q20.53 19.15 22.43 16.24Q24.32 13.33 24.32 10.24Q24.32 8.75 23.63 7.63Q22.93 6.51 21.6 6.51Q19.09 6.51 17.6 10.08Q16.11 13.55 16.11 18.61Q16.11 20.27 16.37 22.19ZM26.72 51.25Q26.72 49.76 26.16 48.48Q25.6 47.2 24.69 46.29Q23.79 45.39 22.61 44.88Q21.44 44.37 20.21 44.37Q20.75 46.88 21.33 50.61Q21.87 54.03 22.51 58.61Q24.8 57.39 25.76 55.31Q26.72 53.23 26.72 51.25Z';
+      // Native path fits ~30.3 × 80; scale to clefH
       const clefScale = clefH / 80;
       staffG
         .append("path")
         .attr("class", "score-clef-watermark")
-        .attr(
-          "d",
-          "M16.2 8.5c-1.2 5.8 1.6 10.8 5.8 14.2 3.4 2.8 5.6 6.4 5.2 10.6" +
-            "c-0.5 5.6-5.8 9.4-11.2 7.8C11.2 39.4 8.4 34.2 10 29.6c1.4-4 5.6-5.8 9-3.8" +
-            "c0.4 3.6-1.6 6.4-4.6 7.2M20.8 18.5c0.1 20.5-1.4 36.5-2.2 52.5" +
-            "c-0.3 4.8 3.2 8.2 7 7.8 3.4-0.4 5.8-3.4 5.4-6.6-0.4-3-3.2-4.6-5.8-3.8" +
-            "M18.6 72.5c0 2.6-2.2 4.6-4.8 4.6s-4.8-2-4.8-4.6 2.2-4.6 4.8-4.6 4.8 2 4.8 4.6z"
-        )
+        .attr("d", CLEF_PATH)
         .attr(
           "transform",
           `translate(${clefX},${clefY}) scale(${clefScale.toFixed(4)})`
         )
-        .attr("fill", "none")
-        .attr("stroke", muted)
-        .attr("stroke-width", 1.4)
-        .attr("stroke-linecap", "round")
-        .attr("stroke-linejoin", "round")
-        .attr("opacity", 0.24);
+        .attr("fill", muted)
+        .attr("fill-rule", "nonzero")
+        .attr("stroke", "none")
+        .attr("opacity", 0.24)
+        .attr("pointer-events", "none");
       // Faint double-barline at far-right edge
-      const barX = width - 20;
+      const barX = width - 28;
       [0, 3].forEach((dx) => {
         staffG
           .append("line")
@@ -550,8 +544,11 @@ async function loadAll() {
         .attr("r", 2)
         .attr("fill", themeColors().muted)
         .attr("opacity", 0.45);
-      const lx = Math.min(width - 8, cx + 52);
-      const ly = Math.max(14, cy - 32);
+      // Keep callout fully inside the SVG (right padding for long label)
+      const label = "mainland China — not measured";
+      const approxLabelW = label.length * 5.15;
+      const lx = Math.min(width - approxLabelW - 18, Math.max(8, cx + 36));
+      const ly = Math.max(20, Math.min(height - 24, cy - 36));
       anno
         .append("path")
         .attr("class", "anno-leader")
@@ -562,7 +559,7 @@ async function loadAll() {
         .attr("x", lx + 2)
         .attr("y", ly + 3)
         .attr("fill", themeColors().muted)
-        .text("mainland China — not measured");
+        .text(label);
     }
 
     state.maps[key] = {
@@ -880,6 +877,7 @@ async function loadAll() {
         })
         .filter((d) => d.kind !== "miss" && d.r > 0);
     } else {
+      const seenIso = new Set();
       state.lands.features.forEach((f) => {
         const iso = f.properties.iso3;
         if (!iso) return;
@@ -926,6 +924,8 @@ async function loadAll() {
         }
 
         if (kind === "miss") return;
+        if (seenIso.has(iso)) return; // one note + one label per country
+        seenIso.add(iso);
         nodes.push({
           iso3: iso,
           feature: f,
@@ -1054,10 +1054,15 @@ async function loadAll() {
         .on("click", (event) => showTip(event, d.feature, "trends"));
     });
 
-    // Collision-aware external labels
+    // Collision-aware external labels — keep close to each note's own centroid
     const placed = [];
-    const candidates = [
-      [10, -6], [12, 4], [-14, -4], [8, -14], [-10, 10], [16, -10], [-18, 2],
+    const labeledIso = new Set();
+    // Prefer short offsets so labels never drift to another region (e.g. AUS→IDN)
+    const candidatesRight = [
+      [9, -5], [11, 5], [8, -12], [14, 0], [6, 10],
+    ];
+    const candidatesLeft = [
+      [-9, -5], [-11, 5], [-8, -12], [-14, 0], [-6, 10],
     ];
 
     function overlaps(box, list) {
@@ -1072,11 +1077,19 @@ async function loadAll() {
       );
     }
 
-    sel.each(function (d) {
-      const label = d3.select(this).select(".dorling-label");
-      label.text("");
-      if (!labelSet.has(d.iso3) || d.labelPct == null || d.kind === "lowvol") return;
+    // Stable order: larger notes first so major countries keep near-centroid labels
+    const labelNodes = nodes
+      .slice()
+      .filter((d) => labelSet.has(d.iso3) && d.labelPct != null && d.kind !== "lowvol")
+      .sort((a, b) => b.r - a.r);
+
+    labelNodes.forEach((d) => {
+      if (labeledIso.has(d.iso3)) return;
       if (!nodeMatchesFilter(d, filter) && filter !== "all") return;
+
+      const g = sel.filter((n) => n.iso3 === d.iso3);
+      const label = g.select(".dorling-label");
+      label.text("");
 
       const pct =
         mode === "peak"
@@ -1085,20 +1098,29 @@ async function loadAll() {
       const text = `${d.iso3} ${pct}`;
       const approxW = text.length * 5.2;
       const approxH = 11;
+      const preferLeft = d.x > map.width * 0.72; // right-edge countries label inward
+      const candidates = preferLeft ? candidatesLeft : candidatesRight;
 
       let chosen = null;
       for (const [dx, dy] of candidates) {
-        const box = {
-          x1: d.x + dx - 2,
-          y1: d.y + dy - approxH,
-          x2: d.x + dx + approxW,
-          y2: d.y + dy + 2,
-        };
-        // keep inside map
-        if (box.x1 < 4 || box.x2 > map.width - 4 || box.y1 < 4 || box.y2 > map.height - 4) {
+        const endAnchor = dx < 0;
+        const box = endAnchor
+          ? {
+              x1: d.x + dx - approxW,
+              y1: d.y + dy - approxH,
+              x2: d.x + dx + 2,
+              y2: d.y + dy + 2,
+            }
+          : {
+              x1: d.x + dx - 2,
+              y1: d.y + dy - approxH,
+              x2: d.x + dx + approxW,
+              y2: d.y + dy + 2,
+            };
+        // keep inside map with right padding for long labels
+        if (box.x1 < 10 || box.x2 > map.width - 18 || box.y1 < 10 || box.y2 > map.height - 10) {
           continue;
         }
-        // avoid note body (rough)
         const noteBox = {
           x1: d.x - d.r - 2,
           y1: d.y - d.r - 10,
@@ -1107,21 +1129,29 @@ async function loadAll() {
         };
         if (overlaps(box, [noteBox])) continue;
         if (overlaps(box, placed)) continue;
-        chosen = { dx, dy, box };
+        chosen = { dx, dy, box, endAnchor };
         break;
       }
       if (!chosen) return;
       placed.push(chosen.box);
+      labeledIso.add(d.iso3);
       label
         .attr("x", chosen.dx)
         .attr("y", chosen.dy)
-        .attr("text-anchor", chosen.dx < 0 ? "end" : "start")
+        .attr("text-anchor", chosen.endAnchor ? "end" : "start")
         .attr("font-size", 9)
         .attr("font-variant-numeric", "tabular-nums")
         .attr("font-weight", 500)
         .attr("fill", c.ink)
         .attr("pointer-events", "none")
         .text(text);
+    });
+
+    // Clear labels on nodes that were not labeled this pass
+    sel.each(function (d) {
+      if (!labeledIso.has(d.iso3)) {
+        d3.select(this).select(".dorling-label").text("");
+      }
     });
   }
 
