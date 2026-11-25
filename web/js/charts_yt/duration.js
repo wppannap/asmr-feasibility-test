@@ -1,7 +1,7 @@
-/* Vertical acoustic spindles — Depth of Sleep sky-to-night backdrop. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126i";
-import { themeColors } from "../theme.js?v=20261126i";
-import { renderReviewBanner } from "./review.js?v=20261126i";
+/* Vertical acoustic spindles — discrete rounded-cap soundwave bars. */
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126k";
+import { themeColors } from "../theme.js?v=20261126k";
+import { renderReviewBanner } from "./review.js?v=20261126k";
 
 const WEIGHTS = [
   { id: "video", label: "video" },
@@ -190,40 +190,9 @@ function draw() {
     .attr("viewBox", `0 0 ${w} ${ih + margin.top + margin.bottom}`)
     .attr("width", "100%")
     .attr("role", "img")
-    .attr("aria-label", "Vertical acoustic spindles of duration density");
-
-  const defs = svg.append("defs");
-  // Depth of Sleep: awake paper → soft twilight (matches Upload Clock midnight tone)
-  const sky = defs
-    .append("linearGradient")
-    .attr("id", "depth-of-sleep-sky")
-    .attr("gradientUnits", "userSpaceOnUse")
-    .attr("x1", 0)
-    .attr("x2", 0)
-    .attr("y1", 0)
-    .attr("y2", ih);
-  [
-    [0, "#fdfcfa"],
-    [0.45, "#eef1f7"],
-    [1, "#b8c5de"],
-  ].forEach(([t, color]) => {
-    sky
-      .append("stop")
-      .attr("offset", `${(t * 100).toFixed(0)}%`)
-      .attr("stop-color", color)
-      .attr("stop-opacity", 1);
-  });
+    .attr("aria-label", "Vertical soundwave bars of duration density");
 
   const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-
-  g.append("rect")
-    .attr("class", "depth-of-sleep-backdrop")
-    .attr("x", 0)
-    .attr("y", 0)
-    .attr("width", iw)
-    .attr("height", ih)
-    .attr("fill", "url(#depth-of-sleep-sky)")
-    .attr("rx", 2);
 
   // Y axis
   g.append("g")
@@ -298,33 +267,40 @@ function draw() {
     // Tiny binaural / dual-capsule cue above the spindle
     drawBinauralCue(g, cx, -2, c.muted);
 
-    // Center spine
+    // Crisp 1px center spine
     g.append("line")
+      .attr("class", "wave-spine")
       .attr("x1", cx)
       .attr("x2", cx)
       .attr("y1", 0)
       .attr("y2", ih)
       .attr("stroke", c.line)
-      .attr("stroke-width", 0.75);
+      .attr("stroke-width", 1);
 
-    drawHalf(g, hist.sleep, y, cx, maxHalf, c.accent, -1);
-    drawHalf(g, hist.not, y, cx, maxHalf, c.neg, 1);
+    drawWaveBars(g, hist.sleep, y, cx, maxHalf, c.accent || "#e06d2c", -1, ih);
+    drawWaveBars(g, hist.not, y, cx, maxHalf, c.neg || "#1f7a8c", 1, ih);
 
     if (hist.sleep?.median) {
       g.append("circle")
-        .attr("cx", cx - 3)
+        .attr("class", "median-bead")
+        .attr("cx", cx - 4)
         .attr("cy", y(hist.sleep.median))
-        .attr("r", 3.2)
-        .attr("fill", c.accent)
+        .attr("r", 3.4)
+        .attr("fill", c.accent || "#e06d2c")
+        .attr("stroke", c.bg || "#fdfcfa")
+        .attr("stroke-width", 1)
         .append("title")
         .text(`sleep median ${fmt(hist.sleep.median, 0)}s`);
     }
     if (hist.not?.median) {
       g.append("circle")
-        .attr("cx", cx + 3)
+        .attr("class", "median-bead")
+        .attr("cx", cx + 4)
         .attr("cy", y(hist.not.median))
-        .attr("r", 3.2)
-        .attr("fill", c.neg)
+        .attr("r", 3.4)
+        .attr("fill", c.neg || "#1f7a8c")
+        .attr("stroke", c.bg || "#fdfcfa")
+        .attr("stroke-width", 1)
         .append("title")
         .text(`not median ${fmt(hist.not.median, 0)}s`);
     }
@@ -358,33 +334,45 @@ function drawBinauralCue(parent, cx, cy, stroke) {
     .attr("stroke-width", 1);
 }
 
-function drawHalf(g, arm, y, cx, maxHalf, color, side) {
+/**
+ * Discrete rounded-cap 音波 bars: sample density every ~4.5px along the log axis.
+ * side = -1 → sleep_title left; side = +1 → not right.
+ */
+function drawWaveBars(g, arm, y, cx, maxHalf, color, side, ih) {
   if (!arm?.bins || !arm?.density) return;
   const bins = arm.bins.map(Number);
   const dens = arm.density.map(Number);
+  if (bins.length < 2 || dens.length < 1) return;
+
+  const mids = dens.map((_, i) => Math.sqrt(bins[i] * bins[i + 1]));
+  const densityAt = d3
+    .scaleLinear()
+    .domain(mids)
+    .range(dens)
+    .clamp(true);
+
   const maxD = d3.max(dens) || 1;
   const xScale = d3.scaleLinear().domain([0, maxD]).range([0, maxHalf]);
-  const pts = dens.map((d, i) => {
-    const mid = Math.sqrt(bins[i] * bins[i + 1]);
-    return [cx + side * xScale(d), y(mid)];
-  });
-  const area = d3
-    .area()
-    .curve(d3.curveBasis)
-    .x0(cx)
-    .x1((p) => p[0])
-    .y((p) => p[1]);
-  g.append("path").attr("d", area(pts)).attr("fill", color).attr("opacity", 0.35);
-  const line = d3
-    .line()
-    .curve(d3.curveBasis)
-    .x((p) => p[0])
-    .y((p) => p[1]);
-  g.append("path")
-    .attr("d", line(pts))
-    .attr("fill", "none")
-    .attr("stroke", color)
-    .attr("stroke-width", 1.25);
+  const step = 4.5;
+  const sw = 2.5;
+  const bars = g.append("g").attr("class", side < 0 ? "wave-bars sleep" : "wave-bars not");
+
+  for (let py = step * 0.5; py <= ih - step * 0.25; py += step) {
+    const sec = y.invert(py);
+    const d = densityAt(sec);
+    if (!(d > 0)) continue;
+    const half = Math.max(1.2, xScale(d));
+    bars
+      .append("line")
+      .attr("x1", cx)
+      .attr("x2", cx + side * half)
+      .attr("y1", py)
+      .attr("y2", py)
+      .attr("stroke", color)
+      .attr("stroke-width", sw)
+      .attr("stroke-linecap", "round")
+      .attr("opacity", 0.92);
+  }
 }
 
 export function update() {
