@@ -1,7 +1,7 @@
-/* Vertical acoustic spindles — refined warm-paper typography + crisp 1h/8h lines. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261125c";
-import { themeColors } from "../theme.js?v=20261125c";
-import { renderReviewBanner } from "./review.js?v=20261125c";
+/* Vertical acoustic spindles — Depth of Sleep sky-to-night backdrop. */
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126i";
+import { themeColors } from "../theme.js?v=20261126i";
+import { renderReviewBanner } from "./review.js?v=20261126i";
 
 const WEIGHTS = [
   { id: "video", label: "video" },
@@ -172,7 +172,7 @@ function draw() {
 
   const w = Math.max(300, mount.clientWidth || 560);
   const n = Math.max(1, hists.length);
-  const margin = { top: 32, right: 14, bottom: 40, left: w < 520 ? 38 : 52 };
+  const margin = { top: 36, right: 14, bottom: 40, left: w < 520 ? 38 : 52 };
   const ih = w < 520 ? 360 : 420;
   const iw = w - margin.left - margin.right;
   const colW = iw / n;
@@ -191,7 +191,39 @@ function draw() {
     .attr("width", "100%")
     .attr("role", "img")
     .attr("aria-label", "Vertical acoustic spindles of duration density");
+
+  const defs = svg.append("defs");
+  // Depth of Sleep: awake paper → soft twilight (matches Upload Clock midnight tone)
+  const sky = defs
+    .append("linearGradient")
+    .attr("id", "depth-of-sleep-sky")
+    .attr("gradientUnits", "userSpaceOnUse")
+    .attr("x1", 0)
+    .attr("x2", 0)
+    .attr("y1", 0)
+    .attr("y2", ih);
+  [
+    [0, "#fdfcfa"],
+    [0.45, "#eef1f7"],
+    [1, "#b8c5de"],
+  ].forEach(([t, color]) => {
+    sky
+      .append("stop")
+      .attr("offset", `${(t * 100).toFixed(0)}%`)
+      .attr("stop-color", color)
+      .attr("stop-opacity", 1);
+  });
+
   const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+  g.append("rect")
+    .attr("class", "depth-of-sleep-backdrop")
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", iw)
+    .attr("height", ih)
+    .attr("fill", "url(#depth-of-sleep-sky)")
+    .attr("rx", 2);
 
   // Y axis
   g.append("g")
@@ -224,18 +256,47 @@ function draw() {
       .text(label);
   });
 
+  // Human-scale cue: ≈ 1 song (3 min)
+  const songSec = 180;
+  if (songSec >= allBins[0] && songSec <= allBins[allBins.length - 1]) {
+    const sy = y(songSec);
+    g.append("line")
+      .attr("class", "song-landmark")
+      .attr("x1", 0)
+      .attr("x2", iw)
+      .attr("y1", sy)
+      .attr("y2", sy)
+      .attr("stroke", c.muted)
+      .attr("stroke-width", 0.7)
+      .attr("opacity", 0.28);
+    g.append("text")
+      .attr("class", "anno-label song-landmark-label")
+      .attr("x", iw - 4)
+      .attr("y", sy - 4)
+      .attr("text-anchor", "end")
+      .attr("font-size", 9.5)
+      .attr("font-style", "italic")
+      .attr("font-variant-numeric", "tabular-nums")
+      .attr("fill", c.muted)
+      .attr("opacity", 0.85)
+      .text("≈ 1 song (3 min)");
+  }
+
   hists.forEach((hist, i) => {
     const cx = colW * i + colW / 2;
     const maxHalf = colW * 0.42;
     g.append("text")
       .attr("x", cx)
-      .attr("y", -10)
+      .attr("y", -14)
       .attr("text-anchor", "middle")
       .attr("font-size", 13)
       .attr("font-family", "Georgia, \"Times New Roman\", serif")
       .attr("letter-spacing", "0.01em")
       .attr("fill", c.ink)
       .text(hist.short);
+
+    // Tiny binaural / dual-capsule cue above the spindle
+    drawBinauralCue(g, cx, -2, c.muted);
 
     // Center spine
     g.append("line")
@@ -268,6 +329,33 @@ function draw() {
         .text(`not median ${fmt(hist.not.median, 0)}s`);
     }
   });
+}
+
+/** Understated 1px dual-capsule / binaural mic mark. */
+function drawBinauralCue(parent, cx, cy, stroke) {
+  const g = parent
+    .append("g")
+    .attr("class", "binaural-cue")
+    .attr("aria-hidden", "true")
+    .attr("opacity", 0.4);
+  const r = 2.2;
+  const gap = 5.5;
+  [-1, 1].forEach((side) => {
+    g.append("circle")
+      .attr("cx", cx + side * gap * 0.5)
+      .attr("cy", cy)
+      .attr("r", r)
+      .attr("fill", "none")
+      .attr("stroke", stroke)
+      .attr("stroke-width", 1);
+  });
+  g.append("line")
+    .attr("x1", cx - gap * 0.5 + r)
+    .attr("x2", cx + gap * 0.5 - r)
+    .attr("y1", cy)
+    .attr("y2", cy)
+    .attr("stroke", stroke)
+    .attr("stroke-width", 1);
 }
 
 function drawHalf(g, arm, y, cx, maxHalf, color, side) {
