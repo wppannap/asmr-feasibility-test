@@ -1,7 +1,7 @@
-/* Vertical acoustic spindles — log-time densities as symmetric soundwave columns. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261125b";
-import { themeColors } from "../theme.js?v=20261125b";
-import { renderReviewBanner } from "./review.js?v=20261125b";
+/* Vertical acoustic spindles — refined warm-paper typography + crisp 1h/8h lines. */
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261125c";
+import { themeColors } from "../theme.js?v=20261125c";
+import { renderReviewBanner } from "./review.js?v=20261125c";
 
 const WEIGHTS = [
   { id: "video", label: "video" },
@@ -172,7 +172,7 @@ function draw() {
 
   const w = Math.max(300, mount.clientWidth || 560);
   const n = Math.max(1, hists.length);
-  const margin = { top: 28, right: 12, bottom: 36, left: w < 520 ? 36 : 48 };
+  const margin = { top: 32, right: 14, bottom: 40, left: w < 520 ? 38 : 52 };
   const ih = w < 520 ? 360 : 420;
   const iw = w - margin.left - margin.right;
   const colW = iw / n;
@@ -199,7 +199,7 @@ function draw() {
     .selectAll("text")
     .attr("fill", c.muted);
 
-  // Milestone strings
+  // Milestone strings (crisp 1h / 8h)
   ctx.markers.forEach((sec) => {
     const yy = y(sec);
     const label = sec === 3600 ? "1 h" : sec === 28800 ? "8 h · full night" : `${sec}s`;
@@ -208,14 +208,18 @@ function draw() {
       .attr("x2", iw)
       .attr("y1", yy)
       .attr("y2", yy)
-      .attr("stroke", c.accent)
+      .attr("stroke", c.ink)
       .attr("stroke-width", 1)
-      .attr("opacity", 0.45);
+      .attr("stroke-dasharray", sec === 28800 ? "5 3" : null)
+      .attr("opacity", 0.35);
     g.append("text")
       .attr("class", "anno-label")
       .attr("x", iw - 4)
-      .attr("y", yy - 4)
+      .attr("y", yy - 5)
       .attr("text-anchor", "end")
+      .attr("font-size", 10)
+      .attr("font-variant-numeric", "tabular-nums")
+      .attr("letter-spacing", "0.02em")
       .attr("fill", c.muted)
       .text(label);
   });
@@ -227,8 +231,9 @@ function draw() {
       .attr("x", cx)
       .attr("y", -10)
       .attr("text-anchor", "middle")
-      .attr("font-size", 12)
-      .attr("font-family", "Georgia, serif")
+      .attr("font-size", 13)
+      .attr("font-family", "Georgia, \"Times New Roman\", serif")
+      .attr("letter-spacing", "0.01em")
       .attr("fill", c.ink)
       .text(hist.short);
 

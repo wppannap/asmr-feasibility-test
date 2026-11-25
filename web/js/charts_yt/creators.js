@@ -1,7 +1,7 @@
-/* Dual-core orbital bubbles — pack layout by n_channels + top5% core. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261125b";
-import { themeColors } from "../theme.js?v=20261125b";
-import { renderReviewBanner } from "./review.js?v=20261125b";
+/* Dual-core orbital bubbles — pack layout + spotlight hover. */
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261125c";
+import { themeColors } from "../theme.js?v=20261125c";
+import { renderReviewBanner } from "./review.js?v=20261125c";
 
 const RULES = [
   { id: "strict", label: "strict" },
@@ -126,8 +126,21 @@ function draw() {
     .attr("class", "bubble")
     .attr("transform", (d) => `translate(${d.x},${d.y})`);
 
+  // Subtle outer orbital rings on major bubbles
+  nodes
+    .filter((d) => d.r > 22 && d.data.country !== "unknown")
+    .append("circle")
+    .attr("class", "bubble-orbit")
+    .attr("r", (d) => d.r + 5)
+    .attr("fill", "none")
+    .attr("stroke", c.line)
+    .attr("stroke-width", 0.8)
+    .attr("stroke-dasharray", "2.5 2.5")
+    .attr("opacity", 0.7);
+
   nodes
     .append("circle")
+    .attr("class", "bubble-shell")
     .attr("r", (d) => d.r)
     .attr("fill", (d) => (d.data.country === "unknown" ? "transparent" : c.bg2))
     .attr("stroke", (d) => (d.data.country === "unknown" ? c.muted : c.accent))
@@ -135,7 +148,6 @@ function draw() {
     .attr("stroke-dasharray", (d) => (d.data.country === "unknown" ? "3 2.5" : null))
     .attr("opacity", (d) => (d.data.country === "unknown" ? 0.55 : 0.95));
 
-  // Inner core ∝ top5% share
   nodes
     .append("circle")
     .attr("class", "bubble-core")
@@ -147,6 +159,16 @@ function draw() {
     .attr("fill", (d) => (d.data.country === "unknown" ? c.muted : c.accent))
     .attr("opacity", (d) => (d.data.country === "unknown" ? 0.25 : 0.55));
 
+  // Spotlight ring (hidden until hover)
+  nodes
+    .append("circle")
+    .attr("class", "bubble-spotlight")
+    .attr("r", (d) => d.r + 3)
+    .attr("fill", "none")
+    .attr("stroke", c.accent)
+    .attr("stroke-width", 1.6)
+    .attr("opacity", 0);
+
   nodes
     .append("title")
     .text(
@@ -157,7 +179,6 @@ function draw() {
           : "")
     );
 
-  // Labels for larger bubbles
   nodes
     .filter((d) => d.r > 18)
     .append("text")
@@ -174,7 +195,19 @@ function draw() {
       return `${d.data.country}${share}`;
     });
 
-  // Callouts for unknown + largest known
+  // Editorial spotlight hover: highlight + dim others
+  nodes
+    .style("cursor", "pointer")
+    .on("pointerenter", function () {
+      nodes.attr("opacity", 0.35);
+      d3.select(this).attr("opacity", 1);
+      d3.select(this).select(".bubble-spotlight").attr("opacity", 1);
+    })
+    .on("pointerleave", function () {
+      nodes.attr("opacity", 1);
+      nodes.select(".bubble-spotlight").attr("opacity", 0);
+    });
+
   const known = leaves.filter((d) => d.data.country !== "unknown");
   const top = known.sort((a, b) => b.data.n_channels - a.data.n_channels)[0];
   const unk = leaves.find((d) => d.data.country === "unknown");

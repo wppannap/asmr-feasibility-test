@@ -1,18 +1,15 @@
 /**
  * Enabled scrolly sections for the published site.
- * Editorial Martini Glass order is defined in web/index.html DOM order.
+ * Editorial order is defined in web/index.html DOM order.
  * Disabled section HTML lives under src_hidden/sections_hidden/ (not deployed).
  */
 // pages-redeploy
 export const ENABLED_SECTIONS = [
   "top",
   "scrolly-1",
-  "scrolly-2",
   "scrolly-9",
   "scrolly-5",
   "scrolly-3",
-  "scrolly-4",
-  "scrolly-6",
 ];
 
 /** Data files required by enabled sections only. */
@@ -20,9 +17,6 @@ export const ENABLED_DATA = {
   topo: "data/countries-50m.json",
   trends: "data/trends_country_v3c.json",
   monthly: "data/trends_monthly_v3c.json",
-  scatter: "data/correlations_v3c.json",
-  scatter_points: "data/scatter_points_v3c.json",
-  wiki: "data/wiki_lang.json",
   yt_creators: "data/yt_creators.json",
   yt_duration: "data/yt_duration.json",
   yt_upload_clock: "data/yt_upload_clock.json",
@@ -30,11 +24,9 @@ export const ENABLED_DATA = {
 
 /** Chart module paths loaded only when the matching section id is enabled. */
 export const SECTION_CHART_MODULES = {
-  "scrolly-3": "./charts_yt/creators.js?v=20261125b",
-  "scrolly-4": "./charts/scatter.js?v=20261125b",
-  "scrolly-5": "./charts_yt/duration.js?v=20261125b",
-  "scrolly-6": "./charts/wiki.js?v=20261125b",
-  "scrolly-9": "./charts_yt/upload_clock.js?v=20261125b",
+  "scrolly-3": "./charts_yt/creators.js?v=20261125c",
+  "scrolly-5": "./charts_yt/duration.js?v=20261125c",
+  "scrolly-9": "./charts_yt/upload_clock.js?v=20261125c",
 };
 
 /** Map caption notes (not hardcoded in HTML). */
@@ -60,13 +52,5 @@ export function applySectionVisibility(doc = document) {
       a.hidden = !on;
       a.style.display = on ? "" : "none";
     });
-  }
-  const metric = doc.getElementById("metric-toggle");
-  if (metric) {
-    const row = metric.closest(".control-row");
-    if (row) {
-      row.hidden = true;
-      row.style.display = "none";
-    }
   }
 }

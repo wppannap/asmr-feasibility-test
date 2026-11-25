@@ -1332,30 +1332,26 @@ input[type="range"] {
   .section-head { padding: 2rem 1rem 0.75rem; }
 }
 
-/* —— Acoustic constellation legend —— */
+/* —— Dorling cartogram legend —— */
 .legend-node-rising {
   background: var(--accent);
   border-radius: 50%;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 .legend-node-falling {
-  background: transparent;
-  border: 2px solid var(--neg);
+  background: var(--neg);
   border-radius: 50%;
-  box-shadow: inset 0 0 0 2px var(--bg), 0 0 0 1px var(--neg);
 }
 .legend-node-flat {
   background: transparent;
   border: 1.5px solid var(--muted);
   border-radius: 50%;
 }
-.country.coast-only {
-  fill: var(--bg2) !important;
-  stroke: #b8b0a2 !important;
-  stroke-width: 0.5px !important;
-}
-.pulse-node .pulse-hit:focus-visible {
+.dorling-node .dorling-hit:focus-visible {
   outline: 1px solid var(--accent);
+}
+.dorling-label {
+  font-family: var(--font-mono);
+  font-weight: 500;
 }
 
 /* Wiki horizon strips */

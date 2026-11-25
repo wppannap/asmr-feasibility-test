@@ -1,13 +1,13 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261125b";
-import { themeColors } from "./theme.js?v=20261125b";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261125c";
+import { themeColors } from "./theme.js?v=20261125c";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261125b";
+} from "./sections.js?v=20261125c";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -54,6 +54,7 @@ function colorDiv(t) {
 
 const state = {
   layerMode: "trends", // trends | creators | compare
+  map1Mode: "growth", // growth | peak
   monthIndex: 0,
   playing: false,
   lands: null,
@@ -87,11 +88,6 @@ async function loadAll() {
     const topo = await d3.json(ENABLED_DATA.topo);
     const trends = await d3.json(ENABLED_DATA.trends);
     const monthly = await d3.json(ENABLED_DATA.monthly);
-    const scatterData = sectionOn("scrolly-4") ? await d3.json(ENABLED_DATA.scatter) : null;
-    const scatterPoints = sectionOn("scrolly-4") && ENABLED_DATA.scatter_points
-      ? await d3.json(ENABLED_DATA.scatter_points)
-      : null;
-    const wikiData = sectionOn("scrolly-6") ? await d3.json(ENABLED_DATA.wiki) : null;
     const ytCreators = sectionOn("scrolly-3") && ENABLED_DATA.yt_creators
       ? await d3.json(ENABLED_DATA.yt_creators)
       : null;
@@ -102,21 +98,7 @@ async function loadAll() {
       ? await d3.json(ENABLED_DATA.yt_upload_clock)
       : null;
 
-    // Unpublished / disabled payloads — never fetch while sections are off.
-    const creators = null;
-    const tiktok = null;
-    const youtube = null;
-    const douyinData = null;
-    const commentsData = null;
-
     state.extra = {
-      tiktok,
-      scatterData,
-      scatterPoints,
-      youtube,
-      wikiData,
-      douyinData,
-      commentsData,
       ytCreators,
       ytDuration,
       ytUpload,
@@ -283,7 +265,7 @@ async function loadAll() {
     root.append("span").attr("class", "legend-title").text(label);
     const legendCopy = state.trendsMeta?.map1_legend || {};
     if (map1Full) {
-      // Acoustic constellation node grammar (no continuous ramp)
+      // Dorling bubble grammar (no continuous ramp)
       const row = (cls, lab) => {
         const r = root.append("div").attr("class", "legend-swatch-row");
         r.append("span").attr("class", `legend-swatch ${cls}`);
@@ -308,7 +290,7 @@ async function loadAll() {
       root
         .append("span")
         .attr("class", "legend-hatch-note")
-        .text("Node size ∝ |clipped growth|; coastline is geographic context only.");
+        .text("Bubble size ∝ |clipped growth|; toggle Mode for 60-month peak.");
       return;
     }
     const w = 180;
@@ -360,8 +342,8 @@ async function loadAll() {
   function createMap(containerSel, key) {
     const wrap = document.querySelector(containerSel);
     const width = 960;
-    const height = 480;
-    const isConstellation = key === "trends";
+    const height = 520;
+    const isDorling = key === "trends";
     const svg = d3
       .select(wrap)
       .append("svg")
@@ -369,8 +351,8 @@ async function loadAll() {
       .attr("role", "img")
       .attr(
         "aria-label",
-        isConstellation
-          ? "Acoustic constellation map of ASMR search growth"
+        isDorling
+          ? "Dorling cartogram of ASMR search growth"
           : "World choropleth map"
       );
 
@@ -405,25 +387,26 @@ async function loadAll() {
       .attr("r", 0.9)
       .attr("fill", themeColors().muted);
 
-    const projection = d3.geoNaturalEarth1().fitSize([width, height], state.lands);
+    const projection = d3.geoNaturalEarth1().fitExtent(
+      [
+        [24, 24],
+        [width - 24, height - 24],
+      ],
+      state.lands
+    );
     const path = d3.geoPath(projection);
 
+    // Dorling: no country polygons — faint land silhouette via tiny quiet dots only
     const g = svg.append("g").attr("class", "countries");
-    const paths = g
-      .selectAll("path.country")
-      .data(state.lands.features)
-      .join("path")
-      .attr("class", isConstellation ? "country coast-only" : "country is-miss")
-      .attr("d", path)
-      .attr("aria-hidden", "true")
-      .attr("data-iso3", (d) => d.properties.iso3 || "")
-      .attr("fill", isConstellation ? themeColors().bg2 : null)
-      .attr("stroke", isConstellation ? "#b8b0a2" : null)
-      .attr("stroke-width", isConstellation ? 0.5 : null)
-      .attr("pointer-events", isConstellation ? "none" : "auto");
-
-    if (!isConstellation) {
-      paths
+    let paths = null;
+    if (!isDorling) {
+      paths = g
+        .selectAll("path.country")
+        .data(state.lands.features)
+        .join("path")
+        .attr("class", "country is-miss")
+        .attr("d", path)
+        .attr("data-iso3", (d) => d.properties.iso3 || "")
         .on("pointerenter", function (event, d) {
           d3.select(this).classed("is-hover", true);
           showTip(event, d, key);
@@ -443,23 +426,41 @@ async function loadAll() {
     const hatchG = svg.append("g").attr("class", "hatch-overlay").attr("pointer-events", "none");
     const hatchPaths = hatchG
       .selectAll("path")
-      .data(isConstellation ? [] : state.lands.features)
+      .data(isDorling ? [] : state.lands.features)
       .join("path")
       .attr("d", path)
       .attr("fill", "none")
       .attr("opacity", 0);
 
-    const pulseG = svg.append("g").attr("class", "pulse-nodes");
+    const pulseG = svg.append("g").attr("class", "dorling-nodes");
 
     if (key === "trends") {
       const [cx, cy] = projection([105, 35]);
-      const lx = Math.min(width - 8, cx + 48);
-      const ly = Math.max(14, cy - 28);
       const anno = svg.append("g").attr("class", "map-anno").attr("pointer-events", "none");
+      // Quiet-zone callout: faint dashed circle at mainland China centroid
+      anno
+        .append("circle")
+        .attr("cx", cx)
+        .attr("cy", cy)
+        .attr("r", 18)
+        .attr("fill", "none")
+        .attr("stroke", themeColors().muted)
+        .attr("stroke-width", 1)
+        .attr("stroke-dasharray", "3 3")
+        .attr("opacity", 0.55);
+      anno
+        .append("circle")
+        .attr("cx", cx)
+        .attr("cy", cy)
+        .attr("r", 2)
+        .attr("fill", themeColors().muted)
+        .attr("opacity", 0.45);
+      const lx = Math.min(width - 8, cx + 52);
+      const ly = Math.max(14, cy - 32);
       anno
         .append("path")
         .attr("class", "anno-leader")
-        .attr("d", `M${cx},${cy} C${cx + 18},${cy - 18} ${lx - 12},${ly} ${lx},${ly}`);
+        .attr("d", `M${cx + 18},${cy - 8} C${cx + 28},${cy - 22} ${lx - 12},${ly} ${lx},${ly}`);
       anno
         .append("text")
         .attr("class", "anno-label")
@@ -478,9 +479,11 @@ async function loadAll() {
       path,
       width,
       height,
-      constellation: isConstellation,
+      dorling: isDorling,
+      constellation: isDorling, // legacy flag for paintMap branch
       hatchId: `hatch-${key}`,
       lowvolPatternId: `dots-lowvol-${key}`,
+      dorlingCache: null,
     };
     return state.maps[key];
   }
@@ -501,7 +504,20 @@ async function loadAll() {
     let html = `<strong>${countryName(iso3)}</strong>`;
     if (kind === "trends") {
       const row = state.countryV2ByIso.get(iso3);
-      if (!row) {
+      if (state.map1Mode === "peak") {
+        const series = state.monthly?.series?.own_peak_asmr || {};
+        const lastIdx = (state.monthly?.months || []).length - 1;
+        const v = series[iso3]?.[lastIdx];
+        const month = state.monthly?.months?.[lastIdx] || "—";
+        if (row?.quality === "low_volume") {
+          html += `<br>Too few searches to measure`;
+        } else if (v == null) {
+          html += `<br>No data`;
+        } else {
+          html += `<br>${month} own-peak: <b>${formatNum(v, 1)}</b>`;
+          if (row?.mk_class) html += `<br>MK class: <b>${row.mk_class}</b>`;
+        }
+      } else if (!row) {
         html += `<br>No data`;
       } else if (row.quality === "low_volume") {
         html += `<br>Too few searches to measure`;
@@ -545,8 +561,8 @@ async function loadAll() {
     const map = state.maps[mapKey];
     if (!map) return;
 
-    if (map.constellation) {
-      paintConstellation(map, valueMap);
+    if (map.dorling || map.constellation) {
+      paintDorling(map, valueMap);
       return;
     }
 
@@ -580,106 +596,205 @@ async function loadAll() {
       });
   }
 
-  /** Acoustic constellation nodes for Map 1 (Trends). */
-  function paintConstellation(map, valueMap) {
+  /** Dorling cartogram bubble-world for Map 1. */
+  function paintDorling(map, valueMap) {
     const c = themeColors();
-    const feats = state.lands.features.filter((f) => f.properties.iso3);
-    const sizeOf = (v) => {
-      const a = Math.abs(v ?? 0);
-      return 1.6 + Math.min(10, Math.sqrt(a) * 0.55);
-    };
+    const mode = state.map1Mode || "growth";
+    const lastIdx = (state.monthly?.months || []).length - 1;
+    const peakSeries = state.monthly?.series?.own_peak_asmr || {};
 
-    const nodes = map.pulseG
-      .selectAll("g.pulse-node")
-      .data(feats, (d) => d.properties.iso3)
+    const nodes = [];
+    state.lands.features.forEach((f) => {
+      const iso = f.properties.iso3;
+      if (!iso) return;
+      const row = state.countryV2ByIso.get(iso);
+      if (!row) return;
+      const pt = map.path.centroid(f);
+      if (!pt || !Number.isFinite(pt[0]) || !Number.isFinite(pt[1])) return;
+
+      let r = 0;
+      let kind = "miss";
+      let labelPct = null;
+      let value = null;
+
+      if (row.quality === "low_volume") {
+        r = 2.2;
+        kind = "lowvol";
+      } else if (mode === "peak") {
+        const v = peakSeries[iso]?.[lastIdx];
+        if (v == null || !Number.isFinite(v)) {
+          kind = "miss";
+          r = 0;
+        } else {
+          kind = "peak";
+          value = v;
+          r = 3.5 + 20 * Math.sqrt(Math.max(0, v) / 100);
+          labelPct = v;
+        }
+      } else if (row.quality === "ok") {
+        const g =
+          row.growth_ratio_clipped != null ? row.growth_ratio_clipped : row.growth_ratio;
+        if (g == null || !Number.isFinite(g)) {
+          kind = "miss";
+          r = 0;
+        } else {
+          value = g;
+          const a = Math.abs(g);
+          r = 3.5 + 22 * Math.sqrt(Math.min(1.5, a) / 1.5);
+          kind = row.mk_class || "flat";
+          labelPct = g * 100;
+        }
+      } else {
+        kind = "miss";
+        r = 0;
+      }
+
+      if (kind === "miss") return;
+      nodes.push({
+        iso3: iso,
+        feature: f,
+        row,
+        x: pt[0],
+        y: pt[1],
+        x0: pt[0],
+        y0: pt[1],
+        r,
+        kind,
+        value,
+        labelPct,
+      });
+    });
+
+    // Deterministic force layout — fixed iterations, no live jitter
+    const sim = d3
+      .forceSimulation(nodes)
+      .force("x", d3.forceX((d) => d.x0).strength(0.75))
+      .force("y", d3.forceY((d) => d.y0).strength(0.75))
+      .force("collide", d3.forceCollide((d) => d.r + 1.15).iterations(2))
+      .stop();
+    for (let i = 0; i < 140; i++) sim.tick();
+
+    // Soft clamp into viewBox
+    nodes.forEach((d) => {
+      d.x = Math.max(d.r + 4, Math.min(map.width - d.r - 4, d.x));
+      d.y = Math.max(d.r + 4, Math.min(map.height - d.r - 4, d.y));
+    });
+
+    map.dorlingCache = nodes;
+
+    const sel = map.pulseG
+      .selectAll("g.dorling-node")
+      .data(nodes, (d) => d.iso3)
       .join((enter) => {
-        const g = enter.append("g").attr("class", "pulse-node");
-        g.append("circle").attr("class", "pulse-orbit");
-        g.append("circle").attr("class", "pulse-ring");
-        g.append("circle").attr("class", "pulse-core");
-        g.append("circle").attr("class", "pulse-hit").attr("fill", "transparent");
+        const g = enter.append("g").attr("class", "dorling-node");
+        g.append("circle").attr("class", "dorling-orbit");
+        g.append("circle").attr("class", "dorling-bubble");
+        g.append("text").attr("class", "dorling-label");
+        g.append("circle").attr("class", "dorling-hit").attr("fill", "transparent");
         return g;
       });
 
-    nodes.attr("transform", (d) => {
-      const pt = d3.geoPath(map.projection).centroid(d);
-      if (!pt || !Number.isFinite(pt[0])) return "translate(-99,-99)";
-      return `translate(${pt[0]},${pt[1]})`;
-    });
+    sel.attr("transform", (d) => `translate(${d.x},${d.y})`);
 
-    nodes.each(function (d) {
-      const iso = d.properties.iso3;
-      const row = state.countryV2ByIso.get(iso);
-      const v = valueMap[iso];
+    sel.each(function (d) {
       const g = d3.select(this);
-      const core = g.select(".pulse-core");
-      const ring = g.select(".pulse-ring");
-      const orbit = g.select(".pulse-orbit");
-      const hit = g.select(".pulse-hit");
+      const bubble = g.select(".dorling-bubble");
+      const orbit = g.select(".dorling-orbit");
+      const label = g.select(".dorling-label");
+      const hit = g.select(".dorling-hit");
 
       orbit.attr("r", 0).attr("fill", "none").attr("stroke", "none");
-      ring.attr("r", 0).attr("fill", "none").attr("stroke", "none");
-      core.attr("r", 0).attr("fill", "none").attr("stroke", "none");
 
-      if (!row || (row.quality !== "ok" && row.quality !== "low_volume")) {
-        // no data — omit node (coastline only)
-        hit.attr("r", 0).attr("pointer-events", "none");
-        return;
-      }
-
-      if (row.quality === "low_volume") {
-        core.attr("r", 1.2).attr("fill", c.muted).attr("opacity", 0.35);
-        hit.attr("r", 6);
-      } else if (row.mk_class === "rising") {
-        const r = sizeOf(v);
-        core.attr("r", r).attr("fill", c.accent).attr("opacity", 0.92);
-        ring
-          .attr("r", r + 3.2)
-          .attr("fill", "none")
-          .attr("stroke", c.accent)
-          .attr("stroke-width", 1)
-          .attr("opacity", 0.45);
-        hit.attr("r", r + 6);
-      } else if (row.mk_class === "falling") {
-        const r = sizeOf(v);
-        core.attr("r", r * 0.55).attr("fill", "none").attr("stroke", c.neg).attr("stroke-width", 1.4);
-        ring
-          .attr("r", r + 2.5)
-          .attr("fill", "none")
-          .attr("stroke", c.neg)
-          .attr("stroke-width", 1.1)
-          .attr("opacity", 0.85);
-        hit.attr("r", r + 6);
-      } else {
-        // flat / no significant trend
-        const r = sizeOf(v);
-        core
-          .attr("r", r)
+      if (d.kind === "lowvol") {
+        bubble
+          .attr("r", d.r)
+          .attr("fill", c.muted)
+          .attr("stroke", "none")
+          .attr("opacity", 0.35);
+        label.text("");
+      } else if (d.kind === "rising" || (d.kind === "peak" && d.value >= 50)) {
+        bubble
+          .attr("r", d.r)
+          .attr("fill", c.accent)
+          .attr("stroke", "none")
+          .attr("opacity", d.kind === "peak" ? 0.55 + 0.4 * (d.value / 100) : 0.9);
+      } else if (d.kind === "falling" || (d.kind === "peak" && d.value < 50)) {
+        if (d.kind === "falling") {
+          bubble
+            .attr("r", d.r)
+            .attr("fill", c.neg)
+            .attr("stroke", "none")
+            .attr("opacity", 0.88);
+        } else {
+          bubble
+            .attr("r", d.r)
+            .attr("fill", c.accent)
+            .attr("stroke", "none")
+            .attr("opacity", 0.35 + 0.45 * (d.value / 100));
+        }
+      } else if (d.kind === "flat") {
+        bubble
+          .attr("r", d.r)
           .attr("fill", "none")
           .attr("stroke", c.muted)
-          .attr("stroke-width", 1.1)
-          .attr("opacity", 0.85);
-        hit.attr("r", r + 5);
+          .attr("stroke-width", 1.4)
+          .attr("opacity", 0.9);
+      } else {
+        bubble
+          .attr("r", d.r)
+          .attr("fill", c.accent)
+          .attr("stroke", "none")
+          .attr("opacity", 0.75);
       }
 
-      if (row.small_base && row.quality === "ok") {
-        const r = sizeOf(v);
+      if (d.row.small_base && d.kind !== "lowvol") {
         orbit
-          .attr("r", r + 5.5)
+          .attr("r", d.r + 3)
           .attr("fill", "none")
           .attr("stroke", c.accent)
           .attr("stroke-width", 1)
           .attr("stroke-dasharray", "2 2")
-          .attr("opacity", 0.7);
+          .attr("opacity", 0.65);
+      }
+
+      // ISO3 + % inside larger bubbles
+      if (d.r >= 14 && d.labelPct != null) {
+        const pct =
+          mode === "peak"
+            ? `${formatNum(d.labelPct, 0)}`
+            : `${d.labelPct >= 0 ? "+" : ""}${d.labelPct.toFixed(0)}%`;
+        label
+          .attr("text-anchor", "middle")
+          .attr("dominant-baseline", "middle")
+          .attr("font-size", Math.min(11, d.r * 0.42))
+          .attr("font-variant-numeric", "tabular-nums")
+          .attr("fill", d.kind === "flat" ? c.ink : c.bg)
+          .attr("pointer-events", "none")
+          .text(`${d.iso3}`);
+        if (d.r >= 20) {
+          // second line via dy offset — use single line with space for mid sizes
+          label.text(`${d.iso3} ${pct}`);
+        }
+      } else if (d.r >= 10) {
+        label
+          .attr("text-anchor", "middle")
+          .attr("dominant-baseline", "middle")
+          .attr("font-size", 8)
+          .attr("fill", d.kind === "flat" ? c.ink : c.bg)
+          .attr("pointer-events", "none")
+          .text(d.iso3);
+      } else {
+        label.text("");
       }
 
       hit
+        .attr("r", d.r + 4)
         .attr("pointer-events", "all")
         .attr("cursor", "pointer")
-        .on("pointerenter", (event) => showTip(event, d, "trends"))
-        .on("pointermove", (event) => showTip(event, d, "trends"))
+        .on("pointerenter", (event) => showTip(event, d.feature, "trends"))
+        .on("pointermove", (event) => showTip(event, d.feature, "trends"))
         .on("pointerleave", () => tooltip.attr("hidden", true))
-        .on("click", (event) => showTip(event, d, "trends"));
+        .on("click", (event) => showTip(event, d.feature, "trends"));
     });
   }
 
@@ -722,7 +837,6 @@ async function loadAll() {
   }
 
   function updateStage1() {
-    // Creator-country payload is unpublished until videos labelled as ASMR (excluding ambient-noise content) are verified.
     state.layerMode = "trends";
     const panels = document.getElementById("map-panels-1");
     if (!panels) return;
@@ -734,29 +848,62 @@ async function loadAll() {
     if (trendsPanel) trendsPanel.classList.remove("is-hidden");
     if (creatorsPanel) creatorsPanel.classList.add("is-hidden");
 
-    if (titleEl) titleEl.textContent = GROWTH_LABEL;
+    const peakMode = state.map1Mode === "peak";
+    const peakLabel =
+      state.monthlyMeta?.map2_caption ||
+      "ASMR relative to each country's own 60-month peak (latest month)";
+    if (titleEl) {
+      titleEl.textContent = peakMode ? peakLabel : GROWTH_LABEL;
+    }
 
-    state.displayValues.trends = collectTrendsValues();
+    state.displayValues.trends = peakMode
+      ? collectPeakValues()
+      : collectTrendsValues();
     state.displayValues.creators = {};
 
-    const tScale = {
-      scale: d3
-        .scaleSequential((t) => colorDiv(1 - t))
-        .domain(GROWTH_DOMAIN_PCT)
-        .clamp(true),
-      domain: GROWTH_DOMAIN_PCT.slice(),
-      log: false,
-      diverging: true,
-    };
+    const tScale = peakMode
+      ? {
+          scale: d3.scaleSequential(colorSeq).domain([0, 100]).clamp(true),
+          domain: [0, 100],
+          log: false,
+          diverging: false,
+        }
+      : {
+          scale: d3
+            .scaleSequential((t) => colorDiv(1 - t))
+            .domain(GROWTH_DOMAIN_PCT)
+            .clamp(true),
+          domain: GROWTH_DOMAIN_PCT.slice(),
+          log: false,
+          diverging: true,
+        };
 
     if (!state.maps.trends) return;
     paintMap("trends", state.displayValues.trends, tScale);
-    drawLegend(document.getElementById("legend-trends"), tScale, GROWTH_LABEL, {
-      map1Full: true,
-      growthTicks: [-50, 0, 50, 150],
-    });
+    drawLegend(
+      document.getElementById("legend-trends"),
+      tScale,
+      peakMode ? "60-month peak (latest)" : GROWTH_LABEL,
+      {
+        map1Full: !peakMode,
+        showMiss: peakMode,
+        showLowVolume: peakMode && anyLowVolumeFlag(),
+        growthTicks: peakMode ? null : [-50, 0, 50, 150],
+      }
+    );
     updateMap1Caption();
     renderTrendsTable();
+  }
+
+  function collectPeakValues() {
+    const out = {};
+    const lastIdx = (state.monthly?.months || []).length - 1;
+    const series = state.monthly?.series?.own_peak_asmr || {};
+    Object.keys(series).forEach((iso) => {
+      const v = series[iso][lastIdx];
+      if (v != null && Number.isFinite(v)) out[iso] = v;
+    });
+    return out;
   }
 
   function renderTrendsTable() {
@@ -868,6 +1015,15 @@ async function loadAll() {
   }
 
   function wireControls() {
+    document.querySelectorAll("#map1-mode button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#map1-mode button").forEach((b) => b.classList.remove("is-active"));
+        btn.classList.add("is-active");
+        state.map1Mode = btn.dataset.mode || "growth";
+        updateStage1();
+      });
+    });
+
     document.querySelectorAll("#layer-mode button").forEach((btn) => {
       btn.addEventListener("click", () => {
         document.querySelectorAll("#layer-mode button").forEach((b) => b.classList.remove("is-active"));
@@ -878,30 +1034,34 @@ async function loadAll() {
     });
 
     const scrubber = document.getElementById("month-scrubber");
-    scrubber.max = String(state.monthly.months.length - 1);
-    // start at first complete month (2021-11)
-    state.monthIndex = 0;
-    scrubber.value = String(state.monthIndex);
-    scrubber.removeAttribute("readonly");
-    scrubber.readOnly = false;
-    scrubber.setAttribute("aria-readonly", "false");
-    scrubber.addEventListener("input", () => {
-      stopPlay();
-      state.monthIndex = +scrubber.value;
-      updateStage2(false);
-    });
+    if (scrubber && state.monthly?.months) {
+      scrubber.max = String(state.monthly.months.length - 1);
+      state.monthIndex = 0;
+      scrubber.value = String(state.monthIndex);
+      scrubber.removeAttribute("readonly");
+      scrubber.readOnly = false;
+      scrubber.setAttribute("aria-readonly", "false");
+      scrubber.addEventListener("input", () => {
+        stopPlay();
+        state.monthIndex = +scrubber.value;
+        updateStage2(false);
+      });
+    }
 
     const playBtn = document.getElementById("play-btn");
-    playBtn.addEventListener("click", () => {
-      if (state.playing) stopPlay();
-      else startPlay();
-    });
+    if (playBtn) {
+      playBtn.addEventListener("click", () => {
+        if (state.playing) stopPlay();
+        else startPlay();
+      });
+    }
   }
 
   let playTimer = null;
   function startPlay() {
     state.playing = true;
     const btn = document.getElementById("play-btn");
+    if (!btn) return;
     btn.classList.add("is-playing");
     btn.textContent = "Pause";
     btn.setAttribute("aria-pressed", "true");
@@ -916,16 +1076,18 @@ async function loadAll() {
   function stopPlay() {
     state.playing = false;
     const btn = document.getElementById("play-btn");
-    btn.classList.remove("is-playing");
-    btn.textContent = "Play";
-    btn.setAttribute("aria-pressed", "false");
-    btn.setAttribute("aria-label", "Play");
+    if (btn) {
+      btn.classList.remove("is-playing");
+      btn.textContent = "Play";
+      btn.setAttribute("aria-pressed", "false");
+      btn.setAttribute("aria-label", "Play");
+    }
     if (playTimer) clearInterval(playTimer);
     playTimer = null;
   }
 
 function initExtraCharts() {
-  const { scatterData, scatterPoints, wikiData, ytCreators, ytDuration, ytUpload } = state.extra;
+  const { ytCreators, ytDuration, ytUpload } = state.extra;
 
   if (sectionOn("scrolly-3") && ChartModules["scrolly-3"] && ytCreators) {
     chartApi.creatorsYt = ChartModules["scrolly-3"].render(
@@ -994,7 +1156,6 @@ function initExtraCharts() {
     });
 
     const nav = document.getElementById("site-nav");
-    // Night theme: no box shadows on nav
     if (nav) nav.style.boxShadow = "none";
     window.addEventListener("resize", syncNotesOpen);
     syncNotesOpen();

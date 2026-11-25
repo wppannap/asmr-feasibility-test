@@ -12,9 +12,12 @@ Re-enable via `scripts/enable_yt_charts.py --section {creators|duration|upload_c
 
 Fragments:
 
-- `scrolly-3.html` — creators (`charts_yt/creators.js`)
-- `scrolly-5.html` — duration (`charts_yt/duration.js`)
+- `scrolly-2.html` — Map 2 own-peak time-lapse (folded into Map 1 peak mode)
+- `scrolly-3.html` — creators (`charts_yt/creators.js`) — currently published
+- `scrolly-4.html` — scatter / association (hidden from published page)
+- `scrolly-5.html` — duration (`charts_yt/duration.js`) — currently published
+- `scrolly-6.html` — Wikipedia pageviews (hidden from published page)
 - `scrolly-7.html` — Douyin (legacy)
 - `scrolly-8.html` — comments (legacy)
-- `scrolly-9.html` — upload clock (`charts_yt/upload_clock.js`)
+- `scrolly-9.html` — upload clock (`charts_yt/upload_clock.js`) — currently published
 - `creator_layer.html` — Map 1 creator overlay (legacy)
