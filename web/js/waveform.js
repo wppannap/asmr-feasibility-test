@@ -41,14 +41,24 @@
     return { w, h };
   }
 
+  /** Cached hero span — avoid reading offsetHeight / scrollHeight on every scroll frame. */
+  let heroSpan = Math.max(1, window.innerHeight * 0.85);
+  let resizeT = 0;
+  function cacheHeroMetrics() {
+    const hero = document.getElementById("top");
+    heroSpan = hero
+      ? Math.max(1, hero.offsetHeight * 0.85)
+      : Math.max(1, window.innerHeight * 0.85);
+  }
+  cacheHeroMetrics();
+
   /** 0 at top of page → 1 once scrolled past hero. */
   function heroProgress() {
     const hero = document.getElementById("top");
     if (!hero) return Math.min(1, window.scrollY / Math.max(1, window.innerHeight));
     const rect = hero.getBoundingClientRect();
-    const span = Math.max(1, hero.offsetHeight * 0.85);
-    const gone = Math.min(span, Math.max(0, -rect.top));
-    return Math.min(1, gone / span);
+    const gone = Math.min(heroSpan, Math.max(0, -rect.top));
+    return Math.min(1, gone / heroSpan);
   }
 
   function ribbon(w, h, mid, amp, time, color, width, layers) {
@@ -192,7 +202,17 @@
     },
     { passive: true }
   );
-  window.addEventListener("resize", () => draw(), { passive: true });
+  window.addEventListener(
+    "resize",
+    () => {
+      clearTimeout(resizeT);
+      resizeT = setTimeout(() => {
+        cacheHeroMetrics();
+        draw();
+      }, 120);
+    },
+    { passive: true }
+  );
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) stop();
     else start();

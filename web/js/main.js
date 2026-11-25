@@ -1,13 +1,13 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126r";
-import { themeColors } from "./theme.js?v=20261126r";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126n";
+import { themeColors } from "./theme.js?v=20261126n";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261126r";
+} from "./sections.js?v=20261126n";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -1572,7 +1572,6 @@ function initExtraCharts() {
     document.querySelectorAll(".scrolly").forEach((section) => {
       if (section.hidden || section.style.display === "none") return;
       const scroller = scrollama();
-      const chartKey = section.dataset.chart;
       const steps = section.querySelectorAll(".step");
       if (!steps.length) return;
       scroller
@@ -1582,28 +1581,27 @@ function initExtraCharts() {
           progress: false,
         })
         .onStepEnter((response) => {
+          // Class toggle only — never redraw SVG / forceSim / refresh ScrollTrigger mid-scroll.
           section.querySelectorAll(".step").forEach((el) => el.classList.remove("is-active"));
           response.element.classList.add("is-active");
-          const mod =
-            ChartModules[section.id] ||
-            (chartKey ? ChartModules[chartKey] : null);
-          if (mod?.update) {
-            mod.update(response.element.dataset.step || response.index + 1);
-          }
         });
 
-      window.addEventListener("resize", () => {
-        scroller.resize();
-        syncNotesOpen();
-      });
+      window.addEventListener(
+        "resize",
+        () => {
+          scroller.resize();
+          syncNotesOpen();
+        },
+        { passive: true }
+      );
     });
 
     const nav = document.getElementById("site-nav");
     if (nav) nav.style.boxShadow = "none";
-    window.addEventListener("resize", syncNotesOpen);
+    window.addEventListener("resize", syncNotesOpen, { passive: true });
     syncNotesOpen();
 
-    // Debounced redraw for width-dependent chart SVGs
+    // Debounced redraw for width-dependent chart SVGs (resize only — not on scroll)
     let chartResizeT = 0;
     window.addEventListener(
       "resize",

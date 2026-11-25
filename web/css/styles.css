@@ -16,17 +16,10 @@
   box-sizing: border-box;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
-html, body {
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
 body {
   margin: 0;
+  max-width: 100%;
+  overflow-x: clip;
   font-family: var(--font-ui);
   color: var(--ink);
   background: var(--bg);
@@ -111,6 +104,7 @@ body::before {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem 1rem 4rem;
+  overflow-anchor: none;
 }
 
 .stage {
@@ -127,6 +121,7 @@ body::before {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  overflow-anchor: none;
 }
 
 .steps {
@@ -1103,10 +1098,6 @@ input[type="range"] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-
   .step,
   .site-nav {
     transition: none !important;
