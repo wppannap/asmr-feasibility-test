@@ -1,13 +1,13 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126a";
-import { themeColors } from "./theme.js?v=20261126a";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126b";
+import { themeColors } from "./theme.js?v=20261126b";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261126a";
+} from "./sections.js?v=20261126b";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -412,6 +412,71 @@ async function loadAll() {
       state.lands
     );
     const path = d3.geoPath(projection);
+
+    // Whisper-quiet five-line staff + treble clef watermark (behind coastlines & notes)
+    if (isDorling) {
+      const muted = themeColors().muted;
+      const staffTop = height * 0.28;
+      const staffBot = height * 0.68;
+      const staffSpan = staffBot - staffTop;
+      const staffG = svg
+        .append("g")
+        .attr("class", "score-staff-watermark")
+        .attr("aria-hidden", "true")
+        .attr("pointer-events", "none");
+      for (let i = 0; i < 5; i++) {
+        const y = staffTop + (staffSpan * i) / 4;
+        staffG
+          .append("line")
+          .attr("x1", 16)
+          .attr("x2", width - 16)
+          .attr("y1", y)
+          .attr("y2", y)
+          .attr("stroke", muted)
+          .attr("stroke-width", 0.6)
+          .attr("opacity", 0.14);
+      }
+      // Compact treble clef on far-left Pacific margin (~37% of staff span)
+      const clefH = staffSpan * 0.37;
+      const clefX = 22;
+      const clefY = staffTop + staffSpan * 0.08;
+      // Unit path roughly 0..32 × 0..80; scale to clefH
+      const clefScale = clefH / 80;
+      staffG
+        .append("path")
+        .attr("class", "score-clef-watermark")
+        .attr(
+          "d",
+          "M16.2 8.5c-1.2 5.8 1.6 10.8 5.8 14.2 3.4 2.8 5.6 6.4 5.2 10.6" +
+            "c-0.5 5.6-5.8 9.4-11.2 7.8C11.2 39.4 8.4 34.2 10 29.6c1.4-4 5.6-5.8 9-3.8" +
+            "c0.4 3.6-1.6 6.4-4.6 7.2M20.8 18.5c0.1 20.5-1.4 36.5-2.2 52.5" +
+            "c-0.3 4.8 3.2 8.2 7 7.8 3.4-0.4 5.8-3.4 5.4-6.6-0.4-3-3.2-4.6-5.8-3.8" +
+            "M18.6 72.5c0 2.6-2.2 4.6-4.8 4.6s-4.8-2-4.8-4.6 2.2-4.6 4.8-4.6 4.8 2 4.8 4.6z"
+        )
+        .attr(
+          "transform",
+          `translate(${clefX},${clefY}) scale(${clefScale.toFixed(4)})`
+        )
+        .attr("fill", "none")
+        .attr("stroke", muted)
+        .attr("stroke-width", 1.4)
+        .attr("stroke-linecap", "round")
+        .attr("stroke-linejoin", "round")
+        .attr("opacity", 0.24);
+      // Faint double-barline at far-right edge
+      const barX = width - 20;
+      [0, 3].forEach((dx) => {
+        staffG
+          .append("line")
+          .attr("x1", barX + dx)
+          .attr("x2", barX + dx)
+          .attr("y1", staffTop)
+          .attr("y2", staffBot)
+          .attr("stroke", muted)
+          .attr("stroke-width", 0.6)
+          .attr("opacity", 0.16);
+      });
+    }
 
     // Ultra-minimal light coastline base under the musical score
     const g = svg.append("g").attr("class", "countries");
