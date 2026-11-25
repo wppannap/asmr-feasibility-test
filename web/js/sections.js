@@ -3,6 +3,7 @@
  * Disabled section HTML lives under src_hidden/sections_hidden/ (not deployed).
  * To re-enable: copy markup into web/index.html and add the id here.
  */
+// pages-redeploy
 export const ENABLED_SECTIONS = [
   "top",
   "scrolly-1",
