@@ -559,9 +559,37 @@ input[type="range"] {
   }
 
   .map-svg-wrap {
-    aspect-ratio: auto;
-    height: min(45vh, 320px);
-    max-height: 45vh;
+    /* Fixed aspect so land extent fills the frame (no empty band above/below). */
+    aspect-ratio: 2 / 1;
+    height: auto;
+    max-height: none;
+  }
+
+  /* Wiki small multiples: flow with the page; no inner scroll cage. */
+  #scrolly-6 .stage-tall .chart-root,
+  #scrolly-6 .chart-root {
+    max-height: none;
+    overflow: visible;
+  }
+
+  #scrolly-6 .chart-scroll,
+  #scrolly-6 .wiki-host {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .wiki-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .corr-table-host {
+    display: none;
+  }
+
+  .corr-cards-host {
+    display: grid;
+    gap: 0.55rem;
+    margin-bottom: 0.5rem;
   }
 
   .map-panel-title,
@@ -643,6 +671,26 @@ input[type="range"] {
   min-height: 320px;
   width: 100%;
   position: relative;
+  min-width: 0;
+  /* Keep room for notes-details sibling inside .stage */
+  max-height: calc(100% - 3.5rem);
+  overflow: hidden;
+}
+
+#scrolly-4 .chart-root {
+  overflow: auto;
+}
+
+.scatter-host {
+  width: 100%;
+  min-height: 280px;
+}
+
+.scatter-host svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 360px;
 }
 
 .stage-tall .chart-root {
@@ -662,6 +710,49 @@ input[type="range"] {
   width: 100%;
   min-height: 300px;
   height: clamp(280px, 48vh, 420px);
+}
+
+.corr-cards-host {
+  display: none;
+}
+
+.corr-card {
+  border: 1px solid var(--stroke);
+  border-radius: 4px;
+  background: #fff;
+  padding: 0.45rem 0.55rem;
+}
+
+.corr-card-title {
+  margin: 0 0 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.corr-card-dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.55rem;
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.corr-card-dl dt {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.corr-card-dl dd {
+  margin: 0;
+}
+
+.scatter-zero {
+  pointer-events: none;
+}
+
+.scatter-pt:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .corr-badge {

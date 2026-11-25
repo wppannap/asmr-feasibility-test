@@ -64,6 +64,9 @@ async function loadAll() {
     const trends = await d3.json(ENABLED_DATA.trends);
     const monthly = await d3.json(ENABLED_DATA.monthly);
     const scatterData = sectionOn("scrolly-4") ? await d3.json(ENABLED_DATA.scatter) : null;
+    const scatterPoints = sectionOn("scrolly-4") && ENABLED_DATA.scatter_points
+      ? await d3.json(ENABLED_DATA.scatter_points)
+      : null;
     const wikiData = sectionOn("scrolly-6") ? await d3.json(ENABLED_DATA.wiki) : null;
     const ytCreators = sectionOn("scrolly-3") && ENABLED_DATA.yt_creators
       ? await d3.json(ENABLED_DATA.yt_creators)
@@ -85,6 +88,7 @@ async function loadAll() {
     state.extra = {
       tiktok,
       scatterData,
+      scatterPoints,
       youtube,
       wikiData,
       douyinData,
@@ -100,6 +104,8 @@ async function loadAll() {
       f.properties = f.properties || {};
       f.properties.iso3 = ISO_NUM_TO_A3[num] || ISO_NUM_TO_A3[num.replace(/^0+/, "")] || null;
     });
+    // Drop Antarctica from projection fit and drawing
+    countries.features = countries.features.filter((f) => f.properties.iso3 !== "ATA");
     state.lands = countries;
 
     state.trendsMeta = trends.meta;
@@ -262,31 +268,26 @@ async function loadAll() {
       grad.append("stop").attr("offset", `${t * 100}%`).attr("stop-color", scaleInfo.scale(x));
     });
     svg.append("rect").attr("width", w).attr("height", h).attr("fill", `url(#${id})`).attr("rx", 2);
-    if (scaleInfo.diverging || growthTicks) {
-      const ticks = growthTicks || [
-        scaleInfo.domain[0],
-        0,
-        scaleInfo.domain[1],
-      ];
-      const tickY = h + 12;
-      ticks.forEach((tv) => {
-        const x =
-          ((tv - scaleInfo.domain[0]) / (scaleInfo.domain[1] - scaleInfo.domain[0])) * w;
-        const anchor = tv <= scaleInfo.domain[0] + 1e-9 ? "start" : tv >= scaleInfo.domain[1] - 1e-9 ? "end" : "middle";
-        svg
-          .append("text")
-          .attr("x", x)
-          .attr("y", tickY)
-          .attr("class", "legend-tick")
-          .attr("text-anchor", anchor)
-          .text(`${tv > 0 ? "+" : ""}${tv}%`);
-      });
-    } else {
-      block
-        .append("span")
-        .attr("class", "legend-range")
-        .text(`${formatNum(scaleInfo.domain[0], 0)} – ${formatNum(scaleInfo.domain[1], 0)}`);
-    }
+    // End labels only, under the ramp (never over the colour band).
+    const endTicks = growthTicks
+      ? [growthTicks[0], growthTicks[growthTicks.length - 1]]
+      : [scaleInfo.domain[0], scaleInfo.domain[1]];
+    const tickY = h + 12;
+    endTicks.forEach((tv, i) => {
+      const x = i === 0 ? 0 : w;
+      const anchor = i === 0 ? "start" : "end";
+      const label =
+        scaleInfo.diverging || growthTicks
+          ? `${tv > 0 ? "+" : ""}${tv}%`
+          : formatNum(tv, 0);
+      svg
+        .append("text")
+        .attr("x", x)
+        .attr("y", tickY)
+        .attr("class", "legend-tick")
+        .attr("text-anchor", anchor)
+        .text(label);
+    });
     const legendCopy = state.trendsMeta?.map1_legend || {};
     if (map1Full) {
       if (legendCopy.ramp) {
@@ -797,7 +798,7 @@ async function loadAll() {
   }
 
 function initExtraCharts() {
-  const { scatterData, wikiData, ytCreators, ytDuration, ytUpload } = state.extra;
+  const { scatterData, scatterPoints, wikiData, ytCreators, ytDuration, ytUpload } = state.extra;
 
   if (sectionOn("scrolly-3") && ChartModules["scrolly-3"] && ytCreators) {
     chartApi.creatorsYt = ChartModules["scrolly-3"].render(
@@ -808,7 +809,11 @@ function initExtraCharts() {
   if (sectionOn("scrolly-4") && ChartModules["scrolly-4"] && scatterData) {
     chartApi.scatter = ChartModules["scrolly-4"].render(
       document.getElementById("chart-scatter"),
-      { scatter: scatterData, caveatEl: document.getElementById("caveat-4") }
+      {
+        scatter: scatterData,
+        scatterPoints: scatterPoints || { points: [] },
+        caveatEl: document.getElementById("caveat-4"),
+      }
     );
   }
   if (sectionOn("scrolly-5") && ChartModules["scrolly-5"] && ytDuration) {

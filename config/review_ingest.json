@@ -1,0 +1,20 @@
+{
+  "generated_at": "2026-11-23T12:29:16Z",
+  "source": "scripts/ingest_review_pack.py",
+  "files": {
+    "human_review_pack.csv": {
+      "sha256": "c87cdaaf22564add81a58107df545d7562b65a0e208354dc14a7add1c3f42f36",
+      "row_count": 40,
+      "nonblank_my_judgment": 40,
+      "ingested_at": "2026-11-23T12:29:16Z",
+      "reviewed_by": "human"
+    }
+  },
+  "pack_blocks": [
+    "ambient_v32",
+    "not_asmr_but_human_trigger",
+    "sleep_title",
+    "tierA",
+    "tierB"
+  ]
+}

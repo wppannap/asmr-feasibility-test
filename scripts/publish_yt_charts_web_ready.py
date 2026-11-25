@@ -46,22 +46,46 @@ def now_iso() -> str:
 
 
 def review_meta(gate_files: list[str]) -> dict:
+    """Build front-end review label from gate files.
+
+    Labels: "(human review, n-item check)", "(AI-assisted review)",
+    nothing for script-only, block for UNSET.
+    """
     rows = []
     if REVIEW.exists():
-        with REVIEW.open(encoding="utf-8-sig", newline="") as f:
-            rows = list(csv.DictReader(f))
+        raw = REVIEW.read_bytes()
+        for enc in ("utf-8-sig", "utf-8", "latin-1"):
+            try:
+                text = raw.decode(enc)
+                break
+            except UnicodeDecodeError:
+                continue
+        else:
+            text = raw.decode("latin-1", errors="replace")
+        rows = list(csv.DictReader(text.replace("\r\n", "\n").splitlines()))
     by_file = {r.get("file"): r for r in rows}
     statuses = []
+    n_items = 0
     for name in gate_files:
         r = by_file.get(name) or {}
-        statuses.append((name, (r.get("reviewed_by") or "UNSET").strip()))
-    unset = [n for n, s in statuses if s == "UNSET"]
-    assisted = [n for n, s in statuses if s == "AI-assisted"]
-    human = [n for n, s in statuses if s.lower() == "human"]
+        rb = (r.get("reviewed_by") or "UNSET").strip()
+        statuses.append((name, rb))
+        try:
+            n_items += int(str(r.get("n") or "0").strip() or "0")
+        except ValueError:
+            pass
+    # script rows are not content reviews
+    content = [(n, s) for n, s in statuses if s != "script"]
+    unset = [n for n, s in content if s == "UNSET"]
+    assisted = [n for n, s in content if s == "AI-assisted"]
+    human = [n for n, s in content if s.lower() == "human"]
     if unset:
         label, reviewed_by, gate_ok = None, "UNSET", False
+    elif not content:
+        label, reviewed_by, gate_ok = "", "script", True
     elif human and not assisted:
-        label, reviewed_by, gate_ok = "(human review)", "human", True
+        label = f"(human review, {n_items}-item check)"
+        reviewed_by, gate_ok = "human", True
     else:
         label, reviewed_by, gate_ok = "(AI-assisted review)", "AI-assisted", True
     return {

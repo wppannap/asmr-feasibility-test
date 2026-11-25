@@ -4,33 +4,33 @@ comment_precision_check_2.csv,100,≈88/100 theme keyword fits comment context,A
 comment_precision_check_3.csv,40,36/40 theme keyword fits,AI-assisted,"sleep_aid (fell asleep/寝落ち) strong; 1–2 anxiety FPs (timestamp 'stress', mild 緊張)"
 comment_precision_check_4.csv,40,38/40 insomnia keyword fits,AI-assisted,FR/ES/JA insomnia phrases largely true positives
 comment_precision_check_5.csv,10,10/10 insomnia keyword fits,AI-assisted,Spanish Anny ASMR insomnia comments all on-theme
-comment_precision_check_6.csv,40,36/40 insomnia keyword fits,AI-assisted,"KO/ZH/JA/EN mostly true; a few 'can't sleep on this' are anti-matches still lexical hits"
-comment_precision_check_7.csv,20,18/20 theme keyword fits,AI-assisted,"KO gratitude/sleep_aid strong; 1 welcome-new-video gratitude weak; 1 almost-slept-then-laughed borderline sleep_aid"
+comment_precision_check_6.csv,40,36/40 insomnia keyword fits,AI-assisted,KO/ZH/JA/EN mostly true; a few 'can't sleep on this' are anti-matches still lexical hits
+comment_precision_check_7.csv,20,18/20 theme keyword fits,AI-assisted,KO gratitude/sleep_aid strong; 1 welcome-new-video gratitude weak; 1 almost-slept-then-laughed borderline sleep_aid
 comment_precision_check_8.csv,30,28/30 insomnia comment plausible,AI-assisted,Title-only pack of insomnia-matched comments; 1–2 ambiguous short lines
-class_check_human.csv,20,17/20 content OK as performed/labelled ASMR,AI-assisted,"FPs/weak: vitamins #asmr short; draw tutorial unintentional; some mukbang-only"
-class_check_ambient_labelled.csv,20,14/20 true ambient/nature/white-noise,AI-assisted,"FPs: salon shampoo ASMR; nape tracing; wax/clay; singing-bowl music with ASMR tag"
+class_check_human.csv,20,17/20 content OK as performed/labelled ASMR,AI-assisted,FPs/weak: vitamins #asmr short; draw tutorial unintentional; some mukbang-only
+class_check_ambient_labelled.csv,20,14/20 true ambient/nature/white-noise,AI-assisted,FPs: salon shampoo ASMR; nape tracing; wax/clay; singing-bowl music with ASMR tag
 class_check_noise_not_asmr.csv,10,10/10 correctly non-ASMR music/ambience,AI-assisted,Jazz/lullaby/meditation/camping — not performed ASMR
-class_check_other.csv,30,25/30 correctly outside labelled ASMR,AI-assisted,"Leaks: whisper mommy RP; spicy mukbang; 睡前引導 reading — ASMR-adjacent left in other"
+class_check_other.csv,30,25/30 correctly outside labelled ASMR,AI-assisted,Leaks: whisper mommy RP; spicy mukbang; 睡前引導 reading — ASMR-adjacent left in other
 class_check_v2_A.csv,10,10/10 tier A human-trigger ASMR OK,AI-assisted,Tapping/massage/mouth/roleplay titles look real
 class_check_v2_B.csv,10,8/10 plausibly ASMR,AI-assisted,Weak: toddler toy purchase; bare live title
 class_check_v2_C.csv,10,6/10 weakly/plausibly ASMR,AI-assisted,Slime/mukbang/roblox keyboard — thin ASMR signal
-class_check_v2_ambient.csv,20,8/20 true ambient content,AI-assisted,"Many FP ambient via binaural/白噪音 tags on girlfriend/ear-cleaning/exam RP"
-class_check_v2_sleep.csv,30,sleep_strict ~20/30 sleep-aid relevant,AI-assisted,"FPs: makeup RP; soap crushing; mukbang gummy; dating vlog with 助眠"
+class_check_v2_ambient.csv,20,8/20 true ambient content,AI-assisted,Many FP ambient via binaural/白噪音 tags on girlfriend/ear-cleaning/exam RP
+class_check_v2_sleep.csv,30,sleep_strict ~20/30 sleep-aid relevant,AI-assisted,FPs: makeup RP; soap crushing; mukbang gummy; dating vlog with 助眠
 class_check_v2_other.csv,20,18/20 correctly other,AI-assisted,Mostly health/music/game/VTuber; mukbang/massage-music borderline
 class_check_v3_ambient.csv,20,9/20 content-correct as ambient_labelled,AI-assisted,"11/20 FP ambient (brain→rain, bare heartbeat, white-noise tags on human ASMR, water/作業用)"
 class_check_v3_nonlatin_nature.csv,20,3/20 nature cue content-OK,AI-assisted,Most hits are 作業用/環境音 tags on human ASMR; only 水声/波音 title hits solid
 class_check_v3_longB.csv,20,20/20 meet long_B rule (tier B + ≥3h),AI-assisted,Flag mechanics OK; several rows are streams/lectures/games weakly ASMR
 class_check_v3_sleep_title.csv,30,sleep_title 16/20 relevant; sleep_v2-only 3/10 relevant,AI-assisted,"FPs: socks article, Minecraft 睡眠不足, Pokémon Sleep, 無法入眠 vlog; v2-only often tag-only"
 class_check_v3_A.csv,10,10/10 tier A content-OK,AI-assisted,Human triggers look real; no ambient in title
-sleep_strict_check.csv,40,≈28/40 sleep-aid framing OK,AI-assisted,"Clear sleep ASMR mixed with giveaways/AI bed shorts/food ASMR; bucket noise expected"
+sleep_strict_check.csv,40,≈28/40 sleep-aid framing OK,AI-assisted,Clear sleep ASMR mixed with giveaways/AI bed shorts/food ASMR; bucket noise expected
 lang_check.csv,240,≈228/240 lang label fits title script,AI-assisted,en/es/fr/ja/ko/zh samples consistent; unlike da/tl/und holdouts
 lang_check_extra.csv,120,"3/120 labels OK (da 0/40, tl 0/40, und 3/40)",AI-assisted,da/tl nearly all wrong (EN/Thai/etc.); und often clear EN/id/pt — hold out from lang charts
 class_check_v31_rain_word.csv,20,18/20 true Latin FPs (brain/train/rainbow/drain),AI-assisted,2/20 are Rainfall/Rainy — whole-word drops real rain words
 class_check_v31_vacuum.csv,10,9/10 moves appropriate,AI-assisted,1 miss: Vacuum Cleaner Sound sleep track needs phrase coverage
 class_check_v31_heartbeat.csv,10,10/10 moves appropriate,AI-assisted,Bare heartbeat was product-name + human-RP FP into ambient
-class_check_v32_ambient_tag_only.csv,20,16/20 appropriately kept under title_only,AI-assisted,"Most are human ASMR with WN only in tags; a few CD-unboxing weak"
+class_check_v32_ambient_tag_only.csv,20,16/20 appropriately kept under title_only,AI-assisted,Most are human ASMR with WN only in tags; a few CD-unboxing weak
 class_check_v32_inflect.csv,20,15/20 correctly newly ambient via nature inflection,AI-assisted,"True rain/waterfall/ambient; FPs: 護腳短影音, Taipei bridge 瀑布 meme, study-with-me"
 script_check.csv,150,≈142/150 script_group matches title script,AI-assisted,KR/JP/Han/Latin look right; other=Cyrillic etc. OK; few mixed-script edge titles
 yt_sleep_tag_check.csv,30,≈18/30 sleep-keyword match is sleep-aid relevant,AI-assisted,"FPs: 雑談 tags, football/relax, product 療癒, slime/bloopers/soap/CD-unboxing, bare live/shorts"
-trends_repeat_check.csv,12,12/12 geos status=ok; |delta_change|≤0.01,AI-assisted,8 quality_v3=ok + 4 low_volume; monthly own_peak pearson≈1 — repeat reproduces v3
+trends_repeat_check.csv,12,12/12 geos status=ok; |delta_change|≤0.01,script,8 quality_v3=ok + 4 low_volume; monthly own_peak pearson≈1 — repeat reproduces v3
 human_review_pack.csv,40,ambient_v32 10/10; not_asmr_but_human_trigger 4/5; sleep_title 10/10; tierA 10/10; tierB 5/5,human,own review

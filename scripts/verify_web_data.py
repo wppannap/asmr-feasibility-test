@@ -2,6 +2,8 @@
 """Verify web/data/*.json against raw sources and privacy / topology rules."""
 from __future__ import annotations
 
+import csv
+import io
 import json
 import math
 import random
@@ -15,7 +17,14 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 WEB = ROOT / "web" / "data"
+CONFIG = ROOT / "config"
+REVIEW_LOG = CONFIG / "review_log.csv"
+REVIEW_INGEST = CONFIG / "review_ingest.json"
 MAX_BYTES = 2 * 1024 * 1024
+
+ALLOWED_REVIEWED_BY = frozenset({"human", "AI-assisted", "script", "UNSET"})
+SCRIPT_OUTPUT_FILES = frozenset({"trends_repeat_check.csv"})
+PACK_FILE = "human_review_pack.csv"
 
 # Published payloads only (human-ASMR scope lockdown). Older YouTube/Douyin/TikTok/
 # comment/creator JSONs live under data/unpublished/ until class_check review.
@@ -23,6 +32,7 @@ EXPECTED_FILES = [
     "trends_country_v3c.json",
     "trends_monthly_v3c.json",
     "correlations_v3c.json",
+    "scatter_points_v3c.json",
     "wiki_lang.json",
 ]
 TOPO_FILE = "countries-50m.json"
@@ -181,6 +191,106 @@ def enabled_sections() -> list[str]:
     if not m:
         return []
     return re.findall(r'"([^"]+)"', m.group(1))
+
+
+def read_review_log_rows() -> list[dict]:
+    """Best-effort CSV read (working copy may be non-UTF-8 after spreadsheet edits)."""
+    if not REVIEW_LOG.exists():
+        return []
+    raw = REVIEW_LOG.read_bytes()
+    text = None
+    for enc in ("utf-8-sig", "utf-8", "latin-1"):
+        try:
+            text = raw.decode(enc)
+            break
+        except UnicodeDecodeError:
+            continue
+    if text is None:
+        text = raw.decode("latin-1", errors="replace")
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    rows = list(csv.DictReader(io.StringIO(text)))
+    if rows and "file" not in rows[0]:
+        first = next(iter(rows[0]))
+        if first.lstrip("\ufeff") == "file":
+            for r in rows:
+                r["file"] = r.pop(first)
+    return rows
+
+
+def check_review_log_human_ingest() -> list[tuple[str, bool, str]]:
+    """Fail if any review_log row says human without an ingest receipt (or pack block).
+
+    Pack blocks listed in review_ingest.json.pack_blocks may appear as human
+    without a per-file receipt. Script outputs must use reviewed_by=script.
+    """
+    out: list[tuple[str, bool, str]] = []
+    rows = read_review_log_rows()
+    if not rows:
+        out.append(("review_log.csv readable", False, "missing or empty"))
+        return out
+    out.append(("review_log.csv readable", True, f"{len(rows)} rows"))
+
+    ingest = {}
+    pack_blocks: set[str] = set()
+    if REVIEW_INGEST.exists():
+        try:
+            ingest = json.loads(REVIEW_INGEST.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            out.append(("review_ingest.json parse", False, str(e)))
+            return out
+        pack_blocks = {str(b) for b in (ingest.get("pack_blocks") or [])}
+        out.append(("review_ingest.json present", True, f"blocks={sorted(pack_blocks)}"))
+    else:
+        out.append(("review_ingest.json present", False, "missing"))
+
+    files_meta = (ingest.get("files") or {}) if isinstance(ingest, dict) else {}
+    bad_values = []
+    script_wrong = []
+    uncovered_human = []
+    for r in rows:
+        fname = (r.get("file") or "").strip()
+        rb = (r.get("reviewed_by") or "UNSET").strip()
+        if rb not in ALLOWED_REVIEWED_BY:
+            bad_values.append(f"{fname}:{rb}")
+        if fname in SCRIPT_OUTPUT_FILES and rb != "script":
+            script_wrong.append(f"{fname}:{rb}")
+        if rb.lower() != "human":
+            continue
+        # (b) pack block name itself
+        if fname in pack_blocks or fname.startswith("block:"):
+            continue
+        # (a) listed in review_ingest.json with matching count
+        meta = files_meta.get(fname)
+        if not isinstance(meta, dict):
+            uncovered_human.append(fname)
+            continue
+        try:
+            logged_n = int(str(r.get("n") or "").strip() or "-1")
+        except ValueError:
+            logged_n = -1
+        receipt_n = meta.get("row_count")
+        if receipt_n is None or int(receipt_n) != logged_n:
+            uncovered_human.append(f"{fname}(n={logged_n}≠receipt={receipt_n})")
+            continue
+        if str(meta.get("reviewed_by") or "").lower() != "human":
+            uncovered_human.append(f"{fname}(receipt not human)")
+
+    out.append((
+        "reviewed_by values allowed",
+        len(bad_values) == 0,
+        f"bad={bad_values}" if bad_values else "ok",
+    ))
+    out.append((
+        "script outputs use reviewed_by=script",
+        len(script_wrong) == 0,
+        f"wrong={script_wrong}" if script_wrong else "ok",
+    ))
+    out.append((
+        "human rows covered by review_ingest.json",
+        len(uncovered_human) == 0,
+        f"uncovered={uncovered_human}" if uncovered_human else "ok",
+    ))
+    return out
 
 
 def check_reviewed_by_unset() -> list[tuple[str, bool, str]]:
@@ -348,6 +458,23 @@ def totals_checks(loaded: dict[str, dict]) -> list[tuple[str, bool, str]]:
         not FORBIDDEN_METRIC_RE.search(blob) and "insomnia" not in blob.lower(),
         "ok",
     ))
+    scat = loaded.get("scatter_points_v3c.json") or {}
+    spts = scat.get("points") or []
+    need_pt = {
+        "iso3", "name", "growth_ratio", "growth_clipped", "mk_class", "strict_ok",
+        "small_base", "internet_users_pct", "internet_year", "youth_share_15_24_pct",
+        "youth_year", "source_ids", "flags",
+    }
+    rows.append((
+        "scatter_points_v3c measured points",
+        len(spts) >= 80 and need_pt <= set((spts[0] or {}).keys()),
+        f"n={len(spts)}",
+    ))
+    rows.append((
+        "scatter_points_v3c meta sources",
+        isinstance((scat.get("meta") or {}).get("sources"), dict),
+        "ok" if isinstance((scat.get("meta") or {}).get("sources"), dict) else "missing sources",
+    ))
     monthly = loaded.get("trends_monthly_v3c.json") or {}
     rows.append((
         "monthly v3c has 60 months",
@@ -452,6 +579,8 @@ def main() -> int:
 
     # Manual-check provenance: page-shown theme checks must not be UNSET
     results.extend(check_reviewed_by_unset())
+    # human rows require ingest receipt; script outputs must be labelled script
+    results.extend(check_review_log_human_ingest())
 
     # TopoJSON country codes
     topo = fetch_topo_iso3()

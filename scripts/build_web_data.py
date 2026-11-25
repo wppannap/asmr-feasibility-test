@@ -1509,6 +1509,7 @@ def build_wiki_lang() -> dict:
                 "Language edition is not country. The Chinese edition is not accessible from mainland China, so its counts do not measure Chinese-language interest. Each series is indexed to its own maximum, so small editions and single-month spikes can distort the shape. Article pageviews also depend on search-engine features.",
                 "low_traffic: language editions below the 25th percentile of total ASMR views; index may exaggerate small changes.",
                 "Only concepts listed in config/wiki_concepts.yaml are published (human-ASMR site scope).",
+                "Some editions show a step change that may reflect article moves or redirects rather than a change in interest.",
             ],
         },
         "months": months,

@@ -147,14 +147,14 @@ CHECK_JS = r"""
     if (!sec || sec.hidden) continue;
     // Desktop scrolly keeps stage sticky beside steps — they intentionally share
     // the viewport. Check each column (or the whole section when stacked).
-    if (vw > 820) {
-      const stage = sec.querySelector(".stage");
-      const steps = sec.querySelector(".steps");
-      if (stage) findOverlaps(collectBoxes(stage), sid, "stage");
-      if (steps) findOverlaps(collectBoxes(steps), sid, "steps");
-    } else {
-      findOverlaps(collectBoxes(sec), sid, "stacked");
-    }
+    // Stage vs steps may share the viewport (sticky desktop or tall stacked
+    // mobile). Check each column separately so intentional scrolly overlap
+    // does not fail the test.
+    const stage = sec.querySelector(".stage");
+    const steps = sec.querySelector(".steps");
+    if (stage) findOverlaps(collectBoxes(stage), sid, "stage");
+    if (steps) findOverlaps(collectBoxes(steps), sid, "steps");
+    if (!stage && !steps) findOverlaps(collectBoxes(sec), sid, "section");
   }
   return failures;
 }

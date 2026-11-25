@@ -17,6 +17,7 @@ export const ENABLED_DATA = {
   trends: "data/trends_country_v3c.json",
   monthly: "data/trends_monthly_v3c.json",
   scatter: "data/correlations_v3c.json",
+  scatter_points: "data/scatter_points_v3c.json",
   wiki: "data/wiki_lang.json",
   // Populated by scripts/enable_yt_charts.py when a YouTube section is enabled:
   // yt_creators / yt_duration / yt_upload_clock
