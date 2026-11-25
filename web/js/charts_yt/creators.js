@@ -3,9 +3,9 @@
  * System layout: large solid dark core first, full share-based sizes,
  * organic scatter with collision — never shrink the sky to fit.
  */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126t";
-import { themeColors } from "../theme.js?v=20261126t";
-import { renderReviewBanner } from "./review.js?v=20261126t";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126u";
+import { themeColors } from "../theme.js?v=20261126u";
+import { renderReviewBanner } from "./review.js?v=20261126u";
 
 const RULES = [
   { id: "strict", label: "strict" },
@@ -15,14 +15,18 @@ const RULES = [
 /** Harmonious celestial palette; unknown is muted silver. */
 const PALETTE = ["#f4a259", "#66c2cf", "#e88d72", "#b4a7e8", "#8fb8ed", "#95c9a8", "#d4a574", "#7eb8c9", "#c9a0dc", "#a8c686"];
 const UNKNOWN_COLOR = "#8a94a8";
+const PAGE_IVORY = "#fdfcfa";
 
-/** Share → spread: DE~23% ≈ 32px, TW~50% ≈ 78px (~2.4×). Never flattened. */
-const SPREAD_LO = 32;
-const SPREAD_HI = 78;
+/** Uniform composition scale (~+12%) — preserves share ratios. */
+const COMP_SCALE = 1.12;
+
+/** Share → spread: DE~23% ≈ 36px, TW~50% ≈ 87px (~2.4×). Never flattened. */
+const SPREAD_LO = 32 * COMP_SCALE;
+const SPREAD_HI = 78 * COMP_SCALE;
 const SHARE_LO = 0.23;
 const SHARE_HI = 0.5;
-const COLLIDE_PAD = 18;
-const LABEL_CLEAR = 16;
+const COLLIDE_PAD = 18 * COMP_SCALE;
+const LABEL_CLEAR = 16 * COMP_SCALE;
 
 let ctx = null;
 let resizeBound = false;
@@ -272,8 +276,10 @@ function canvasFor(rows, mobile) {
   const layoutFrac = 0.62;
   let side = Math.ceil(needSide / layoutFrac + 40);
   side = Math.max(side, mobile ? 520 : 960);
-  const w = mobile ? Math.max(440, Math.round(side * 0.72)) : Math.max(960, side);
-  const h = mobile ? Math.max(640, Math.round(side * 0.95)) : Math.max(720, Math.round(side * 0.78));
+  // Extra margin so a long soft feather can breathe outside the solid core
+  side = Math.round(side * COMP_SCALE * 1.12);
+  const w = mobile ? Math.max(500, Math.round(side * 0.72)) : Math.max(1120, side);
+  const h = mobile ? Math.max(720, Math.round(side * 0.95)) : Math.max(840, Math.round(side * 0.78));
   return { w, h };
 }
 
@@ -282,10 +288,11 @@ function canvasFor(rows, mobile) {
  */
 function placeAnchors(rows, iw, ih) {
   const rand = mulberry32(hashSeed(`sky-scatter-${ctx.rule}-${rows.length}-v7`));
-  const x0 = iw * 0.18;
-  const x1 = iw * 0.82;
-  const y0 = ih * 0.18;
-  const y1 = ih * 0.82;
+  // Fill the solid core; outer ~28% of the ellipse is colour feather only
+  const x0 = iw * 0.22;
+  const x1 = iw * 0.78;
+  const y0 = ih * 0.22;
+  const y1 = ih * 0.78;
 
   const nodes = rows.map((r) => {
     const spread = clusterSpread(r);
@@ -370,10 +377,10 @@ function placeAnchors(rows, iw, ih) {
 }
 
 function resolveLabelPositions(items, iw, ih) {
-  const x0 = iw * 0.18;
-  const x1 = iw * 0.82;
-  const y0 = ih * 0.18;
-  const y1 = ih * 0.82;
+  const x0 = iw * 0.22;
+  const x1 = iw * 0.78;
+  const y0 = ih * 0.22;
+  const y1 = ih * 0.78;
   const lw = 56;
   const lh = 14;
   const labels = items.map((it) => ({
@@ -442,30 +449,57 @@ function draw() {
 
   const defs = svg.append("defs");
 
-  // Solid midnight indigo — no muddy mix toward paper
+  // objectBoundingBox radial = ellipse matching the SVG — soft on all four sides.
+  // Opaque indigo→ivory colour path (not alpha×indigo) so midtones never read as a grey halo.
   const skyGrad = defs
     .append("radialGradient")
     .attr("id", "creators-midnight-sky")
+    .attr("gradientUnits", "objectBoundingBox")
     .attr("cx", "50%")
     .attr("cy", "48%")
-    .attr("r", "75%");
+    .attr("r", "50%");
+  // Large solid core; long outer dissolve (layout axis edge ≈ 0.56 elliptical).
+  const solidEnd = 0.58;
   skyGrad.append("stop").attr("offset", "0%").attr("stop-color", "#1a2642");
-  skyGrad.append("stop").attr("offset", "100%").attr("stop-color", "#11182b");
+  skyGrad.append("stop").attr("offset", "40%").attr("stop-color", "#141b2e");
+  skyGrad.append("stop").attr("offset", `${solidEnd * 100}%`).attr("stop-color", "#1a2642");
+  // Dense blue-biased ramp → ivory. Many stops = no banding / no grey ring.
+  [
+    [0.08, "#1c2846"],
+    [0.16, "#1f2d4c"],
+    [0.24, "#243456"],
+    [0.32, "#2a3c62"],
+    [0.4, "#334872"],
+    [0.48, "#405886"],
+    [0.56, "#516998"],
+    [0.64, "#687eac"],
+    [0.72, "#8696b8"],
+    [0.8, "#a8b0c4"],
+    [0.86, "#c5c8d4"],
+    [0.91, "#dddce0"],
+    [0.95, "#efece8"],
+    [0.98, "#f8f6f2"],
+    [1, PAGE_IVORY],
+  ].forEach(([t, color]) => {
+    const offset = solidEnd + t * (1 - solidEnd);
+    skyGrad
+      .append("stop")
+      .attr("offset", `${(offset * 100).toFixed(1)}%`)
+      .attr("stop-color", color);
+  });
 
-  // Large solid core (0→72%), feather only after layout room (72→97%)
+  // Soft alpha only at the outermost rim — colour already ≈ ivory there, so no grey halo.
   const feather = defs
     .append("radialGradient")
     .attr("id", "creators-sky-feather-grad")
-    .attr("gradientUnits", "userSpaceOnUse")
-    .attr("cx", w * 0.5)
-    .attr("cy", h * 0.48)
-    .attr("r", Math.min(w, h) * 0.72);
+    .attr("gradientUnits", "objectBoundingBox")
+    .attr("cx", "50%")
+    .attr("cy", "48%")
+    .attr("r", "50%");
   feather.append("stop").attr("offset", "0%").attr("stop-color", "#fff").attr("stop-opacity", 1);
-  feather.append("stop").attr("offset", "72%").attr("stop-color", "#fff").attr("stop-opacity", 1);
-  feather.append("stop").attr("offset", "84%").attr("stop-color", "#fff").attr("stop-opacity", 0.55);
-  feather.append("stop").attr("offset", "92%").attr("stop-color", "#fff").attr("stop-opacity", 0.18);
-  feather.append("stop").attr("offset", "97%").attr("stop-color", "#000").attr("stop-opacity", 0);
-  feather.append("stop").attr("offset", "100%").attr("stop-color", "#000").attr("stop-opacity", 0);
+  feather.append("stop").attr("offset", "90%").attr("stop-color", "#fff").attr("stop-opacity", 1);
+  feather.append("stop").attr("offset", "96%").attr("stop-color", "#fff").attr("stop-opacity", 0.45);
+  feather.append("stop").attr("offset", "100%").attr("stop-color", "#fff").attr("stop-opacity", 0);
 
   defs
     .append("mask")
@@ -513,7 +547,8 @@ function draw() {
   const fieldRand = mulberry32(0xc0ffee ^ hashSeed(ctx.rule));
   let drawn = 0;
   let tries = 0;
-  while (drawn < 260 && tries < 1200) {
+  const fieldTarget = Math.round(260 * COMP_SCALE * COMP_SCALE);
+  while (drawn < fieldTarget && tries < 1400) {
     tries++;
     const fx = fieldRand() * iw;
     const fy = fieldRand() * ih;
@@ -524,7 +559,7 @@ function draw() {
       .attr("class", "field-star")
       .attr("cx", fx)
       .attr("cy", fy)
-      .attr("r", 0.35 + fieldRand() * 1.1)
+      .attr("r", (0.35 + fieldRand() * 1.1) * COMP_SCALE)
       .attr("fill", "#e8ecf5")
       .attr("opacity", (0.12 + fieldRand() * 0.38) * fade);
     drawn++;
@@ -597,7 +632,7 @@ function draw() {
         .attr("x2", stars[j].x)
         .attr("y2", stars[j].y)
         .attr("stroke", color)
-        .attr("stroke-width", 0.75)
+        .attr("stroke-width", 0.75 * COMP_SCALE)
         .attr("opacity", 0.42)
         .attr("pointer-events", "none");
     });
@@ -609,7 +644,7 @@ function draw() {
         .attr("class", isAnchor ? "constellation-star anchor-star" : "constellation-star")
         .attr("cx", s.x)
         .attr("cy", s.y)
-        .attr("r", isAnchor ? 1.6 + share * 2.2 : 0.85 + rand() * 0.5)
+        .attr("r", (isAnchor ? 1.6 + share * 2.2 : 0.85 + rand() * 0.5) * COMP_SCALE)
         .attr("fill", color)
         .attr("opacity", isAnchor ? Math.min(0.96, 0.52 + glowBoost * 0.42) : 0.4 + rand() * 0.28)
         .attr("filter", isAnchor ? "url(#star-glow)" : null)
