@@ -129,6 +129,26 @@ function draw() {
         ? `top5% ${fmt(d.share_videos_from_top5pct_channels * 100, 0)}%`
         : ""
     );
+  const known = data.filter((d) => d.country !== "unknown");
+  const top = known[0];
+  const unk = data.find((d) => d.country === "unknown");
+  function annotate(row, text) {
+    if (!row) return;
+    const yy = y(row.country) + y.bandwidth() / 2;
+    const x1 = x(row.n_channels || 0);
+    const x2 = Math.min(iw - 4, x1 + 40);
+    g.append("path")
+      .attr("class", "anno-leader")
+      .attr("d", `M${x1},${yy} C${x1 + 14},${yy - 10} ${x2 - 10},${yy - 14} ${x2},${yy - 12}`);
+    g.append("text")
+      .attr("class", "anno-label")
+      .attr("x", x2 + 2)
+      .attr("y", yy - 10)
+      .attr("fill", c.muted)
+      .text(text);
+  }
+  if (top) annotate(top, top.country);
+  if (unk) annotate(unk, "unknown");
 }
 
 export function update() {}

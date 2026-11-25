@@ -294,6 +294,17 @@ function drawScatter() {
       .attr("stroke", themeColors().muted)
       .attr("stroke-width", 1)
       .attr("stroke-dasharray", "4 3");
+    const zx = innerW - 8;
+    const zy = y(0);
+    g.append("path")
+      .attr("class", "anno-leader")
+      .attr("d", `M${zx - 36},${zy} C${zx - 20},${zy - 14} ${zx - 8},${zy - 16} ${zx},${zy - 12}`);
+    g.append("text")
+      .attr("class", "anno-label")
+      .attr("x", zx - 34)
+      .attr("y", zy - 16)
+      .attr("fill", themeColors().muted)
+      .text("zero growth");
   }
 
   const tip = (d) => {

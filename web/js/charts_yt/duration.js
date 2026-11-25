@@ -147,20 +147,26 @@ function draw() {
 
   const c = themeColors();
   ctx.markers.forEach((sec) => {
+    const label = sec === 3600 ? "1 h" : sec === 28800 ? "8 h" : `${sec}s`;
+    const x0 = x(sec);
     g.append("line")
-      .attr("x1", x(sec))
-      .attr("x2", x(sec))
+      .attr("x1", x0)
+      .attr("x2", x0)
       .attr("y1", 0)
       .attr("y2", hists.length * ridgeH)
       .attr("stroke", c.muted)
       .attr("stroke-dasharray", "3 3")
       .attr("opacity", 0.55);
+    const lx = Math.min(iw - 4, x0 + 28);
+    g.append("path")
+      .attr("class", "anno-leader")
+      .attr("d", `M${x0},14 C${x0 + 10},6 ${lx - 10},6 ${lx},10`);
     g.append("text")
-      .attr("x", x(sec) + 2)
-      .attr("y", 10)
-      .attr("font-size", 10)
+      .attr("class", "anno-label")
+      .attr("x", lx + 2)
+      .attr("y", 12)
       .attr("fill", c.muted)
-      .text(sec === 3600 ? "1 h" : sec === 28800 ? "8 h" : `${sec}s`);
+      .text(label);
   });
 
   hists.forEach((hist, i) => {

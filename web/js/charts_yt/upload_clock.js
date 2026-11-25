@@ -119,6 +119,24 @@ function draw() {
     );
     drawRadial(g, sleep?.profile, cell * 0.38, c.accent);
     drawRadial(g, not?.profile, cell * 0.38, c.neg, true);
+    if (i === 0) {
+      const R = cell * 0.38;
+      const mid = ((20 / 24) * 2 * Math.PI + (2 / 24) * 2 * Math.PI) / 2 - Math.PI / 2;
+      const lx = Math.cos(mid) * (R + 36);
+      const ly = Math.sin(mid) * (R + 36);
+      g.append("path")
+        .attr("class", "anno-leader")
+        .attr(
+          "d",
+          `M${Math.cos(mid) * R},${Math.sin(mid) * R} Q${Math.cos(mid) * (R + 18)},${Math.sin(mid) * (R + 18)} ${lx},${ly}`
+        );
+      g.append("text")
+        .attr("class", "anno-label")
+        .attr("x", lx + 2)
+        .attr("y", ly)
+        .attr("fill", c.muted)
+        .text("20:00–02:00");
+    }
   });
 }
 

@@ -434,6 +434,24 @@ async function loadAll() {
       .attr("fill", "none")
       .attr("opacity", 0);
 
+    if (key === "trends") {
+      const [cx, cy] = projection([105, 35]);
+      const lx = Math.min(width - 8, cx + 48);
+      const ly = Math.max(14, cy - 28);
+      const anno = svg.append("g").attr("class", "map-anno").attr("pointer-events", "none");
+      anno
+        .append("path")
+        .attr("class", "anno-leader")
+        .attr("d", `M${cx},${cy} C${cx + 18},${cy - 18} ${lx - 12},${ly} ${lx},${ly}`);
+      anno
+        .append("text")
+        .attr("class", "anno-label")
+        .attr("x", lx + 2)
+        .attr("y", ly + 3)
+        .attr("fill", themeColors().muted)
+        .text("mainland China — not measured");
+    }
+
     state.maps[key] = {
       svg,
       paths,
