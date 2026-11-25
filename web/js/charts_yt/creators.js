@@ -1,18 +1,13 @@
 /* Creators · declared country — star-cluster density field.
  *
- * Cluster AREA ∝ top-5% share; uniform star density inside each cluster.
- * No constellation lines, no hard borders.
+ * Cluster AREA ∝ top-5% share; uniform core density, soft feathered edges.
+ * Named countries only (title_only); no Rule toggle.
  */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126s";
-import { themeColors } from "../theme.js?v=20261126s";
-import { renderReviewBanner } from "./review.js?v=20261126s";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126t";
+import { themeColors } from "../theme.js?v=20261126t";
+import { renderReviewBanner } from "./review.js?v=20261126t";
 
-const RULES = [
-  { id: "strict", label: "strict" },
-  { id: "title_only", label: "title_only" },
-];
-
-/** Harmonious starlight tints; unknown is cool silver-slate. */
+/** Harmonious starlight tints for named countries. */
 const PALETTE = [
   "#e8b86d", // warm gold
   "#7ec8d8", // ice cyan
@@ -25,16 +20,16 @@ const PALETTE = [
   "#b8a0d8",
   "#a8c686",
 ];
-const UNKNOWN_COLOR = "#8a94a8";
 
-/** Share → cluster radius (area ∝ share via sqrt mapping). DE~23%≈34, TW~50%≈88. */
+/** Share → cluster radius (area ∝ share). DE~23%≈34, TW~50%≈88. */
 const R_LO = 34;
 const R_HI = 88;
 const SHARE_LO = 0.23;
 const SHARE_HI = 0.5;
 const STARS_PER_PX2 = 0.032;
-const COLLIDE_PAD = 24;
+const COLLIDE_PAD = 28;
 const LABEL_GAP = 14;
+const RULE = "title_only";
 
 let ctx = null;
 let resizeBound = false;
@@ -59,26 +54,17 @@ export function render(container, data) {
     .attr("class", "chart-subtitle")
     .text(meta.scope_line || "videos labelled as ASMR (excluding ambient-noise content)");
   const ok = renderReviewBanner(wrap, meta);
-  setCaveat(caveatEl, meta.caveats || []);
+  const caveats = [...(meta.caveats || [])];
+  if (!caveats.some((c) => /unknown/i.test(c))) {
+    caveats.push(
+      "Unknown countryCode channels are omitted from the starfield (shown in View as table); shares use the title_only ASMR rule — the ~3,057 tag-only videos barely change creator shares."
+    );
+  }
+  setCaveat(caveatEl, caveats);
   if (!ok) return;
 
-  ctx = { rows, rule: "title_only", meta };
-  const controls = wrap.append("div").attr("class", "control-row chart-controls");
-  controls.append("span").attr("class", "control-label").text("Rule");
-  const seg = controls.append("div").attr("class", "seg");
-  RULES.forEach((o) => {
-    seg
-      .append("button")
-      .attr("type", "button")
-      .classed("is-active", o.id === ctx.rule)
-      .text(o.label)
-      .on("click", function () {
-        ctx.rule = o.id;
-        seg.selectAll("button").classed("is-active", false);
-        d3.select(this).classed("is-active", true);
-        draw();
-      });
-  });
+  ctx = { rows, meta };
+  // No Rule toggle — title_only is the fixed view for general readers.
 
   const tableApi = attachTableToggle(wrap.node(), () => tableRows());
   ctx.mount = tableApi.visual;
@@ -99,17 +85,25 @@ export function render(container, data) {
   }
 }
 
-function filtered() {
+/** Named countries for the starfield (≥30 channels; excludes unknown). */
+function visualRows() {
   return ctx.rows
-    .filter((r) => r.rule === ctx.rule)
+    .filter((r) => r.rule === RULE)
+    .filter((r) => String(r.country || "").toLowerCase() !== "unknown")
     .slice()
     .sort((a, b) => (b.n_channels || 0) - (a.n_channels || 0));
 }
 
+/** Table includes unknown so readers can still inspect it. */
 function tableRows() {
+  const named = visualRows();
+  const unknown = ctx.rows.filter(
+    (r) => r.rule === RULE && String(r.country || "").toLowerCase() === "unknown"
+  );
+  const rows = [...named, ...unknown];
   return {
     columns: ["country", "n_channels", "n_videos", "top5pct_channels", "share_top5pct"],
-    rows: filtered().map((r) => [
+    rows: rows.map((r) => [
       r.country,
       r.n_channels,
       r.n_videos,
@@ -140,8 +134,20 @@ function hashSeed(str) {
   return h >>> 0;
 }
 
+/** Low-discrepancy Halton sequence for balanced 2D scatter. */
+function halton(index, base) {
+  let f = 1;
+  let r = 0;
+  let i = index;
+  while (i > 0) {
+    f /= base;
+    r += f * (i % base);
+    i = Math.floor(i / base);
+  }
+  return r;
+}
+
 function countryColor(code, index) {
-  if (String(code).toLowerCase() === "unknown") return UNKNOWN_COLOR;
   return PALETTE[index % PALETTE.length];
 }
 
@@ -156,11 +162,9 @@ function shareOf(row) {
   return s != null && Number.isFinite(s) ? s : 0.28;
 }
 
-/** Radius from share so area scales clearly with percentage (sqrt of share). */
 function clusterRadius(row) {
   const share = shareOf(row);
   const t = Math.max(0, Math.min(1, (share - SHARE_LO) / (SHARE_HI - SHARE_LO)));
-  // Amplify mid-tier a touch so 35–39% still reads larger than DE/US
   const u = Math.pow(t, 0.92);
   return R_LO + u * (R_HI - R_LO);
 }
@@ -178,12 +182,11 @@ function countOverlaps(nodes) {
   return n;
 }
 
-/** Canvas sized so solid dark core fits all full-size collide disks. */
 function canvasFor(rows, mobile) {
   const radii = rows.map((r) => clusterRadius(r));
   const area = radii.reduce((s, R) => s + Math.PI * (R + COLLIDE_PAD) ** 2, 0);
   const needSide = Math.sqrt(area / 0.48);
-  const layoutFrac = 0.64; // 18–82% band
+  const layoutFrac = 0.56; // 22–78% band
   let side = Math.ceil(needSide / layoutFrac + 48);
   side = Math.max(side, mobile ? 520 : 980);
   const w = mobile ? Math.max(440, Math.round(side * 0.7)) : Math.max(960, side);
@@ -192,34 +195,35 @@ function canvasFor(rows, mobile) {
 }
 
 /**
- * Organic placement inside solid core (18–82%) with forceCollide(R+24).
+ * Jittered Halton scatter across full dark core [0.22–0.78], then forceCollide.
  */
 function placeClusters(rows, iw, ih) {
-  const rand = mulberry32(hashSeed(`cluster-field-${ctx.rule}-${rows.length}-v1`));
-  const x0 = iw * 0.18;
-  const x1 = iw * 0.82;
-  const y0 = ih * 0.18;
-  const y1 = ih * 0.82;
+  const rand = mulberry32(hashSeed(`cluster-halton-${RULE}-${rows.length}-v2`));
+  const x0 = iw * 0.22;
+  const x1 = iw * 0.78;
+  const y0 = ih * 0.22;
+  const y1 = ih * 0.78;
 
-  const nodes = rows.map((r) => {
+  const nodes = rows.map((r, i) => {
     const R = clusterRadius(r);
-    let x = x0 + rand() * (x1 - x0);
-    let y = y0 + rand() * (y1 - y0);
-    x += (rand() - 0.5) * iw * 0.06;
-    y += (rand() - 0.5) * ih * 0.06;
+    // Halton bases 2 & 3; skip index 0; light jitter so it stays organic
+    const hx = halton(i + 1, 2);
+    const hy = halton(i + 1, 3);
+    let x = x0 + hx * (x1 - x0) + (rand() - 0.5) * iw * 0.05;
+    let y = y0 + hy * (y1 - y0) + (rand() - 0.5) * ih * 0.05;
     return { row: r, x, y, R };
   });
 
   function clamp() {
     nodes.forEach((d) => {
-      const m = d.R * 0.35 + 8;
+      const m = d.R * 0.4 + 10;
       d.x = Math.max(x0 + m, Math.min(x1 - m, d.x));
       d.y = Math.max(y0 + m, Math.min(y1 - m, d.y));
     });
   }
 
   function separate() {
-    for (let iter = 0; iter < 180; iter++) {
+    for (let iter = 0; iter < 200; iter++) {
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
           const a = nodes[i];
@@ -253,7 +257,7 @@ function placeClusters(rows, iw, ih) {
         .strength(1)
     )
     .stop();
-  for (let i = 0; i < 300; i++) {
+  for (let i = 0; i < 320; i++) {
     sim.tick();
     clamp();
   }
@@ -264,8 +268,8 @@ function placeClusters(rows, iw, ih) {
   while (countOverlaps(nodes) > 0 && guard < 10) {
     guard++;
     nodes.forEach((d) => {
-      d.x += (rand() - 0.5) * 28;
-      d.y += (rand() - 0.5) * 28;
+      d.x += (rand() - 0.5) * 32;
+      d.y += (rand() - 0.5) * 32;
     });
     separate();
     clamp();
@@ -273,31 +277,51 @@ function placeClusters(rows, iw, ih) {
   return nodes;
 }
 
-/** Soft radial density: r = R * rand()^0.58 — dense core, soft edge, no hard outline. */
+/**
+ * Organic star cloud: ~75% dense core, ~25% soft outer feather (R·0.75–1.22).
+ */
 function buildClusterStars(cx, cy, R, rand) {
   const area = Math.PI * R * R;
   const n = Math.max(40, Math.round(area * STARS_PER_PX2));
+  const nCore = Math.round(n * 0.75);
+  const nFeather = n - nCore;
   const stars = [];
-  for (let i = 0; i < n; i++) {
+
+  for (let i = 0; i < nCore; i++) {
     const a = rand() * Math.PI * 2;
-    const rr = R * Math.pow(rand(), 0.58);
-    const bright = rand() < 0.07;
+    const rr = R * 0.75 * Math.pow(rand(), 0.55);
+    const bright = rand() < 0.08;
     stars.push({
       x: cx + Math.cos(a) * rr,
       y: cy + Math.sin(a) * rr,
       bright,
       r: bright ? 1.15 + rand() * 1.35 : 0.35 + rand() * 0.7,
-      op: bright ? 0.72 + rand() * 0.26 : 0.28 + rand() * 0.42,
+      op: bright ? 0.72 + rand() * 0.26 : 0.32 + rand() * 0.4,
+    });
+  }
+
+  for (let i = 0; i < nFeather; i++) {
+    const a = rand() * Math.PI * 2;
+    const t = rand();
+    const rr = R * (0.75 + t * 0.47); // 0.75 → 1.22
+    const fade = 1 - t; // outer stars dimmer
+    const bright = rand() < 0.04;
+    stars.push({
+      x: cx + Math.cos(a) * rr,
+      y: cy + Math.sin(a) * rr,
+      bright,
+      r: bright ? 0.9 + rand() * 0.9 : 0.3 + rand() * 0.55,
+      op: (bright ? 0.45 + rand() * 0.25 : 0.1 + rand() * 0.28) * (0.35 + fade * 0.65),
     });
   }
   return stars;
 }
 
 function resolveLabelPositions(items, iw, ih) {
-  const x0 = iw * 0.18;
-  const x1 = iw * 0.82;
-  const y0 = ih * 0.18;
-  const y1 = ih * 0.82;
+  const x0 = iw * 0.22;
+  const x1 = iw * 0.78;
+  const y0 = ih * 0.22;
+  const y1 = ih * 0.78;
   const lw = 58;
   const lh = 14;
   const labels = items.map((it) => ({
@@ -333,7 +357,7 @@ function resolveLabelPositions(items, iw, ih) {
       const mdx = it.lx - it.cx;
       const mdy = it.ly - it.cy;
       const md = Math.hypot(mdx, mdy);
-      const maxLeash = it.R + 32;
+      const maxLeash = it.R + 34;
       if (md > maxLeash) {
         it.lx = it.cx + (mdx / md) * maxLeash;
         it.ly = it.cy + (mdy / md) * maxLeash;
@@ -346,7 +370,7 @@ function resolveLabelPositions(items, iw, ih) {
 function draw() {
   const mount = ctx.mount;
   clear(mount);
-  const rows = filtered();
+  const rows = visualRows();
   const mobile = (typeof window !== "undefined" ? window.innerWidth : 1000) < 700;
   const { w, h } = canvasFor(rows, mobile);
   const pad = 12;
@@ -364,7 +388,6 @@ function draw() {
 
   const defs = svg.append("defs");
 
-  // Deep indigo sky — solid dark core, soft radial fade (no hard border)
   const skyGrad = defs
     .append("radialGradient")
     .attr("id", "creators-midnight-sky")
@@ -376,7 +399,6 @@ function draw() {
   skyGrad.append("stop").attr("offset", "55%").attr("stop-color", "#0e1424");
   skyGrad.append("stop").attr("offset", "100%").attr("stop-color", "#0e1424");
 
-  // Alpha mask: opaque 0→66%, feather to 0 by 97% (before SVG edge)
   const feather = defs
     .append("radialGradient")
     .attr("id", "creators-sky-feather-grad")
@@ -386,7 +408,7 @@ function draw() {
     .attr("r", "50%");
   feather.append("stop").attr("offset", "0%").attr("stop-color", "#fff").attr("stop-opacity", 1);
   feather.append("stop").attr("offset", "66%").attr("stop-color", "#fff").attr("stop-opacity", 1);
-  const featherStops = [
+  [
     [0.72, 0.88],
     [0.78, 0.7],
     [0.84, 0.48],
@@ -394,8 +416,7 @@ function draw() {
     [0.94, 0.1],
     [0.97, 0],
     [1, 0],
-  ];
-  featherStops.forEach(([off, op]) => {
+  ].forEach(([off, op]) => {
     feather
       .append("stop")
       .attr("offset", `${off * 100}%`)
@@ -445,8 +466,7 @@ function draw() {
   const cy0 = ih * 0.48;
   const solidR = Math.min(iw, ih) * 0.66;
 
-  // Background starfield — ~1200 tiny dim stars across the night sky
-  const fieldRand = mulberry32(0xc0ffee ^ hashSeed(ctx.rule));
+  const fieldRand = mulberry32(0xc0ffee ^ hashSeed(RULE));
   let drawn = 0;
   let tries = 0;
   while (drawn < 1200 && tries < 6000) {
@@ -477,7 +497,7 @@ function draw() {
     const color = countryColor(row.country, idx);
     const pct = sharePct(row);
     const R = anchor.R;
-    const rand = mulberry32(hashSeed(`${ctx.rule}-${code}-cluster-v1`));
+    const rand = mulberry32(hashSeed(`${RULE}-${code}-cluster-v2`));
     const stars = buildClusterStars(anchor.x, anchor.y, R, rand);
 
     const cg = clusters
@@ -485,6 +505,8 @@ function draw() {
       .attr("class", `star-cluster c-${code}`)
       .attr("tabindex", 0)
       .attr("data-r", R.toFixed(1))
+      .attr("data-x", anchor.x.toFixed(1))
+      .attr("data-y", anchor.y.toFixed(1))
       .style("outline", "none")
       .style("cursor", "pointer");
 
@@ -492,7 +514,7 @@ function draw() {
       .attr("class", "cluster-hit")
       .attr("cx", anchor.x)
       .attr("cy", anchor.y)
-      .attr("r", R * 1.02)
+      .attr("r", R * 1.15)
       .attr("fill", color)
       .attr("opacity", 0)
       .attr("pointer-events", "all");
@@ -510,12 +532,7 @@ function draw() {
         .attr("filter", s.bright ? "url(#star-glow)" : null);
     });
 
-    const label =
-      pct != null
-        ? `${code === "UNKNOWN" ? "unknown" : code} ${pct}%`
-        : code === "UNKNOWN"
-          ? "unknown"
-          : code;
+    const label = pct != null ? `${code} ${pct}%` : code;
 
     labelItems.push({
       cg,
@@ -523,7 +540,7 @@ function draw() {
       cx: anchor.x,
       cy: anchor.y,
       R,
-      preferY: anchor.y + R * 0.72 + LABEL_GAP,
+      preferY: anchor.y + R * 0.78 + LABEL_GAP,
       tip:
         `${row.country}: ${row.n_channels} channels, ${row.n_videos} videos` +
         (pct != null ? `, top 5% share ${pct}%` : ""),
