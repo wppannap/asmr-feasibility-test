@@ -1,21 +1,16 @@
-/* Creators · declared country — constellation star-map on warm paper. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126o";
-import { themeColors } from "../theme.js?v=20261126o";
-import { renderReviewBanner } from "./review.js?v=20261126o";
+/* Creators · declared country — deep-night starfield constellations. */
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126p";
+import { themeColors } from "../theme.js?v=20261126p";
+import { renderReviewBanner } from "./review.js?v=20261126p";
 
 const RULES = [
   { id: "strict", label: "strict" },
   { id: "title_only", label: "title_only" },
 ];
 
-/** Display order + muted regional palette (Unknown ignored). */
-const REGIONS = [
-  { id: "HK", color: "#c4785a", label: "Hong Kong" }, // muted terracotta
-  { id: "KR", color: "#7a92a8", label: "South Korea" }, // dusty blue
-  { id: "US", color: "#8a9a7b", label: "United States" }, // muted sage
-  { id: "JP", color: "#9a8fb0", label: "Japan" }, // soft lavender
-  { id: "TW", color: "#c4a35a", label: "Taiwan" }, // muted golden
-];
+/** Harmonious celestial palette; unknown is muted silver. */
+const PALETTE = ["#f4a259", "#66c2cf", "#e88d72", "#b4a7e8", "#8fb8ed", "#95c9a8", "#d4a574", "#7eb8c9", "#c9a0dc", "#a8c686"];
+const UNKNOWN_COLOR = "#8a94a8";
 
 let ctx = null;
 let resizeBound = false;
@@ -32,7 +27,7 @@ export function render(container, data) {
   wrap
     .append("p")
     .attr("class", "chart-subtitle chart-subtitle-plain")
-    .text("Top 5% of channels’ share of videos — each region as a quiet constellation.");
+    .text("Top 5% of channels’ share of videos — each country as a constellation in deep night.");
   wrap
     .append("p")
     .attr("class", "chart-subtitle")
@@ -79,15 +74,10 @@ export function render(container, data) {
 }
 
 function filtered() {
-  const allow = new Set(REGIONS.map((r) => r.id));
   return ctx.rows
-    .filter((r) => r.rule === ctx.rule && allow.has(String(r.country || "").toUpperCase()))
+    .filter((r) => r.rule === ctx.rule)
     .slice()
-    .sort((a, b) => {
-      const ia = REGIONS.findIndex((r) => r.id === String(a.country).toUpperCase());
-      const ib = REGIONS.findIndex((r) => r.id === String(b.country).toUpperCase());
-      return ia - ib;
-    });
+    .sort((a, b) => (b.n_channels || 0) - (a.n_channels || 0));
 }
 
 function tableRows() {
@@ -105,7 +95,6 @@ function tableRows() {
   };
 }
 
-/** Deterministic PRNG from string seed. */
 function mulberry32(seed) {
   let t = seed >>> 0;
   return function () {
@@ -125,7 +114,18 @@ function hashSeed(str) {
   return h >>> 0;
 }
 
-/** Sparse constellation edges: connect each star to its 1–2 nearest neighbours. */
+function countryColor(code, index) {
+  if (String(code).toLowerCase() === "unknown") return UNKNOWN_COLOR;
+  return PALETTE[index % PALETTE.length];
+}
+
+function sharePct(row) {
+  const s = row?.share_videos_from_top5pct_channels;
+  if (s == null || !Number.isFinite(s)) return null;
+  return Math.round(s * 100);
+}
+
+/** Sparse edges: each star to 1–2 nearest neighbours. */
 function constellationEdges(stars) {
   const edges = [];
   const seen = new Set();
@@ -146,10 +146,50 @@ function constellationEdges(stars) {
   return edges;
 }
 
-function sharePct(row) {
-  const s = row?.share_videos_from_top5pct_channels;
-  if (s == null || !Number.isFinite(s)) return null;
-  return Math.round(s * 100);
+/** Organic, non-grid anchors with simple collision separation. */
+function placeAnchors(rows, iw, ih, mobile) {
+  const rand = mulberry32(hashSeed(`anchors-${ctx.rule}-${rows.length}`));
+  const nodes = rows.map((r, i) => {
+    // Asymmetric seed positions (not a 3×2 grid)
+    const t = (i + 0.37) / Math.max(1, rows.length);
+    const spiral = 0.18 + t * 0.62;
+    const ang = t * Math.PI * 2.15 + rand() * 0.55;
+    let x = iw * (0.5 + Math.cos(ang) * spiral * 0.42 + (rand() - 0.5) * 0.12);
+    let y = ih * (0.48 + Math.sin(ang) * spiral * 0.38 + (rand() - 0.5) * 0.14);
+    // Extra vertical stagger so clusters don't read as rows
+    y += ((i % 5) - 2) * (mobile ? 10 : 14);
+    x = Math.max(iw * 0.1, Math.min(iw * 0.9, x));
+    y = Math.max(ih * 0.12, Math.min(ih * 0.88, y));
+    const nCh = r.n_channels || 30;
+    const spread = (mobile ? 28 : 36) + Math.sqrt(nCh) * (mobile ? 1.1 : 1.35);
+    return { row: r, x, y, r: spread + 18 };
+  });
+
+  // Force-ish separation
+  for (let iter = 0; iter < 48; iter++) {
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i];
+        const b = nodes[j];
+        let dx = b.x - a.x;
+        let dy = b.y - a.y;
+        let dist = Math.hypot(dx, dy) || 0.01;
+        const minD = a.r + b.r;
+        if (dist < minD) {
+          const push = ((minD - dist) / dist) * 0.5;
+          dx *= push;
+          dy *= push;
+          a.x -= dx;
+          a.y -= dy;
+          b.x += dx;
+          b.y += dy;
+        }
+      }
+      nodes[i].x = Math.max(iw * 0.08, Math.min(iw * 0.92, nodes[i].x));
+      nodes[i].y = Math.max(ih * 0.1, Math.min(ih * 0.9, nodes[i].y));
+    }
+  }
+  return nodes;
 }
 
 function draw() {
@@ -157,192 +197,195 @@ function draw() {
   clear(mount);
   const rows = filtered();
   const c = themeColors();
-  const paper = c.bg || "#fdfcfa";
-  const ink = c.ink || "#121622";
-  const muted = c.muted || "#525b70";
-
   const w = Math.max(320, mount.clientWidth || 640);
   const mobile = w < 560;
-  const legendH = mobile ? 118 : 96;
-  const skyH = mobile ? 340 : 400;
-  const margin = { top: 12, right: 16, bottom: 8, left: 16 };
-  const iw = w - margin.left - margin.right;
-  const totalH = skyH + legendH + 8;
+  const h = mobile ? 460 : 520;
+  const pad = 10;
 
   const svg = d3
     .select(mount)
     .append("svg")
-    .attr("viewBox", `0 0 ${w} ${totalH}`)
+    .attr("class", "creators-starfield")
+    .attr("viewBox", `0 0 ${w} ${h}`)
     .attr("width", "100%")
     .attr("role", "img")
-    .attr("aria-label", "Constellation map of top-5% channel video share by declared country");
+    .attr("aria-label", "Deep-night starfield of creator constellations by declared country");
 
-  // Soft ivory sky (no dark navy)
+  const defs = svg.append("defs");
+  const skyGrad = defs
+    .append("radialGradient")
+    .attr("id", "creators-midnight-sky")
+    .attr("cx", "50%")
+    .attr("cy", "45%")
+    .attr("r", "68%");
+  skyGrad.append("stop").attr("offset", "0%").attr("stop-color", "#18223d");
+  skyGrad.append("stop").attr("offset", "100%").attr("stop-color", "#0d1220");
+
+  // Soft glow for anchor stars
+  const glow = defs
+    .append("filter")
+    .attr("id", "star-glow")
+    .attr("x", "-80%")
+    .attr("y", "-80%")
+    .attr("width", "260%")
+    .attr("height", "260%");
+  glow.append("feGaussianBlur").attr("stdDeviation", 1.4).attr("result", "b");
+  const merge = glow.append("feMerge");
+  merge.append("feMergeNode").attr("in", "b");
+  merge.append("feMergeNode").attr("in", "SourceGraphic");
+
+  // Deep midnight canvas
   svg
     .append("rect")
-    .attr("width", w)
-    .attr("height", skyH)
-    .attr("fill", paper);
+    .attr("class", "starfield-canvas")
+    .attr("x", 0.5)
+    .attr("y", 0.5)
+    .attr("width", w - 1)
+    .attr("height", h - 1)
+    .attr("rx", 4)
+    .attr("ry", 4)
+    .attr("fill", "url(#creators-midnight-sky)")
+    .attr("stroke", "#2a3550")
+    .attr("stroke-width", 1);
 
-  const sky = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-  const fieldH = skyH - margin.top - 8;
+  const g = svg.append("g").attr("transform", `translate(${pad},${pad})`);
+  const iw = w - pad * 2;
+  const ih = h - pad * 2;
 
-  // Distant field stars — many, tiny, dim
-  const fieldRand = mulberry32(0x51a7e);
-  const fieldN = Math.round(iw * fieldH * 0.0011);
+  // 220+ deterministic dim field stars
+  const fieldRand = mulberry32(0xc0ffee ^ hashSeed(ctx.rule));
+  const fieldN = 240;
   for (let i = 0; i < fieldN; i++) {
-    sky
-      .append("circle")
+    g.append("circle")
       .attr("class", "field-star")
       .attr("cx", fieldRand() * iw)
-      .attr("cy", fieldRand() * fieldH)
-      .attr("r", 0.4 + fieldRand() * 0.7)
-      .attr("fill", muted)
-      .attr("opacity", 0.08 + fieldRand() * 0.12);
+      .attr("cy", fieldRand() * ih)
+      .attr("r", 0.4 + fieldRand() * 1.0)
+      .attr("fill", "#e8ecf5")
+      .attr("opacity", 0.12 + fieldRand() * 0.38);
   }
 
-  // Region anchors across a wide landscape
-  const anchors = REGIONS.map((reg, i) => {
-    const col = i % 3;
-    const row = Math.floor(i / 3);
-    const ax = mobile
-      ? iw * (0.22 + col * 0.32)
-      : iw * (0.12 + i * 0.19);
-    const ay = mobile
-      ? fieldH * (0.28 + row * 0.48)
-      : fieldH * (0.32 + (i % 2) * 0.28 + (i === 4 ? -0.06 : 0));
-    return { ...reg, ax, ay };
+  // Ultra-faint celestial arcs
+  [
+    { cx: iw * 0.35, cy: ih * 0.55, r: Math.min(iw, ih) * 0.55 },
+    { cx: iw * 0.72, cy: ih * 0.38, r: Math.min(iw, ih) * 0.42 },
+  ].forEach((arc, i) => {
+    g.append("circle")
+      .attr("class", "celestial-arc")
+      .attr("cx", arc.cx)
+      .attr("cy", arc.cy)
+      .attr("r", arc.r)
+      .attr("fill", "none")
+      .attr("stroke", "#e8ecf5")
+      .attr("stroke-width", 0.7)
+      .attr("opacity", 0.08)
+      .attr("stroke-dasharray", i === 0 ? "2 10" : "1 14");
   });
 
-  const byId = new Map(rows.map((r) => [String(r.country).toUpperCase(), r]));
+  const anchors = placeAnchors(rows, iw, ih, mobile);
+  const constellations = g.append("g").attr("class", "constellations");
 
-  anchors.forEach((reg) => {
-    const row = byId.get(reg.id);
+  const groups = [];
+
+  anchors.forEach((anchor, idx) => {
+    const row = anchor.row;
+    const code = String(row.country || "").toUpperCase();
+    const color = countryColor(row.country, idx);
     const pct = sharePct(row);
-    const nCh = row?.n_channels || 40;
-    // Star count: modest, scales gently with share (TW denser, still small)
-    const nStars = Math.round(9 + (pct != null ? pct * 0.14 : 8) + Math.min(8, nCh / 80));
-    const spread = mobile ? 42 : 52;
-    const rand = mulberry32(hashSeed(`${ctx.rule}-${reg.id}-const`));
+    const nCh = row.n_channels || 30;
+    const share = row.share_videos_from_top5pct_channels;
+    const spread = (mobile ? 26 : 34) + Math.sqrt(nCh) * (mobile ? 1.05 : 1.3);
+    const nStars = Math.round(7 + Math.min(28, Math.sqrt(nCh) * 1.15));
+    const rand = mulberry32(hashSeed(`${ctx.rule}-${code}-stars`));
 
     const stars = [];
     for (let i = 0; i < nStars; i++) {
-      // Organic jitter — avoid neat polygons
       const ang = rand() * Math.PI * 2;
-      const rad = spread * (0.25 + rand() * 0.85) * (0.55 + rand() * 0.55);
-      const jx = (rand() - 0.5) * spread * 0.35;
-      const jy = (rand() - 0.5) * spread * 0.35;
+      const rad = spread * (0.2 + rand() * 0.9) * (0.5 + rand() * 0.55);
       stars.push({
-        x: reg.ax + Math.cos(ang) * rad + jx,
-        y: reg.ay + Math.sin(ang) * rad * 0.72 + jy,
-        bright: rand() > 0.78,
+        x: anchor.x + Math.cos(ang) * rad + (rand() - 0.5) * spread * 0.3,
+        y: anchor.y + Math.sin(ang) * rad * 0.7 + (rand() - 0.5) * spread * 0.28,
+        anchor: rand() < 0.18 + (share != null ? share * 0.35 : 0),
       });
     }
 
-    const g = sky.append("g").attr("class", `constellation c-${reg.id}`);
-    const edges = constellationEdges(stars);
+    // Ensure at least one bright anchor when share is high
+    if (share != null && share >= 0.35 && !stars.some((s) => s.anchor)) {
+      stars[0].anchor = true;
+    }
 
-    edges.forEach(([i, j]) => {
-      g.append("line")
+    const cg = constellations
+      .append("g")
+      .attr("class", `constellation c-${code}`)
+      .attr("tabindex", 0)
+      .style("outline", "none")
+      .style("cursor", "pointer");
+
+    constellationEdges(stars).forEach(([i, j]) => {
+      cg.append("line")
         .attr("class", "constellation-link")
         .attr("x1", stars[i].x)
         .attr("y1", stars[i].y)
         .attr("x2", stars[j].x)
         .attr("y2", stars[j].y)
-        .attr("stroke", reg.color)
-        .attr("stroke-width", 0.6)
-        .attr("opacity", 0.28);
+        .attr("stroke", color)
+        .attr("stroke-width", 0.75)
+        .attr("opacity", 0.45);
     });
 
     stars.forEach((s) => {
-      g.append("circle")
-        .attr("class", "constellation-star")
+      const isAnchor = s.anchor;
+      const glowBoost = share != null ? 0.35 + share * 0.55 : 0.4;
+      cg.append("circle")
+        .attr("class", isAnchor ? "constellation-star anchor-star" : "constellation-star")
         .attr("cx", s.x)
         .attr("cy", s.y)
-        .attr("r", s.bright ? 1.65 : 1.05)
-        .attr("fill", reg.color)
-        .attr("opacity", s.bright ? 0.75 : 0.42);
+        .attr("r", isAnchor ? 1.8 + (share || 0) * 1.4 : 0.9 + rand() * 0.5)
+        .attr("fill", color)
+        .attr("opacity", isAnchor ? Math.min(0.95, 0.55 + glowBoost * 0.4) : 0.4 + rand() * 0.25)
+        .attr("filter", isAnchor ? "url(#star-glow)" : null);
     });
 
-    // Unobtrusive label near cluster
-    const lx = reg.ax;
-    const ly = Math.min(fieldH - 4, Math.max(...stars.map((s) => s.y)) + 16);
-    const label = pct != null ? `${reg.id}  ${pct}%` : reg.id;
-    g.append("text")
+    const labelY = Math.min(ih - 6, Math.max(...stars.map((s) => s.y)) + 14);
+    const label = pct != null ? `${code === "UNKNOWN" ? "unknown" : code} ${pct}%` : code;
+    cg.append("text")
       .attr("class", "constellation-label")
-      .attr("x", lx)
-      .attr("y", ly)
+      .attr("x", anchor.x)
+      .attr("y", labelY)
       .attr("text-anchor", "middle")
-      .attr("font-size", 11)
+      .attr("font-size", mobile ? 10 : 11)
       .attr("font-family", 'Georgia, "Times New Roman", serif')
       .attr("letter-spacing", "0.04em")
-      .attr("fill", ink)
-      .attr("opacity", reg.id === "TW" ? 0.9 : 0.72)
-      .attr("font-weight", reg.id === "TW" ? 600 : 400)
+      .attr("fill", "#eef1f7")
+      .attr("opacity", 0.88)
       .text(label);
 
-    g.append("title").text(
-      `${reg.label}: top 5% of channels account for ${pct != null ? pct + "%" : "—"} of videos` +
-        (row ? ` (${row.n_channels} channels)` : "")
-    );
+    const tip =
+      `${row.country}: ${row.n_channels} channels, ${row.n_videos} videos` +
+      (pct != null ? `, top 5% share ${pct}%` : "");
+    cg.append("title").text(tip);
+
+    groups.push(cg);
   });
 
-  // Compact horizontal bar legend (share comparison)
-  const leg = svg
-    .append("g")
-    .attr("class", "share-legend")
-    .attr("transform", `translate(${margin.left},${skyH + 4})`);
+  function setFocus(active) {
+    groups.forEach((cg) => {
+      const on = !active || cg.node() === active;
+      cg.attr("opacity", on ? 1 : 0.28);
+      cg.selectAll(".constellation-link").attr("opacity", on ? 0.7 : 0.2);
+      cg.selectAll(".anchor-star").attr("opacity", on ? 1 : 0.35);
+    });
+  }
 
-  leg
-    .append("text")
-    .attr("x", 0)
-    .attr("y", 12)
-    .attr("font-size", 10)
-    .attr("fill", muted)
-    .attr("letter-spacing", "0.03em")
-    .text("Top 5% of channels · share of videos");
-
-  const barMax = iw * (mobile ? 0.55 : 0.62);
-  const barX = mobile ? 78 : 88;
-  const rowH = mobile ? 16 : 14;
-  const maxPct = 50;
-
-  anchors.forEach((reg, i) => {
-    const row = byId.get(reg.id);
-    const pct = sharePct(row) ?? 0;
-    const y0 = 28 + i * rowH;
-    const bw = (pct / maxPct) * barMax;
-    const isTw = reg.id === "TW";
-
-    leg
-      .append("text")
-      .attr("x", 0)
-      .attr("y", y0 + 9)
-      .attr("font-size", 10)
-      .attr("font-variant-numeric", "tabular-nums")
-      .attr("fill", isTw ? ink : muted)
-      .attr("font-weight", isTw ? 600 : 400)
-      .text(reg.id);
-
-    leg
-      .append("rect")
-      .attr("x", barX)
-      .attr("y", y0 + 2)
-      .attr("width", Math.max(1, bw))
-      .attr("height", 7)
-      .attr("rx", 1)
-      .attr("fill", reg.color)
-      .attr("opacity", isTw ? 0.85 : 0.55);
-
-    leg
-      .append("text")
-      .attr("x", barX + bw + 6)
-      .attr("y", y0 + 9)
-      .attr("font-size", 10)
-      .attr("font-variant-numeric", "tabular-nums")
-      .attr("fill", isTw ? ink : muted)
-      .attr("font-weight", isTw ? 600 : 400)
-      .text(`${pct}%`);
+  groups.forEach((cg) => {
+    cg.on("pointerenter", function () {
+      setFocus(this);
+    })
+      .on("pointerleave", () => setFocus(null))
+      .on("focus", function () {
+        setFocus(this);
+      })
+      .on("blur", () => setFocus(null));
   });
 }
 
