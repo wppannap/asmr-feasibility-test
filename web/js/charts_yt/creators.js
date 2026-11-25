@@ -1,7 +1,7 @@
 /* Creators · declared country — deep-night starfield constellations. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126q";
-import { themeColors } from "../theme.js?v=20261126q";
-import { renderReviewBanner } from "./review.js?v=20261126q";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126r";
+import { themeColors } from "../theme.js?v=20261126r";
+import { renderReviewBanner } from "./review.js?v=20261126r";
 
 const RULES = [
   { id: "strict", label: "strict" },
@@ -163,34 +163,40 @@ function clusterSpread(row, mobile) {
   const share = shareOf(row);
   const nCh = row.n_channels || 30;
   // Share dominates size (TW ~50% clearly larger than DE ~23%); channels are a light dense-fill term.
-  const shareTerm = (mobile ? 58 : 78) * Math.pow(Math.max(0.18, share) / 0.5, 1.35);
-  const channelTerm = Math.sqrt(nCh) * (mobile ? 0.35 : 0.45);
-  return (mobile ? 16 : 20) + shareTerm + channelTerm;
+  const shareTerm = (mobile ? 64 : 86) * Math.pow(Math.max(0.18, share) / 0.5, 1.45);
+  const channelTerm = Math.sqrt(nCh) * (mobile ? 0.3 : 0.4);
+  return (mobile ? 14 : 18) + shareTerm + channelTerm;
 }
 
-/** Organic, asymmetric anchors — deliberately non-grid / non-spiral. */
+/** Organic, asymmetric anchors — star-chart scatter, not a lattice. */
 function placeAnchors(rows, iw, ih, mobile) {
-  const rand = mulberry32(hashSeed(`sky-anchors-${ctx.rule}-${rows.length}-v2`));
-  // Precompute spreads so collision radii track share-driven size
+  const rand = mulberry32(hashSeed(`sky-anchors-${ctx.rule}-${rows.length}-v3`));
+  // Hand-jittered celestial slots (deterministic) so the sky never reads as rows/cols
+  const slots = [
+    [0.18, 0.22],
+    [0.62, 0.14],
+    [0.88, 0.28],
+    [0.34, 0.38],
+    [0.72, 0.44],
+    [0.12, 0.58],
+    [0.48, 0.62],
+    [0.86, 0.68],
+    [0.28, 0.78],
+    [0.58, 0.86],
+    [0.78, 0.78],
+  ];
   const nodes = rows.map((r, i) => {
     const spread = clusterSpread(r, mobile);
-    // Scattered seed: jittered columns + strong y noise (not a lattice)
-    const col = (i * 0.6180339887) % 1;
-    const band = Math.floor(i / 3) / Math.max(1, Math.ceil(rows.length / 3));
-    let x = iw * (0.12 + col * 0.76 + (rand() - 0.5) * 0.2);
-    let y = ih * (0.16 + band * 0.62 + (rand() - 0.5) * 0.28);
-    // Push a few outliers into corners / mid gaps
-    if (rand() < 0.28) {
-      x = iw * (rand() < 0.5 ? 0.1 + rand() * 0.22 : 0.68 + rand() * 0.22);
-      y = ih * (0.14 + rand() * 0.72);
-    }
+    const slot = slots[i % slots.length];
+    let x = iw * (slot[0] + (rand() - 0.5) * 0.1);
+    let y = ih * (slot[1] + (rand() - 0.5) * 0.1);
     x = Math.max(iw * 0.1, Math.min(iw * 0.9, x));
-    y = Math.max(ih * 0.12, Math.min(ih * 0.86, y));
-    return { row: r, x, y, r: spread + (mobile ? 14 : 18), spread };
+    y = Math.max(ih * 0.12, Math.min(ih * 0.88, y));
+    return { row: r, x, y, r: spread * 0.85 + (mobile ? 10 : 12), spread };
   });
 
-  // Soft separation — fewer iterations so clusters stay uneven
-  for (let iter = 0; iter < 36; iter++) {
+  // Light separation only — keep the asymmetric scatter
+  for (let iter = 0; iter < 28; iter++) {
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const a = nodes[i];
@@ -198,9 +204,9 @@ function placeAnchors(rows, iw, ih, mobile) {
         let dx = b.x - a.x;
         let dy = b.y - a.y;
         let dist = Math.hypot(dx, dy) || 0.01;
-        const minD = (a.r + b.r) * 0.92;
+        const minD = (a.r + b.r) * 0.78;
         if (dist < minD) {
-          const push = ((minD - dist) / dist) * 0.42;
+          const push = ((minD - dist) / dist) * 0.35;
           dx *= push;
           dy *= push;
           a.x -= dx;
@@ -216,58 +222,59 @@ function placeAnchors(rows, iw, ih, mobile) {
   return nodes;
 }
 
-/** Irregular star cloud: clumpy, elliptical, with a few outliers. */
+/** Irregular star cloud: clumpy + rim stars so share-scaled radius reads clearly. */
 function buildStars(anchor, nStars, spread, share, rand) {
   const stars = [];
   const cx = anchor.x;
   const cy = anchor.y;
-  const squash = 0.55 + rand() * 0.5;
+  const squash = 0.5 + rand() * 0.55;
   const tilt = rand() * Math.PI;
   const cosT = Math.cos(tilt);
   const sinT = Math.sin(tilt);
 
-  // 2–3 denser clumps inside the constellation
   const clumps = [];
-  const nClumps = 2 + (rand() < 0.45 ? 1 : 0);
+  const nClumps = 2 + (rand() < 0.5 ? 1 : 0);
   for (let c = 0; c < nClumps; c++) {
     const a = rand() * Math.PI * 2;
-    const rr = spread * (0.15 + rand() * 0.55);
+    const rr = spread * (0.12 + rand() * 0.5);
     clumps.push({
-      x: cx + Math.cos(a) * rr * (0.7 + rand() * 0.5),
+      x: cx + Math.cos(a) * rr,
       y: cy + Math.sin(a) * rr * squash,
-      w: 0.25 + rand() * 0.45,
+      w: 0.22 + rand() * 0.4,
     });
   }
 
+  // Reserve ~30% of stars near the outer envelope so larger share = visibly bigger cloud
+  const rimN = Math.max(2, Math.round(nStars * (0.22 + share * 0.25)));
+
   for (let i = 0; i < nStars; i++) {
-    const useClump = rand() < 0.62;
     let x;
     let y;
-    if (useClump) {
+    if (i < rimN) {
+      const a = (i / rimN) * Math.PI * 2 + rand() * 0.5;
+      const rr = spread * (0.72 + rand() * 0.28);
+      const lx = Math.cos(a) * rr;
+      const ly = Math.sin(a) * rr * squash;
+      x = cx + lx * cosT - ly * sinT;
+      y = cy + lx * sinT + ly * cosT;
+    } else if (rand() < 0.55) {
       const cl = clumps[Math.floor(rand() * clumps.length)];
       const a = rand() * Math.PI * 2;
-      const rr = spread * cl.w * (0.15 + rand() * 0.95);
+      const rr = spread * cl.w * (0.2 + rand() * 0.9);
       x = cl.x + Math.cos(a) * rr;
-      y = cl.y + Math.sin(a) * rr * (0.65 + rand() * 0.5);
+      y = cl.y + Math.sin(a) * rr * (0.6 + rand() * 0.55);
     } else {
-      // elongated stray arm
       const a = rand() * Math.PI * 2;
-      const rr = spread * (0.35 + rand() * 0.95);
+      const rr = spread * (0.25 + rand() * 0.7);
       const lx = Math.cos(a) * rr;
       const ly = Math.sin(a) * rr * squash;
       x = cx + lx * cosT - ly * sinT;
       y = cy + lx * sinT + ly * cosT;
     }
-    // rare short stray — keep within the share-scaled envelope
-    if (rand() < 0.08) {
-      x += (rand() - 0.5) * spread * 0.35;
-      y += (rand() - 0.5) * spread * 0.28;
-    }
-    // soft clamp so cluster radius tracks share
     const dx = x - cx;
     const dy = y - cy;
     const d = Math.hypot(dx, dy) || 0.01;
-    const maxR = spread * 1.05;
+    const maxR = spread * 1.02;
     if (d > maxR) {
       x = cx + (dx / d) * maxR;
       y = cy + (dy / d) * maxR;
@@ -280,7 +287,6 @@ function buildStars(anchor, nStars, spread, share, rand) {
   }
 
   if (share >= 0.35 && !stars.some((s) => s.anchor)) stars[0].anchor = true;
-  // Higher share → more bright cores
   const wantAnchors = Math.max(1, Math.round(1 + share * 5));
   let have = stars.filter((s) => s.anchor).length;
   for (let i = 0; have < wantAnchors && i < stars.length; i++) {
@@ -312,39 +318,20 @@ function draw() {
 
   const defs = svg.append("defs");
 
-  // Sky that eases from midnight core → dusk → page ivory at the rim
+  // Midnight core → cool dusk → warm page ivory (no hard navy box)
   const skyGrad = defs
     .append("radialGradient")
     .attr("id", "creators-midnight-sky")
-    .attr("cx", "48%")
-    .attr("cy", "42%")
-    .attr("r", "72%");
-  skyGrad.append("stop").attr("offset", "0%").attr("stop-color", "#1a2544");
-  skyGrad.append("stop").attr("offset", "42%").attr("stop-color", "#121a30");
-  skyGrad.append("stop").attr("offset", "68%").attr("stop-color", "#1c2438");
-  skyGrad.append("stop").attr("offset", "84%").attr("stop-color", "#5c5f6a");
-  skyGrad.append("stop").attr("offset", "93%").attr("stop-color", "#c5c2ba");
-  skyGrad.append("stop").attr("offset", "100%").attr("stop-color", PAGE_BG);
-
-  // Soft feather so the hard rect edge never punches the light page
-  const feather = defs
-    .append("radialGradient")
-    .attr("id", "creators-sky-feather-grad")
     .attr("cx", "50%")
-    .attr("cy", "48%")
-    .attr("r", "72%");
-  feather.append("stop").attr("offset", "0%").attr("stop-color", "#fff").attr("stop-opacity", 1);
-  feather.append("stop").attr("offset", "78%").attr("stop-color", "#fff").attr("stop-opacity", 1);
-  feather.append("stop").attr("offset", "92%").attr("stop-color", "#fff").attr("stop-opacity", 0.55);
-  feather.append("stop").attr("offset", "100%").attr("stop-color", "#fff").attr("stop-opacity", 0);
-  defs
-    .append("mask")
-    .attr("id", "creators-sky-feather")
-    .attr("maskUnits", "userSpaceOnUse")
-    .append("rect")
-    .attr("width", w)
-    .attr("height", h)
-    .attr("fill", "url(#creators-sky-feather-grad)");
+    .attr("cy", "44%")
+    .attr("r", "78%");
+  skyGrad.append("stop").attr("offset", "0%").attr("stop-color", "#18223d");
+  skyGrad.append("stop").attr("offset", "38%").attr("stop-color", "#12192c");
+  skyGrad.append("stop").attr("offset", "58%").attr("stop-color", "#1a2236");
+  skyGrad.append("stop").attr("offset", "72%").attr("stop-color", "#3a4154");
+  skyGrad.append("stop").attr("offset", "84%").attr("stop-color", "#8a877e");
+  skyGrad.append("stop").attr("offset", "93%").attr("stop-color", "#e4e1d9");
+  skyGrad.append("stop").attr("offset", "100%").attr("stop-color", PAGE_BG);
 
   const glow = defs
     .append("filter")
@@ -358,7 +345,7 @@ function draw() {
   merge.append("feMergeNode").attr("in", "b");
   merge.append("feMergeNode").attr("in", "SourceGraphic");
 
-  const sky = svg.append("g").attr("class", "starfield-sky").attr("mask", "url(#creators-sky-feather)");
+  const sky = svg.append("g").attr("class", "starfield-sky");
 
   sky
     .append("rect")
@@ -367,21 +354,9 @@ function draw() {
     .attr("y", 0)
     .attr("width", w)
     .attr("height", h)
+    .attr("rx", 8)
+    .attr("ry", 8)
     .attr("fill", "url(#creators-midnight-sky)");
-
-  // Hairline dusk rim (low contrast vs page) instead of a hard navy box
-  svg
-    .append("rect")
-    .attr("x", 0.5)
-    .attr("y", 0.5)
-    .attr("width", w - 1)
-    .attr("height", h - 1)
-    .attr("rx", 6)
-    .attr("ry", 6)
-    .attr("fill", "none")
-    .attr("stroke", "#b8b4ab")
-    .attr("stroke-width", 1)
-    .attr("opacity", 0.45);
 
   const g = sky.append("g").attr("transform", `translate(${pad},${pad})`);
   const iw = w - pad * 2;
@@ -429,7 +404,7 @@ function draw() {
     const spread = anchor.spread;
     // Star count: channels set the floor; higher share densifies a bit
     const nStars = Math.round(6 + Math.min(26, Math.sqrt(nCh) * 0.95) + share * 10);
-    const rand = mulberry32(hashSeed(`${ctx.rule}-${code}-stars-v2`));
+    const rand = mulberry32(hashSeed(`${ctx.rule}-${code}-stars-v3`));
     const stars = buildStars(anchor, nStars, spread, share, rand);
 
     const xs = stars.map((s) => s.x);
