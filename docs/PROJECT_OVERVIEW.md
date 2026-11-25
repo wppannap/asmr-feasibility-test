@@ -17,13 +17,11 @@ Hidden section HTML for remaining charts lives under `src_hidden/sections_hidden
 | 0 | `top` | none | — | published | hero + waveform |
 | 1 | `scrolly-1` | choropleth + legend/caption/notes | trends_country_v3c, topo | **published** | growth_ratio_clipped colour; MK hatch |
 | 2 | `scrolly-2` | monthly choropleth | trends_monthly_v3c | **published** | own_peak_asmr scrubber |
-| 3 | `scrolly-3` | creators by declared country | yt_creators | **published** | rule toggle; review banner |
-| 4 | `scrolly-4` | corr table + scatter | correlations_v3c | **published** | table on; frames measured/strict |
-| 5 | `scrolly-5` | duration densities | yt_duration | **published** | rule / tier / weight toggles |
-| 6 | `scrolly-6` | wiki small multiples | wiki_lang | **published** | concept `ASMR` only |
-| 7 | `scrolly-7` | Douyin (disabled) | unpublished | **hidden** | — |
-| 8 | `scrolly-8` | comments (disabled) | unpublished | **hidden** | — |
-| 9 | `scrolly-9` | upload clock | yt_upload_clock | **published** | JP/KR/TW/HK radials |
+| 3 | `scrolly-9` | upload clock (night shift) | yt_upload_clock | **published** | radial night clocks JP/KR/TW/HK |
+| 4 | `scrolly-5` | duration (till dawn) | yt_duration | **published** | audio-track densities |
+| 5 | `scrolly-3` | creators | yt_creators | **published** | declared country |
+| 6 | `scrolly-4` + `scrolly-6` | explore layer | correlations + wiki | **published** | scatter then wiki |
+| — | `scrolly-7` / `scrolly-8` | Douyin / comments | unpublished | **hidden** | — |
 
 ### Visible claim-like strings (verbatim)
 

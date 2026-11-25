@@ -3,52 +3,54 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ASMR · sleep — scrolly map</title>
-  <link rel="stylesheet" href="css/theme.css?v=5" />
-  <link rel="stylesheet" href="css/styles.css?v=5" />
+  <title>ASMR · sleep — late-night listening</title>
+  <link rel="stylesheet" href="css/theme.css?v=6" />
+  <link rel="stylesheet" href="css/styles.css?v=6" />
 </head>
 <body>
   <a class="skip-link" href="#scrolly-1">Skip to content</a>
 
   <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
 
+  <!-- 01 Hero -->
   <header class="hero" id="top">
     <p class="hero-brand">ASMR · sleep</p>
+    <p class="hero-kicker reveal" data-reveal>late-night frequency</p>
     <h1 class="hero-title">TODO: my text</h1>
     <p class="hero-dek">TODO: my text</p>
-    <canvas id="hero-waveform" class="hero-waveform" width="640" height="48"></canvas>
+    <canvas id="hero-waveform" class="hero-waveform" width="960" height="160" aria-hidden="true"></canvas>
   </header>
 
   <nav class="site-nav" id="site-nav" aria-label="Section navigation">
     <a href="#top">Top</a>
-    <a href="#scrolly-1">Map 1</a>
-    <a href="#scrolly-2">Map 2</a>
+    <a href="#scrolly-1">Search pulse</a>
+    <a href="#scrolly-2">Time-lapse</a>
+    <a href="#scrolly-9">Night shift</a>
+    <a href="#scrolly-5">Till dawn</a>
     <a href="#scrolly-3">Creators</a>
-    <a href="#scrolly-4">Scatter</a>
-    <a href="#scrolly-5">Duration</a>
-    <a href="#scrolly-6">Wiki</a>
-    <a href="#scrolly-9">Upload clock</a>
+    <a href="#explore">Explore</a>
   </nav>
 
-  <!-- Stage 1: dual-layer choropleth -->
-
-  <!-- Stage 2: monthly time-lapse -->
-
-
-  <!-- Stage 4: insomnia scatter -->
-
-
-  <!-- Stage 6: wiki small multiples -->
-
-
-
-  <!-- Stage 3: creators by declared country (disabled) -->
-
-  <!-- Stage 5: duration (disabled; charts_yt) -->
-
-  <!-- Stage 9: upload clock (disabled) -->
-
-  <section class="scrolly" id="scrolly-1" data-stage="1">
+  <!-- 02 Global Search Pulse -->
+  <section class="scrolly editorial" id="scrolly-1" data-stage="1" data-rail="02">
+    <header class="section-head">
+      <p class="section-kicker">02 · Global search pulse</p>
+      <h2 class="section-title">ASMR search growth</h2>
+      <div class="kpi-row" id="kpi-trends" aria-label="Key figures from Trends v3c">
+        <div class="kpi reveal" data-reveal>
+          <span class="kpi-value" id="kpi-measured">—</span>
+          <span class="kpi-label">measured</span>
+        </div>
+        <div class="kpi reveal" data-reveal>
+          <span class="kpi-value" id="kpi-rising">—</span>
+          <span class="kpi-label">rising</span>
+        </div>
+        <div class="kpi reveal" data-reveal>
+          <span class="kpi-value" id="kpi-median">—</span>
+          <span class="kpi-label">median growth</span>
+        </div>
+      </div>
+    </header>
     <figure class="stage" id="stage-1">
       <div class="map-panels" id="map-panels-1">
         <div class="map-panel" data-panel="trends">
@@ -67,10 +69,8 @@
           </div>
         </div>
       </div>
-
       <div class="tooltip" id="tooltip" hidden></div>
     </figure>
-
     <article class="steps">
       <div class="step" data-step="1-1"><p>TODO: my text</p></div>
       <div class="step" data-step="1-2"><p>TODO: my text</p></div>
@@ -79,7 +79,12 @@
     </article>
   </section>
 
-  <section class="scrolly" id="scrolly-2" data-stage="2">
+  <!-- 03 Own-Peak Time-Lapse -->
+  <section class="scrolly editorial" id="scrolly-2" data-stage="2" data-rail="03">
+    <header class="section-head">
+      <p class="section-kicker">03 · Own-peak time-lapse</p>
+      <h2 class="section-title">Sixty months of rhythm</h2>
+    </header>
     <figure class="stage" id="stage-2">
       <div class="stage-chrome">
         <div class="control-row timeline-row">
@@ -89,7 +94,6 @@
         </div>
         <p class="month-caption" id="month-caption">each region relative to its own peak</p>
       </div>
-
       <div class="map-panels single">
         <div class="map-panel">
           <p class="map-panel-title">ASMR own-peak time-lapse</p>
@@ -107,7 +111,6 @@
         </div>
       </div>
     </figure>
-
     <article class="steps">
       <div class="step" data-step="2-1"><p>TODO: my text</p></div>
       <div class="step" data-step="2-2"><p>TODO: my text</p></div>
@@ -115,41 +118,35 @@
     </article>
   </section>
 
-  <section class="scrolly" id="scrolly-3" data-chart="creators_yt">
-    <figure class="stage stage-chart">
-      <div class="chart-root" id="chart-creators-yt"></div>
-      <p class="fig-caption">Fig. 3 — Creators by declared country</p>
-      <details class="notes-details" id="notes-3" open>
+  <!-- 04 The Night Shift -->
+  <section class="scrolly editorial" id="scrolly-9" data-chart="upload_clock" data-rail="04">
+    <header class="section-head">
+      <p class="section-kicker">04 · The night shift</p>
+      <h2 class="section-title">Upload clock</h2>
+    </header>
+    <figure class="stage stage-chart stage-tall">
+      <div class="chart-root chart-scroll" id="chart-upload-clock"></div>
+      <p class="fig-caption">Fig. 3 — Upload clock</p>
+      <details class="notes-details" id="notes-9" open>
         <summary>Notes and limits</summary>
-        <p class="caveat" id="caveat-3">Loading…</p>
+        <p class="caveat" id="caveat-9">Loading…</p>
       </details>
     </figure>
     <article class="steps">
-      <div class="step" data-step="3-1"><p>TODO: my text</p></div>
-      <div class="step" data-step="3-2"><p>TODO: my text</p></div>
+      <div class="step" data-step="9-1"><p>TODO: my text</p></div>
+      <div class="step" data-step="9-2"><p>TODO: my text</p></div>
     </article>
   </section>
 
-  <section class="scrolly" id="scrolly-4" data-chart="scatter">
-    <figure class="stage stage-chart">
-      <div class="chart-root" id="chart-scatter"></div>
-      <p class="fig-caption">Fig. 4 — Association</p>
-      <details class="notes-details" id="notes-4" open>
-        <summary>Notes and limits</summary>
-        <p class="caveat" id="caveat-4">Loading…</p>
-      </details>
-    </figure>
-    <article class="steps">
-      <div class="step" data-step="4-1"><p>TODO: my text</p></div>
-      <div class="step" data-step="4-2"><p>TODO: my text</p></div>
-      <div class="step" data-step="4-3"><p>TODO: my text</p></div>
-    </article>
-  </section>
-
-  <section class="scrolly" id="scrolly-5" data-chart="duration_yt">
+  <!-- 05 Staying Till Dawn -->
+  <section class="scrolly editorial" id="scrolly-5" data-chart="duration_yt" data-rail="05">
+    <header class="section-head">
+      <p class="section-kicker">05 · Staying till dawn</p>
+      <h2 class="section-title">Duration</h2>
+    </header>
     <figure class="stage stage-chart stage-tall">
       <div class="chart-root chart-scroll" id="chart-duration-yt"></div>
-      <p class="fig-caption">Fig. 5 — Duration</p>
+      <p class="fig-caption">Fig. 4 — Duration</p>
       <details class="notes-details" id="notes-5" open>
         <summary>Notes and limits</summary>
         <p class="caveat" id="caveat-5">Loading…</p>
@@ -162,37 +159,65 @@
     </article>
   </section>
 
-  <section class="scrolly" id="scrolly-6" data-chart="wiki">
-    <figure class="stage stage-chart stage-tall">
-      <div class="chart-root" id="chart-wiki"></div>
-      <p class="fig-caption">Fig. 6 — Wikipedia ASMR pageviews</p>
-      <details class="notes-details" id="notes-6" open>
+  <!-- 06 Who Makes It -->
+  <section class="scrolly editorial" id="scrolly-3" data-chart="creators_yt" data-rail="06">
+    <header class="section-head">
+      <p class="section-kicker">06 · Who makes it</p>
+      <h2 class="section-title">Creators</h2>
+    </header>
+    <figure class="stage stage-chart">
+      <div class="chart-root" id="chart-creators-yt"></div>
+      <p class="fig-caption">Fig. 5 — Creators by declared country</p>
+      <details class="notes-details" id="notes-3" open>
         <summary>Notes and limits</summary>
-        <p class="caveat" id="caveat-6">Loading…</p>
+        <p class="caveat" id="caveat-3">Loading…</p>
       </details>
     </figure>
     <article class="steps">
-      <div class="step" data-step="6-1"><p>TODO: my text</p></div>
-      <div class="step" data-step="6-2"><p>TODO: my text</p></div>
-      <div class="step" data-step="6-3"><p>TODO: my text</p></div>
+      <div class="step" data-step="3-1"><p>TODO: my text</p></div>
+      <div class="step" data-step="3-2"><p>TODO: my text</p></div>
     </article>
   </section>
 
-  <section class="scrolly" id="scrolly-9" data-chart="upload_clock">
-    <figure class="stage stage-chart stage-tall">
-      <div class="chart-root chart-scroll" id="chart-upload-clock"></div>
-      <p class="fig-caption">Fig. 7 — Upload clock</p>
-      <details class="notes-details" id="notes-9" open>
-        <summary>Notes and limits</summary>
-        <p class="caveat" id="caveat-9">Loading…</p>
-      </details>
-    </figure>
-    <article class="steps">
-      <div class="step" data-step="9-1"><p>TODO: my text</p></div>
-      <div class="step" data-step="9-2"><p>TODO: my text</p></div>
-    </article>
-  </section>
+  <!-- 07 Reality Check / Explore Layer -->
+  <div class="explore-band" id="explore">
+    <header class="section-head explore-head">
+      <p class="section-kicker">07 · The reality check</p>
+      <h2 class="section-title">Explore layer</h2>
+    </header>
 
+    <section class="scrolly editorial" id="scrolly-4" data-chart="scatter" data-rail="07">
+      <figure class="stage stage-chart">
+        <div class="chart-root" id="chart-scatter"></div>
+        <p class="fig-caption">Fig. 6 — Association</p>
+        <details class="notes-details" id="notes-4" open>
+          <summary>Notes and limits</summary>
+          <p class="caveat" id="caveat-4">Loading…</p>
+        </details>
+      </figure>
+      <article class="steps">
+        <div class="step" data-step="4-1"><p>TODO: my text</p></div>
+        <div class="step" data-step="4-2"><p>TODO: my text</p></div>
+        <div class="step" data-step="4-3"><p>TODO: my text</p></div>
+      </article>
+    </section>
+
+    <section class="scrolly editorial" id="scrolly-6" data-chart="wiki" data-rail="07b">
+      <figure class="stage stage-chart stage-tall">
+        <div class="chart-root" id="chart-wiki"></div>
+        <p class="fig-caption">Fig. 7 — Wikipedia ASMR pageviews</p>
+        <details class="notes-details" id="notes-6" open>
+          <summary>Notes and limits</summary>
+          <p class="caveat" id="caveat-6">Loading…</p>
+        </details>
+      </figure>
+      <article class="steps">
+        <div class="step" data-step="6-1"><p>TODO: my text</p></div>
+        <div class="step" data-step="6-2"><p>TODO: my text</p></div>
+        <div class="step" data-step="6-3"><p>TODO: my text</p></div>
+      </article>
+    </section>
+  </div>
 
   <footer class="site-footer">
     <p>TODO: my text</p>
@@ -201,9 +226,12 @@
   <script src="js/vendor/d3.min.js"></script>
   <script src="js/vendor/topojson-client.min.js"></script>
   <script src="js/vendor/scrollama.js"></script>
+  <script src="js/vendor/gsap.min.js"></script>
+  <script src="js/vendor/ScrollTrigger.min.js"></script>
   <script src="js/iso.js"></script>
   <script src="js/waveform.js"></script>
-  <script type="module" src="js/main.js?v=5"></script>
+  <script src="js/motion.js"></script>
+  <script type="module" src="js/main.js?v=6"></script>
   <script>
     (function () {
       const el = document.getElementById("scroll-progress");

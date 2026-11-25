@@ -24,6 +24,23 @@ async function loadChartModules() {
 const GROWTH_LABEL = "ASMR search growth (latest 12 months ÷ first 12 months − 1)";
 const GROWTH_DOMAIN_PCT = [-50, 150]; // colour only; values clipped
 
+/** Editorial KPI callouts — values from trends payload meta only. */
+function fillTrendKpis(meta) {
+  if (!meta) return;
+  const counts = meta.counts || {};
+  const mk = meta.counts_by_mk_class || {};
+  const growth = meta.growth_ratio_ok || {};
+  const measured = document.getElementById("kpi-measured");
+  const rising = document.getElementById("kpi-rising");
+  const median = document.getElementById("kpi-median");
+  if (measured && counts.measured != null) measured.textContent = String(counts.measured);
+  if (rising && mk.rising != null) rising.textContent = String(mk.rising);
+  if (median && growth.median != null) {
+    const pct = (growth.median * 100).toFixed(1);
+    median.textContent = `${growth.median >= 0 ? "+" : ""}${pct}%`;
+  }
+}
+
 function colorSeq(t) {
   const c = themeColors();
   return d3.interpolateRgb(c.nodata, c.accent)(t);
@@ -116,6 +133,7 @@ async function loadAll() {
     state.lands = countries;
 
     state.trendsMeta = trends.meta;
+    fillTrendKpis(trends.meta);
     state.countryV2ByIso = new Map();
     (trends.rows || []).forEach((r) => {
       if (r.iso3) state.countryV2ByIso.set(r.iso3, r);

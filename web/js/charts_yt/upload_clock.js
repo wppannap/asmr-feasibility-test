@@ -1,4 +1,4 @@
-/* Upload clock: 24h radial profiles JP/KR/TW/HK. */
+/* Radial Night Clock — 24h dials JP/KR/TW/HK (editorial reskin; same payload). */
 import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js";
 import { themeColors } from "../theme.js";
 import { renderReviewBanner } from "./review.js";
@@ -33,11 +33,11 @@ export function render(container, data) {
   if (meta.jp_depends_on_rule) {
     wrap
       .append("p")
-      .attr("class", "chart-note chart-note-jp")
+      .attr("class", "chart-note chart-note-jp badge-jp")
       .text("JP result depends on the classification rule");
   }
 
-  ctx = { rows, profiles, rule: "strict", meta, wrapEl: wrap };
+  ctx = { rows, profiles, rule: "strict", meta };
   const controls = wrap.append("div").attr("class", "control-row chart-controls");
   controls.append("span").attr("class", "control-label").text("Rule");
   const seg = controls.append("div").attr("class", "seg");
@@ -55,12 +55,14 @@ export function render(container, data) {
       });
   });
 
-  // Compact legend (HTML, above SVG)
-  const legend = wrap.append("p").attr("class", "chart-inline-legend");
-  legend.html(
-    `<span class="leg-swatch leg-sleep"></span> sleep_title` +
-      ` <span class="leg-swatch leg-not"></span> not`
-  );
+  wrap
+    .append("p")
+    .attr("class", "chart-inline-legend")
+    .html(
+      `<span class="leg-swatch leg-sleep"></span> sleep_title` +
+        ` <span class="leg-swatch leg-not"></span> not` +
+        ` <span class="leg-swatch leg-night"></span> 20:00–02:00`
+    );
 
   const tableApi = attachTableToggle(wrap.node(), () => tableRows());
   ctx.mount = tableApi.visual;
@@ -120,10 +122,9 @@ function draw() {
   const mount = ctx.mount;
   clear(mount);
   const w = Math.max(280, mount.clientWidth || 640);
-  // Pad cells so hour ticks + night-band annotation stay inside viewBox
-  const gap = 12;
-  const cell = Math.max(150, Math.min(260, Math.floor((w - gap) / 2)));
-  const pad = 18;
+  const gap = 16;
+  const cell = Math.max(156, Math.min(268, Math.floor((w - gap) / 2)));
+  const pad = 20;
   const svgH = cell * 2 + pad * 2;
   const svg = d3
     .select(mount)
@@ -131,7 +132,7 @@ function draw() {
     .attr("viewBox", `0 0 ${w} ${svgH}`)
     .attr("width", "100%")
     .attr("role", "img")
-    .attr("aria-label", "24-hour upload radial profiles");
+    .attr("aria-label", "24-hour upload radial night clocks");
 
   const c = themeColors();
   REGIONS.forEach((region, i) => {
@@ -140,30 +141,41 @@ function draw() {
     const cx = col * cell + cell / 2 + (col === 0 ? 0 : gap / 2);
     const cy = row * cell + cell / 2 + pad;
     const g = svg.append("g").attr("transform", `translate(${cx},${cy})`);
+    const R = Math.min(cell * 0.34, cell / 2 - 30);
+
+    // Clock dial ring
+    g.append("circle")
+      .attr("r", R + 2)
+      .attr("fill", "none")
+      .attr("stroke", c.line)
+      .attr("stroke-width", 1);
+
+    // Night sector 20:00–02:00 (warm amber arc)
+    drawNightSector(g, R + 2, c.accent);
+
     g.append("text")
       .attr("text-anchor", "middle")
-      .attr("y", -cell / 2 + 12)
-      .attr("font-size", 12)
-      .attr("font-weight", 700)
+      .attr("y", -cell / 2 + 14)
+      .attr("font-size", 13)
+      .attr("font-family", "Georgia, serif")
       .attr("fill", c.ink)
       .text(region);
+
     const sleep = ctx.profiles.find(
       (p) => p.rule === ctx.rule && p.region === region && p.arm === "sleep"
     );
     const not = ctx.profiles.find(
       (p) => p.rule === ctx.rule && p.region === region && p.arm === "not"
     );
-    // Leave room for ticks + optional annotation inside the cell
-    const R = Math.min(cell * 0.32, cell / 2 - 28);
-    drawRadial(g, sleep?.profile, R, c.accent);
-    drawRadial(g, not?.profile, R, c.neg, true);
+    drawRadialPetal(g, sleep?.profile, R, c.accent, false);
+    drawRadialPetal(g, not?.profile, R, c.neg, true);
+
     if (i === 0) {
-      // Place night-band label inside the lower-right of the cell (avoids clip)
-      const lx = Math.min(cell / 2 - 8, R + 22);
-      const ly = Math.min(cell / 2 - 10, R + 8);
+      const lx = Math.min(cell / 2 - 6, R + 20);
+      const ly = Math.min(cell / 2 - 8, R + 6);
       g.append("path")
         .attr("class", "anno-leader")
-        .attr("d", `M${R * 0.55},${R * 0.55} Q${R * 0.85},${R * 0.9} ${lx},${ly}`);
+        .attr("d", `M${R * 0.5},${R * 0.5} Q${R * 0.85},${R * 0.9} ${lx},${ly}`);
       g.append("text")
         .attr("class", "anno-label")
         .attr("x", lx)
@@ -175,18 +187,37 @@ function draw() {
   });
 }
 
-function drawRadial(g, profile, R, color, dashed = false) {
+/** Night wedge from hour 20 to hour 2 (crossing midnight). */
+function drawNightSector(g, R, color) {
+  const a0 = (20 / 24) * 2 * Math.PI - Math.PI / 2;
+  const a1 = (2 / 24) * 2 * Math.PI - Math.PI / 2 + 2 * Math.PI;
+  const x0 = Math.cos(a0) * R;
+  const y0 = Math.sin(a0) * R;
+  const x1 = Math.cos(a1) * R;
+  const y1 = Math.sin(a1) * R;
+  const large = 1;
+  g.append("path")
+    .attr(
+      "d",
+      `M0,0 L${x0},${y0} A${R},${R} 0 ${large} 1 ${x1},${y1} Z`
+    )
+    .attr("fill", color)
+    .attr("opacity", 0.12);
+}
+
+function drawRadialPetal(g, profile, R, color, dashed) {
   if (!profile?.mean) return;
   const c = themeColors();
   const angle = d3.scaleLinear().domain([0, 24]).range([0, 2 * Math.PI]);
   const max = d3.max(profile.mean) || 0.1;
-  const r = d3.scaleLinear().domain([0, max]).range([0, R]);
+  const r = d3.scaleLinear().domain([0, max]).range([0, R * 0.92]);
   const line = d3
     .lineRadial()
     .angle((d, i) => angle(i))
     .radius((d) => r(d))
     .curve(d3.curveCardinalClosed);
-  if (profile.ci95_low && profile.ci95_high) {
+
+  if (!dashed && profile.ci95_low && profile.ci95_high) {
     const area = d3
       .areaRadial()
       .angle((d, i) => angle(i))
@@ -196,23 +227,27 @@ function drawRadial(g, profile, R, color, dashed = false) {
     g.append("path")
       .attr("d", area(profile.mean))
       .attr("fill", color)
-      .attr("opacity", 0.15);
+      .attr("opacity", 0.22);
   }
+
   g.append("path")
     .attr("d", line(profile.mean))
-    .attr("fill", "none")
+    .attr("fill", dashed ? "none" : color)
+    .attr("fill-opacity", dashed ? 0 : 0.18)
     .attr("stroke", color)
-    .attr("stroke-width", 1.5)
-    .attr("stroke-dasharray", dashed ? "3 2" : null);
+    .attr("stroke-width", dashed ? 1.5 : 1.75)
+    .attr("stroke-dasharray", dashed ? "3.5 2.5" : null);
+
   for (let h = 0; h < 24; h += 6) {
     const a = angle(h) - Math.PI / 2;
-    const tickR = R + 9;
+    const tickR = R + 10;
     g.append("text")
       .attr("x", Math.cos(a) * tickR)
       .attr("y", Math.sin(a) * tickR)
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "middle")
       .attr("font-size", 9)
+      .attr("font-variant-numeric", "tabular-nums")
       .attr("fill", c.muted)
       .text(`${h}`);
   }
