@@ -169,18 +169,25 @@ function drawSunIcon(parent, cx, cy, r, color) {
   }
 }
 
-/** Decorative crescent moon (~18–20px): solid moonlight blue. */
+/** Decorative crescent moon (~18–20px): solid moonlight blue (evenodd crescent). */
 function drawMoonIcon(parent, cx, cy, r, fill) {
   const g = parent.append("g").attr("class", "sky-icon sky-moon").attr("aria-hidden", "true");
+  // Outer disc minus offset inner disc → readable crescent
+  const ox = cx + r * 0.28;
   const d = [
-    `M ${cx + r * 0.15} ${cy - r}`,
-    `A ${r} ${r} 0 1 0 ${cx + r * 0.15} ${cy + r}`,
-    `A ${r * 0.72} ${r * 0.72} 0 1 1 ${cx + r * 0.15} ${cy - r}`,
+    `M ${cx} ${cy - r}`,
+    `A ${r} ${r} 0 1 1 ${cx} ${cy + r}`,
+    `A ${r} ${r} 0 1 1 ${cx} ${cy - r}`,
+    "Z",
+    `M ${ox} ${cy - r * 0.72}`,
+    `A ${r * 0.72} ${r * 0.72} 0 1 0 ${ox} ${cy + r * 0.72}`,
+    `A ${r * 0.72} ${r * 0.72} 0 1 0 ${ox} ${cy - r * 0.72}`,
     "Z",
   ].join(" ");
   g.append("path")
     .attr("d", d)
     .attr("fill", fill)
+    .attr("fill-rule", "evenodd")
     .attr("stroke", "none")
     .attr("stroke-linejoin", "round");
 }
@@ -195,8 +202,8 @@ function draw() {
   clear(mount);
   const w = Math.max(300, mount.clientWidth || 640);
   const mobile = w < 520;
-  // Extra margins so larger sun/moon icons, peak leaders, and table toggle never clip
-  const margin = { top: 38, right: mobile ? 108 : 128, bottom: 40, left: mobile ? 40 : 48 };
+  // Extra top margin so sun/moon sit clearly above the sky strip
+  const margin = { top: 44, right: mobile ? 108 : 128, bottom: 40, left: mobile ? 40 : 48 };
   const stripH = mobile ? 78 : 94;
   const gap = 12;
   const n = REGIONS.length;
@@ -277,27 +284,27 @@ function draw() {
       .attr("opacity", 0.28);
   });
 
-  // Top time-ruler icons (~18–20px) — golden suns + moonlight crescent
-  const iconY = -12;
-  const iconR = 9.5;
+  // Top time-ruler icons (~18px) — suns above noon edges; moon above midnight
+  const iconY = -22;
+  const iconR = 9;
   const sunColor = "#e6a119";
   const moonColor = "#4f78b8";
-  drawSunIcon(g, x(0) + iconR + 1, iconY, iconR, sunColor);
-  drawSunIcon(g, x(24) - iconR - 1, iconY, iconR, sunColor);
-  drawMoonIcon(g, midX - 2, iconY, iconR, moonColor);
+  drawSunIcon(g, x(0) + 2, iconY, iconR, sunColor);
+  drawSunIcon(g, x(24) - 2, iconY, iconR, sunColor);
+  drawMoonIcon(g, midX, iconY, iconR, moonColor);
 
-  // Midnight rule + label in crisp dark ink over soft twilight
+  // Midnight rule + label (label sits below the moon, just above the plot)
   g.append("line")
     .attr("x1", midX)
     .attr("x2", midX)
-    .attr("y1", -4)
+    .attr("y1", -6)
     .attr("y2", ih + 4)
     .attr("stroke", ink)
     .attr("stroke-width", 1.15)
     .attr("opacity", 0.85);
   g.append("text")
-    .attr("x", midX + 8)
-    .attr("y", -2)
+    .attr("x", midX + 10)
+    .attr("y", -8)
     .attr("font-size", 10)
     .attr("font-variant-numeric", "tabular-nums")
     .attr("font-weight", 600)
