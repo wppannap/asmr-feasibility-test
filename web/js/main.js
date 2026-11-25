@@ -1,13 +1,13 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126i";
-import { themeColors } from "./theme.js?v=20261126i";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126j";
+import { themeColors } from "./theme.js?v=20261126j";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261126i";
+} from "./sections.js?v=20261126j";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -406,7 +406,7 @@ async function loadAll() {
 
     const projection = d3.geoNaturalEarth1().fitExtent(
       [
-        [210, 28],
+        [190, 28],
         [width - 88, height - 32],
       ],
       state.lands
@@ -416,9 +416,9 @@ async function loadAll() {
     // Whisper-quiet five-line staff + treble clef watermark (behind coastlines & notes)
     if (isDorling) {
       const muted = themeColors().muted;
-      // Near full-map staff: ~14% → ~86% of SVG height
-      const staffTop = height * 0.14;
-      const staffBot = height * 0.86;
+      // Staff frames note belt: N Europe/NA → AUS/NZ (~18% → ~76%)
+      const staffTop = height * 0.18;
+      const staffBot = height * 0.76;
       const staffSpan = staffBot - staffTop;
       const staffG = svg
         .append("g")
