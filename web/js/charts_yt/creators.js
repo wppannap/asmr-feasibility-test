@@ -1,7 +1,7 @@
 /* Creators · declared country — deep-night starfield constellations. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126n";
-import { themeColors } from "../theme.js?v=20261126n";
-import { renderReviewBanner } from "./review.js?v=20261126n";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126s";
+import { themeColors } from "../theme.js?v=20261126s";
+import { renderReviewBanner } from "./review.js?v=20261126s";
 
 const RULES = [
   { id: "strict", label: "strict" },

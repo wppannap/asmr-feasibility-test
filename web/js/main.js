@@ -1,13 +1,13 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126n";
-import { themeColors } from "./theme.js?v=20261126n";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126s";
+import { themeColors } from "./theme.js?v=20261126s";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261126n";
+} from "./sections.js?v=20261126s";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -443,12 +443,12 @@ async function loadAll() {
       const CLEF_G_LINE_Y = 48;
       const CLEF_PATH =
         'M0 46.24Q0 42.45 1.15 39.28Q2.29 36.11 4.24 33.39Q6.19 30.67 8.8 28.27Q11.41 25.87 14.4 23.52Q13.76 19.95 13.71 15.84Q13.71 8.8 15.84 4.48Q17.97 0 21.65 0Q24.21 0 25.79 2.85Q27.36 5.71 27.36 11.15Q27.36 18.08 23.84 22.93Q22.61 24.59 21.07 26.24Q19.52 27.89 17.55 29.55Q18.4 33.6 19.15 38.19Q24.11 38.19 27.2 41.28Q30.35 44.43 30.35 49.55Q30.35 53.65 28.35 56.59Q26.35 59.52 22.99 60.91Q23.36 63.41 23.55 65.63Q23.73 67.84 23.73 69.87Q23.73 75.2 21.25 77.6Q18.77 80 14.72 80Q10.77 80 8.43 77.71Q6.08 75.36 6.08 72.64Q6.03 70.24 7.39 68.69Q8.75 67.15 10.99 67.15Q13.23 67.15 14.45 68.53Q15.68 69.92 15.68 71.95Q15.68 73.07 15.25 73.95Q14.83 74.83 14.08 75.39Q13.33 75.95 12.37 76.13Q11.41 76.32 10.29 76.05Q11.68 78.08 14.83 78.08Q18.35 78.08 20.13 76Q21.92 73.92 21.92 69.92Q21.92 68.05 21.73 65.97Q21.55 63.89 21.23 61.49Q19.36 61.97 17.28 61.97Q13.55 61.97 10.4 60.96Q7.25 59.95 4.93 57.95Q2.61 55.95 1.31 53.01Q0 50.08 0 46.24ZM19.73 52.16Q19.15 48.21 18.45 44.37Q16 44.37 14.37 45.87Q12.75 47.36 12.75 49.92Q12.75 51.57 13.57 52.85Q14.4 54.13 15.89 54.88Q15.68 55.47 15.52 55.89Q13.12 55.25 11.36 53.23Q9.6 51.2 9.6 47.63Q9.6 43.73 12.37 40.96Q14.51 38.93 17.39 38.35Q16.37 33.07 15.89 30.88Q13.71 32.64 11.65 34.53Q9.6 36.43 8 38.51Q6.4 40.59 5.44 42.93Q4.48 45.28 4.48 48Q4.48 51.04 5.49 53.25Q6.51 55.47 8.29 56.91Q10.08 58.35 12.48 59.04Q14.88 59.73 17.65 59.73Q19.41 59.73 20.85 59.31Q20.27 55.79 19.73 52.16ZM16.37 22.19Q20.53 19.15 22.43 16.24Q24.32 13.33 24.32 10.24Q24.32 8.75 23.63 7.63Q22.93 6.51 21.6 6.51Q19.09 6.51 17.6 10.08Q16.11 13.55 16.11 18.61Q16.11 20.27 16.37 22.19ZM26.72 51.25Q26.72 49.76 26.16 48.48Q25.6 47.2 24.69 46.29Q23.79 45.39 22.61 44.88Q21.44 44.37 20.21 44.37Q20.75 46.88 21.33 50.61Q21.87 54.03 22.51 58.61Q24.8 57.39 25.76 55.31Q26.72 53.23 26.72 51.25Z';
-      // Smaller clef; spiral sits on upper-middle staff (near densest notes)
-      const clefH = staffSpan * 0.92;
+      // Slightly smaller clef; same G-line height; nudged right
+      const clefH = staffSpan * 0.82;
       const clefScale = clefH / CLEF_NATIVE_H;
       const gLineY = staffTop + staffSpan * 0.42;
       const clefY = gLineY - CLEF_G_LINE_Y * clefScale;
-      const clefX = 8;
+      const clefX = 24;
       staffG
         .append("path")
         .attr("class", "score-clef-watermark")
