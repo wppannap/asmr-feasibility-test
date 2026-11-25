@@ -1,13 +1,13 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261125d";
-import { themeColors } from "./theme.js?v=20261125d";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261125e";
+import { themeColors } from "./theme.js?v=20261125e";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261125d";
+} from "./sections.js?v=20261125e";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -285,32 +285,29 @@ async function loadAll() {
     root.append("span").attr("class", "legend-title").text(label);
     const legendCopy = state.trendsMeta?.map1_legend || {};
     if (map1Full) {
-      // Dorling bubble grammar (no continuous ramp)
+      // Musical-note grammar
       const row = (cls, lab) => {
         const r = root.append("div").attr("class", "legend-swatch-row");
         r.append("span").attr("class", `legend-swatch ${cls}`);
         r.append("span").text(lab);
       };
-      row("legend-node-rising", legendCopy.solid || "Rising (significant)");
-      row("legend-node-falling", "Falling (significant)");
-      row(
-        "legend-node-flat",
-        legendCopy.hatch_flat || "No statistically significant trend"
-      );
-      row("legend-swatch-lowvol", legendCopy.low_volume || "Too few searches to measure");
+      row("legend-note-quarter", "Quarter / eighth / sixteenth — rising or falling (significant)");
+      row("legend-note-hollow", legendCopy.hatch_flat || "Whole / half — no significant trend");
+      row("legend-note-rest", legendCopy.low_volume || "Rest — too few searches to measure");
+      row("legend-note-falling", "Teal notes — falling (significant)");
       row(
         "legend-swatch-miss",
         legendCopy.no_data ||
           "No data (including mainland China: Google is not accessible there)"
       );
-      row("legend-swatch-smallbase", legendCopy.small_base || "Small base");
+      row("legend-swatch-smallbase", legendCopy.small_base || "Small base (dashed halo)");
       if (legendCopy.clip_note) {
         root.append("span").attr("class", "legend-hatch-note").text(legendCopy.clip_note);
       }
       root
         .append("span")
         .attr("class", "legend-hatch-note")
-        .text("Bubble size ∝ |clipped growth|; toggle Mode for 60-month peak.");
+        .text("Note size ∝ |clipped growth|; note type is deterministic by region. Toggle Mode for 60-month peak.");
       return;
     }
     const w = 180;
@@ -372,7 +369,7 @@ async function loadAll() {
       .attr(
         "aria-label",
         isDorling
-          ? "Dorling cartogram of ASMR search growth"
+          ? "World Acoustic Score of ASMR search growth"
           : "World choropleth map"
       );
 
@@ -416,10 +413,23 @@ async function loadAll() {
     );
     const path = d3.geoPath(projection);
 
-    // Dorling: no country polygons — faint land silhouette via tiny quiet dots only
+    // Ultra-minimal light coastline base under the musical score
     const g = svg.append("g").attr("class", "countries");
     let paths = null;
-    if (!isDorling) {
+    if (isDorling) {
+      paths = g
+        .selectAll("path.country")
+        .data(state.lands.features)
+        .join("path")
+        .attr("class", "country coast-only")
+        .attr("d", path)
+        .attr("aria-hidden", "true")
+        .attr("fill", themeColors().bg2)
+        .attr("stroke", "#b8b0a2")
+        .attr("stroke-width", 0.45)
+        .attr("opacity", 0.55)
+        .attr("pointer-events", "none");
+    } else {
       paths = g
         .selectAll("path.country")
         .data(state.lands.features)
@@ -615,7 +625,152 @@ async function loadAll() {
       });
   }
 
-  /** Dorling cartogram — Acoustic Ripple Bubbles for Map 1. */
+  /** Deterministic hash from ISO3 for musical variety. */
+  function hashIso(iso) {
+    let h = 2166136261;
+    const s = String(iso || "");
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+
+  function noteTypeFor(d) {
+    if (d.kind === "lowvol") return "rest";
+    if (d.kind === "flat") return hashIso(d.iso3) % 2 === 0 ? "whole" : "half";
+    // rising / falling / peak — rich musical variety
+    const types = ["quarter", "eighth", "sixteenth", "eighth", "quarter", "sixteenth"];
+    return types[hashIso(d.iso3) % types.length];
+  }
+
+  function noteColor(d, c) {
+    if (d.kind === "falling") return c.neg;
+    if (d.kind === "flat" || d.kind === "lowvol") return c.muted;
+    return c.accent; // rising / peak
+  }
+
+  /** Draw crisp SVG vector musical notes (no Unicode glyphs). */
+  function drawNoteGlyph(g, type, scale, color, c) {
+    g.selectAll("*").remove();
+    const s = scale;
+    const nhx = 0;
+    const nhy = 0;
+    const rx = 3.2 * s;
+    const ry = 2.35 * s;
+    const stemH = 11 * s;
+    const stemX = nhx + rx * 0.85;
+    const stemTop = nhy - stemH;
+
+    function notehead(filled) {
+      g.append("ellipse")
+        .attr("cx", nhx)
+        .attr("cy", nhy)
+        .attr("rx", rx)
+        .attr("ry", ry)
+        .attr("transform", `rotate(-22 ${nhx} ${nhy})`)
+        .attr("fill", filled ? color : "none")
+        .attr("stroke", color)
+        .attr("stroke-width", Math.max(0.9, 1.1 * s));
+    }
+    function stem() {
+      g.append("line")
+        .attr("x1", stemX)
+        .attr("y1", nhy - ry * 0.15)
+        .attr("x2", stemX)
+        .attr("y2", stemTop)
+        .attr("stroke", color)
+        .attr("stroke-width", Math.max(1, 1.15 * s))
+        .attr("stroke-linecap", "round");
+    }
+    function flag() {
+      const d = `M${stemX},${stemTop} C${stemX + 5.5 * s},${stemTop + 1.5 * s} ${stemX + 6.2 * s},${stemTop + 6 * s} ${stemX + 1.2 * s},${stemTop + 8.5 * s}`;
+      g.append("path")
+        .attr("d", d)
+        .attr("fill", "none")
+        .attr("stroke", color)
+        .attr("stroke-width", Math.max(1, 1.2 * s))
+        .attr("stroke-linecap", "round");
+    }
+
+    if (type === "rest") {
+      g.append("circle")
+        .attr("cx", 0)
+        .attr("cy", 0)
+        .attr("r", Math.max(1.4, 1.8 * s))
+        .attr("fill", color)
+        .attr("opacity", 0.7);
+      return;
+    }
+    if (type === "whole") {
+      notehead(false);
+      return;
+    }
+    if (type === "half") {
+      notehead(false);
+      stem();
+      return;
+    }
+    if (type === "quarter") {
+      notehead(true);
+      stem();
+      return;
+    }
+    if (type === "eighth") {
+      notehead(true);
+      stem();
+      flag();
+      return;
+    }
+    if (type === "sixteenth") {
+      // Beamed pair of sixteenths
+      const gap = 7.2 * s;
+      [-gap / 2, gap / 2].forEach((dx, i) => {
+        const cx = dx;
+        g.append("ellipse")
+          .attr("cx", cx)
+          .attr("cy", nhy)
+          .attr("rx", rx * 0.92)
+          .attr("ry", ry * 0.92)
+          .attr("transform", `rotate(-22 ${cx} ${nhy})`)
+          .attr("fill", color)
+          .attr("stroke", color)
+          .attr("stroke-width", Math.max(0.8, s));
+        const sx = cx + rx * 0.8;
+        g.append("line")
+          .attr("x1", sx)
+          .attr("y1", nhy - ry * 0.1)
+          .attr("x2", sx)
+          .attr("y2", stemTop)
+          .attr("stroke", color)
+          .attr("stroke-width", Math.max(1, 1.05 * s));
+      });
+      const left = -gap / 2 + rx * 0.8;
+      const right = gap / 2 + rx * 0.8;
+      // double beam
+      [0, 2.2 * s].forEach((dy) => {
+        g.append("line")
+          .attr("x1", left)
+          .attr("y1", stemTop + dy)
+          .attr("x2", right)
+          .attr("y2", stemTop + dy)
+          .attr("stroke", color)
+          .attr("stroke-width", Math.max(1.2, 1.5 * s))
+          .attr("stroke-linecap", "round");
+      });
+      return;
+    }
+    notehead(true);
+    stem();
+  }
+
+  const SCORE_LABEL_ISO = new Set([
+    "USA", "JPN", "KOR", "TWN", "HKG", "GBR", "DEU", "FRA", "BRA", "AUS",
+    "CAN", "IDN", "THA", "IND", "MEX", "ESP", "ITA", "NLD", "SGP", "PHL",
+    "VNM", "MYS", "ARG", "CHL", "COL", "POL", "SWE", "NOR", "NZL", "ZAF",
+  ]);
+
+  /** World Acoustic Score — SVG musical notes on a light coastline base. */
   function paintDorling(map, valueMap, opts = {}) {
     const c = themeColors();
     const mode = state.map1Mode || "growth";
@@ -628,43 +783,37 @@ async function loadAll() {
 
     let nodes = [];
     if (reuse) {
-      nodes = (map.dorlingCache || []).map((prev) => {
-        const row = prev.row;
-        const iso = prev.iso3;
-        let r = prev.r;
-        let kind = prev.kind;
-        let value = prev.value;
-        let labelPct = prev.labelPct;
-        if (mode === "peak") {
-          const v = peakSeries[iso]?.[peakIdx];
-          if (row.quality === "low_volume") {
-            kind = "lowvol";
-            r = 2.2;
-            value = null;
-            labelPct = null;
-          } else if (v == null || !Number.isFinite(v)) {
-            kind = "miss";
-            r = 0;
-            value = null;
-            labelPct = null;
-          } else {
-            kind = "peak";
-            value = v;
-            r = 3.5 + 20 * Math.sqrt(Math.max(0, v) / 100);
-            labelPct = v;
+      nodes = (map.dorlingCache || [])
+        .map((prev) => {
+          const row = prev.row;
+          const iso = prev.iso3;
+          let r = prev.r;
+          let kind = prev.kind;
+          let value = prev.value;
+          let labelPct = prev.labelPct;
+          if (mode === "peak") {
+            const v = peakSeries[iso]?.[peakIdx];
+            if (row.quality === "low_volume") {
+              kind = "lowvol";
+              r = 2.4;
+              value = null;
+              labelPct = null;
+            } else if (v == null || !Number.isFinite(v)) {
+              kind = "miss";
+              r = 0;
+              value = null;
+              labelPct = null;
+            } else {
+              kind = "peak";
+              value = v;
+              r = 3.2 + 18 * Math.sqrt(Math.max(0, v) / 100);
+              labelPct = v;
+            }
           }
-        }
-        const pos = map.dorlingPositions.get(iso) || { x: prev.x, y: prev.y };
-        return {
-          ...prev,
-          x: pos.x,
-          y: pos.y,
-          r,
-          kind,
-          value,
-          labelPct,
-        };
-      }).filter((d) => d.kind !== "miss" && d.r > 0);
+          const pos = map.dorlingPositions.get(iso) || { x: prev.x, y: prev.y };
+          return { ...prev, x: pos.x, y: pos.y, r, kind, value, labelPct };
+        })
+        .filter((d) => d.kind !== "miss" && d.r > 0);
     } else {
       state.lands.features.forEach((f) => {
         const iso = f.properties.iso3;
@@ -680,7 +829,7 @@ async function loadAll() {
         let value = null;
 
         if (row.quality === "low_volume") {
-          r = 2.2;
+          r = 2.4;
           kind = "lowvol";
         } else if (mode === "peak") {
           const v = peakSeries[iso]?.[peakIdx];
@@ -690,7 +839,7 @@ async function loadAll() {
           } else {
             kind = "peak";
             value = v;
-            r = 3.5 + 20 * Math.sqrt(Math.max(0, v) / 100);
+            r = 3.2 + 18 * Math.sqrt(Math.max(0, v) / 100);
             labelPct = v;
           }
         } else if (row.quality === "ok") {
@@ -702,7 +851,7 @@ async function loadAll() {
           } else {
             value = g;
             const a = Math.abs(g);
-            r = 3.5 + 22 * Math.sqrt(Math.min(1.5, a) / 1.5);
+            r = 3.2 + 20 * Math.sqrt(Math.min(1.5, a) / 1.5);
             kind = row.mk_class || "flat";
             labelPct = g * 100;
           }
@@ -725,190 +874,189 @@ async function loadAll() {
           kind,
           value,
           labelPct,
+          noteType: null,
         });
       });
 
-      // Layout with collision padding for ripple/hover rings
+      // Collision-free Dorling layout (extra pad for stems/flags)
       const sim = d3
         .forceSimulation(nodes)
-        .force("x", d3.forceX((d) => d.x0).strength(0.75))
-        .force("y", d3.forceY((d) => d.y0).strength(0.75))
-        .force("collide", d3.forceCollide((d) => d.r + 2.2).iterations(2))
+        .force("x", d3.forceX((d) => d.x0).strength(0.72))
+        .force("y", d3.forceY((d) => d.y0).strength(0.72))
+        .force("collide", d3.forceCollide((d) => d.r + 3.4).iterations(3))
         .stop();
-      for (let i = 0; i < 140; i++) sim.tick();
+      for (let i = 0; i < 160; i++) sim.tick();
 
       nodes.forEach((d) => {
-        d.x = Math.max(d.r + 6, Math.min(map.width - d.r - 6, d.x));
-        d.y = Math.max(d.r + 6, Math.min(map.height - d.r - 6, d.y));
+        d.x = Math.max(d.r + 10, Math.min(map.width - d.r - 10, d.x));
+        d.y = Math.max(d.r + 14, Math.min(map.height - d.r - 8, d.y));
       });
       map.dorlingPositions = new Map(nodes.map((d) => [d.iso3, { x: d.x, y: d.y }]));
     }
 
+    nodes.forEach((d) => {
+      d.noteType = noteTypeFor(d);
+      d.scale = Math.max(0.55, d.r / 9);
+    });
+
     map.dorlingCache = nodes;
     const filter = state.map1Filter || "all";
+
+    // Which notes get external ISO3+% labels
+    const byAbs = nodes
+      .filter((d) => d.kind !== "lowvol" && d.labelPct != null)
+      .slice()
+      .sort((a, b) => Math.abs(b.labelPct) - Math.abs(a.labelPct));
+    const labelSet = new Set(
+      byAbs.slice(0, 18).map((d) => d.iso3).concat([...SCORE_LABEL_ISO])
+    );
 
     const sel = map.pulseG
       .selectAll("g.dorling-node")
       .data(nodes, (d) => d.iso3)
       .join((enter) => {
-        const g = enter.append("g").attr("class", "dorling-node");
+        const g = enter.append("g").attr("class", "dorling-node score-note");
         g.append("circle").attr("class", "dorling-hover-ring");
         g.append("circle").attr("class", "dorling-focus-ring");
         g.append("circle").attr("class", "dorling-orbit");
-        g.append("circle").attr("class", "dorling-bubble");
-        g.append("circle").attr("class", "dorling-ripple1");
-        g.append("circle").attr("class", "dorling-ripple2");
-        g.append("text").attr("class", "dorling-label");
+        g.append("g").attr("class", "note-glyph");
+        g.append("text").attr("class", "dorling-label score-label");
         g.append("circle").attr("class", "dorling-hit").attr("fill", "transparent");
         return g;
       });
 
     sel.attr("transform", (d) => `translate(${d.x},${d.y})`);
 
+    // First pass: draw glyphs
     sel.each(function (d) {
       const g = d3.select(this);
-      const bubble = g.select(".dorling-bubble");
+      const color = noteColor(d, c);
+      const match = nodeMatchesFilter(d, filter);
+      g.attr("opacity", match ? 1 : 0.18);
+
       const orbit = g.select(".dorling-orbit");
-      const ripple1 = g.select(".dorling-ripple1");
-      const ripple2 = g.select(".dorling-ripple2");
       const hoverRing = g.select(".dorling-hover-ring");
       const focusRing = g.select(".dorling-focus-ring");
-      const label = g.select(".dorling-label");
+      const glyph = g.select(".note-glyph");
       const hit = g.select(".dorling-hit");
-      const match = nodeMatchesFilter(d, filter);
-      const baseOp = match ? 1 : 0.18;
 
-      g.attr("opacity", baseOp);
-      orbit.attr("r", 0).attr("fill", "none").attr("stroke", "none");
-      ripple1.attr("r", 0).attr("fill", "none").attr("stroke", "none");
-      ripple2.attr("r", 0).attr("fill", "none").attr("stroke", "none");
-      hoverRing
-        .attr("r", d.r + 5)
-        .attr("fill", "none")
-        .attr("stroke", c.accent)
-        .attr("stroke-width", 1.4)
-        .attr("opacity", 0);
-      focusRing
-        .attr("r", match && filter !== "all" ? d.r + 3.5 : 0)
-        .attr("fill", "none")
-        .attr("stroke", c.ink)
-        .attr("stroke-width", 1.1)
-        .attr("opacity", match && filter !== "all" ? 0.55 : 0);
+      drawNoteGlyph(glyph, d.noteType, d.scale, color, c);
 
-      if (d.kind === "lowvol") {
-        bubble
-          .attr("r", d.r)
-          .attr("fill", c.muted)
-          .attr("stroke", "none")
-          .attr("opacity", 0.4);
-        label.text("");
-      } else if (d.kind === "rising") {
-        bubble
-          .attr("r", d.r)
-          .attr("fill", c.accent)
-          .attr("stroke", "none")
-          .attr("opacity", 0.92);
-        // Acoustic ripple rings (soundwave read)
-        if (d.r >= 6) {
-          ripple1
-            .attr("r", Math.max(2, d.r * 0.55))
-            .attr("fill", "none")
-            .attr("stroke", c.bg)
-            .attr("stroke-width", 1)
-            .attr("opacity", 0.45);
-        }
-        if (d.r >= 10) {
-          ripple2
-            .attr("r", Math.max(3, d.r * 0.28))
-            .attr("fill", "none")
-            .attr("stroke", c.bg)
-            .attr("stroke-width", 0.9)
-            .attr("opacity", 0.35);
-        }
-      } else if (d.kind === "falling") {
-        bubble
-          .attr("r", d.r)
-          .attr("fill", c.neg)
-          .attr("stroke", "none")
-          .attr("opacity", 0.9);
-      } else if (d.kind === "flat") {
-        bubble
-          .attr("r", d.r)
-          .attr("fill", "none")
-          .attr("stroke", c.ink)
-          .attr("stroke-width", 1.15)
-          .attr("opacity", 0.85);
-      } else if (d.kind === "peak") {
-        bubble
-          .attr("r", d.r)
-          .attr("fill", c.accent)
-          .attr("stroke", "none")
-          .attr("opacity", 0.35 + 0.55 * (Math.max(0, d.value || 0) / 100));
-        if (d.r >= 8) {
-          ripple1
-            .attr("r", Math.max(2, d.r * 0.5))
-            .attr("fill", "none")
-            .attr("stroke", c.bg)
-            .attr("stroke-width", 1)
-            .attr("opacity", 0.4);
-        }
+      // peak glow pulse
+      if (d.kind === "peak") {
+        glyph.attr("opacity", 0.45 + 0.55 * (Math.max(0, d.value || 0) / 100));
       } else {
-        bubble
-          .attr("r", d.r)
-          .attr("fill", c.accent)
-          .attr("stroke", "none")
+        glyph.attr("opacity", 1);
+      }
+
+      orbit.attr("r", 0).attr("fill", "none").attr("stroke", "none");
+      if (d.row.small_base && d.kind !== "lowvol") {
+        orbit
+          .attr("r", d.r + 5)
+          .attr("fill", "none")
+          .attr("stroke", color)
+          .attr("stroke-width", 1)
+          .attr("stroke-dasharray", "2.5 2")
           .attr("opacity", 0.75);
       }
 
-      if (d.row.small_base && d.kind !== "lowvol") {
-        orbit
-          .attr("r", d.r + 3.5)
-          .attr("fill", "none")
-          .attr("stroke", c.accent)
-          .attr("stroke-width", 1)
-          .attr("stroke-dasharray", "2.5 2")
-          .attr("opacity", 0.7);
-      }
-
-      if (d.r >= 14 && d.labelPct != null) {
-        const pct =
-          mode === "peak"
-            ? `${formatNum(d.labelPct, 0)}`
-            : `${d.labelPct >= 0 ? "+" : ""}${d.labelPct.toFixed(0)}%`;
-        label
-          .attr("text-anchor", "middle")
-          .attr("dominant-baseline", "middle")
-          .attr("font-size", Math.min(11, d.r * 0.42))
-          .attr("font-variant-numeric", "tabular-nums")
-          .attr("fill", d.kind === "flat" ? c.ink : c.bg)
-          .attr("pointer-events", "none")
-          .text(d.r >= 20 ? `${d.iso3} ${pct}` : d.iso3);
-      } else if (d.r >= 10) {
-        label
-          .attr("text-anchor", "middle")
-          .attr("dominant-baseline", "middle")
-          .attr("font-size", 8)
-          .attr("fill", d.kind === "flat" ? c.ink : c.bg)
-          .attr("pointer-events", "none")
-          .text(d.iso3);
-      } else {
-        label.text("");
-      }
+      hoverRing
+        .attr("r", d.r + 7)
+        .attr("fill", "none")
+        .attr("stroke", c.accent)
+        .attr("stroke-width", 1.3)
+        .attr("opacity", 0);
+      focusRing
+        .attr("r", match && filter !== "all" ? d.r + 4.5 : 0)
+        .attr("fill", "none")
+        .attr("stroke", c.ink)
+        .attr("stroke-width", 1)
+        .attr("opacity", match && filter !== "all" ? 0.5 : 0);
 
       hit
-        .attr("r", d.r + 6)
+        .attr("r", d.r + 8)
         .attr("pointer-events", "all")
         .attr("cursor", "pointer")
         .on("pointerenter", (event) => {
-          hoverRing.attr("opacity", 0.85).attr("r", d.r + 6);
+          hoverRing.attr("opacity", 0.9).attr("r", d.r + 9);
           showTip(event, d.feature, "trends");
         })
         .on("pointermove", (event) => showTip(event, d.feature, "trends"))
         .on("pointerleave", () => {
-          hoverRing.attr("opacity", 0).attr("r", d.r + 5);
+          hoverRing.attr("opacity", 0).attr("r", d.r + 7);
           tooltip.attr("hidden", true);
         })
         .on("click", (event) => showTip(event, d.feature, "trends"));
+    });
+
+    // Collision-aware external labels
+    const placed = [];
+    const candidates = [
+      [10, -6], [12, 4], [-14, -4], [8, -14], [-10, 10], [16, -10], [-18, 2],
+    ];
+
+    function overlaps(box, list) {
+      return list.some(
+        (b) =>
+          !(
+            box.x2 < b.x1 ||
+            box.x1 > b.x2 ||
+            box.y2 < b.y1 ||
+            box.y1 > b.y2
+          )
+      );
+    }
+
+    sel.each(function (d) {
+      const label = d3.select(this).select(".dorling-label");
+      label.text("");
+      if (!labelSet.has(d.iso3) || d.labelPct == null || d.kind === "lowvol") return;
+      if (!nodeMatchesFilter(d, filter) && filter !== "all") return;
+
+      const pct =
+        mode === "peak"
+          ? `${formatNum(d.labelPct, 0)}`
+          : `${d.labelPct >= 0 ? "+" : ""}${d.labelPct.toFixed(0)}%`;
+      const text = `${d.iso3} ${pct}`;
+      const approxW = text.length * 5.2;
+      const approxH = 11;
+
+      let chosen = null;
+      for (const [dx, dy] of candidates) {
+        const box = {
+          x1: d.x + dx - 2,
+          y1: d.y + dy - approxH,
+          x2: d.x + dx + approxW,
+          y2: d.y + dy + 2,
+        };
+        // keep inside map
+        if (box.x1 < 4 || box.x2 > map.width - 4 || box.y1 < 4 || box.y2 > map.height - 4) {
+          continue;
+        }
+        // avoid note body (rough)
+        const noteBox = {
+          x1: d.x - d.r - 2,
+          y1: d.y - d.r - 10,
+          x2: d.x + d.r + 6,
+          y2: d.y + d.r + 4,
+        };
+        if (overlaps(box, [noteBox])) continue;
+        if (overlaps(box, placed)) continue;
+        chosen = { dx, dy, box };
+        break;
+      }
+      if (!chosen) return;
+      placed.push(chosen.box);
+      label
+        .attr("x", chosen.dx)
+        .attr("y", chosen.dy)
+        .attr("text-anchor", chosen.dx < 0 ? "end" : "start")
+        .attr("font-size", 9)
+        .attr("font-variant-numeric", "tabular-nums")
+        .attr("font-weight", 500)
+        .attr("fill", c.ink)
+        .attr("pointer-events", "none")
+        .text(text);
     });
   }
 

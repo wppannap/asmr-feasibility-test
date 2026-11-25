@@ -1,7 +1,7 @@
 /* Midnight-centered 24h upload waves — night spotlight + peak leaders. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261125d";
-import { themeColors } from "../theme.js?v=20261125d";
-import { renderReviewBanner } from "./review.js?v=20261125d";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261125e";
+import { themeColors } from "../theme.js?v=20261125e";
+import { renderReviewBanner } from "./review.js?v=20261125e";
 
 const RULES = [
   { id: "strict", label: "strict" },

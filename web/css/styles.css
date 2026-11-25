@@ -1332,19 +1332,42 @@ input[type="range"] {
   .section-head { padding: 2rem 1rem 0.75rem; }
 }
 
-/* —— Dorling cartogram legend —— */
-.legend-node-rising {
+/* —— World Acoustic Score legend —— */
+.legend-node-rising,
+.legend-note-quarter {
   background: var(--accent);
-  border-radius: 50%;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  transform: rotate(-20deg);
 }
-.legend-node-falling {
+.legend-node-falling,
+.legend-note-falling {
   background: var(--neg);
-  border-radius: 50%;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  transform: rotate(-20deg);
 }
-.legend-node-flat {
+.legend-node-flat,
+.legend-note-hollow {
   background: transparent;
   border: 1.5px solid var(--muted);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  transform: rotate(-20deg);
+}
+.legend-note-rest {
+  background: var(--muted);
   border-radius: 50%;
+  width: 0.45rem;
+  height: 0.45rem;
+}
+.country.coast-only {
+  fill: var(--bg2) !important;
+  stroke: #b8b0a2 !important;
+  stroke-width: 0.45px !important;
+}
+.score-label {
+  paint-order: stroke fill;
+  stroke: var(--bg);
+  stroke-width: 3px;
+  stroke-linejoin: round;
 }
 .dorling-node .dorling-hit:focus-visible {
   outline: 1px solid var(--accent);
