@@ -1,13 +1,13 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126u";
-import { themeColors } from "./theme.js?v=20261126u";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126v";
+import { themeColors } from "./theme.js?v=20261126v";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261126u";
+} from "./sections.js?v=20261126v";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -1552,12 +1552,6 @@ async function loadAll() {
     state.map1PrevPeak = nextPrev;
   }
 
-  function hashIso(iso) {
-    let h = 0;
-    for (let i = 0; i < iso.length; i++) h = (h * 31 + iso.charCodeAt(i)) | 0;
-    return Math.abs(h);
-  }
-
   function startMap1Play() {
     if (!state.monthly?.months?.length) return;
     state.map1Playing = true;
@@ -1707,42 +1701,53 @@ async function loadAll() {
   }
 
 function initExtraCharts() {
-  const { ytCreators, ytDuration, ytUpload } = state.extra;
+  const { ytCreators, ytDuration, ytUpload } = state.extra || {};
 
-  if (sectionOn("scrolly-3") && ChartModules["scrolly-3"] && ytCreators) {
-    chartApi.creatorsYt = ChartModules["scrolly-3"].render(
-      document.getElementById("chart-creators-yt"),
-      { creators: ytCreators, caveatEl: document.getElementById("caveat-3") }
-    );
+  function safeRender(sid, label, fn) {
+    if (!sectionOn(sid) || !ChartModules[sid]) return;
+    try {
+      fn(ChartModules[sid]);
+    } catch (err) {
+      console.error(`[chart ${label}] render failed:`, err);
+    }
   }
-  if (sectionOn("scrolly-4") && ChartModules["scrolly-4"] && scatterData) {
-    chartApi.scatter = ChartModules["scrolly-4"].render(
-      document.getElementById("chart-scatter"),
-      {
-        scatter: scatterData,
-        scatterPoints: scatterPoints || { points: [] },
-        caveatEl: document.getElementById("caveat-4"),
-      }
-    );
-  }
-  if (sectionOn("scrolly-5") && ChartModules["scrolly-5"] && ytDuration) {
-    chartApi.durationYt = ChartModules["scrolly-5"].render(
-      document.getElementById("chart-duration-yt"),
-      { duration: ytDuration, caveatEl: document.getElementById("caveat-5") }
-    );
-  }
-  if (sectionOn("scrolly-6") && ChartModules["scrolly-6"] && wikiData) {
-    chartApi.wiki = ChartModules["scrolly-6"].render(
-      document.getElementById("chart-wiki"),
-      { wiki: wikiData, caveatEl: document.getElementById("caveat-6") }
-    );
-  }
-  if (sectionOn("scrolly-9") && ChartModules["scrolly-9"] && ytUpload) {
-    chartApi.uploadClock = ChartModules["scrolly-9"].render(
-      document.getElementById("chart-upload-clock"),
-      { upload_clock: ytUpload, caveatEl: document.getElementById("caveat-9") }
-    );
-  }
+
+  safeRender("scrolly-3", "creators", (mod) => {
+    if (!ytCreators) return;
+    chartApi.creatorsYt = mod.render(document.getElementById("chart-creators-yt"), {
+      creators: ytCreators,
+      caveatEl: document.getElementById("caveat-3"),
+    });
+  });
+  safeRender("scrolly-4", "scatter", (mod) => {
+    if (typeof scatterData === "undefined" || !scatterData) return;
+    chartApi.scatter = mod.render(document.getElementById("chart-scatter"), {
+      scatter: scatterData,
+      scatterPoints: (typeof scatterPoints !== "undefined" && scatterPoints) || { points: [] },
+      caveatEl: document.getElementById("caveat-4"),
+    });
+  });
+  safeRender("scrolly-5", "duration", (mod) => {
+    if (!ytDuration) return;
+    chartApi.durationYt = mod.render(document.getElementById("chart-duration-yt"), {
+      duration: ytDuration,
+      caveatEl: document.getElementById("caveat-5"),
+    });
+  });
+  safeRender("scrolly-6", "wiki", (mod) => {
+    if (typeof wikiData === "undefined" || !wikiData) return;
+    chartApi.wiki = mod.render(document.getElementById("chart-wiki"), {
+      wiki: wikiData,
+      caveatEl: document.getElementById("caveat-6"),
+    });
+  });
+  safeRender("scrolly-9", "upload_clock", (mod) => {
+    if (!ytUpload) return;
+    chartApi.uploadClock = mod.render(document.getElementById("chart-upload-clock"), {
+      upload_clock: ytUpload,
+      caveatEl: document.getElementById("caveat-9"),
+    });
+  });
 }
 
   function initScrollama() {
@@ -1785,8 +1790,12 @@ function initExtraCharts() {
       () => {
         clearTimeout(chartResizeT);
         chartResizeT = setTimeout(() => {
-          Object.values(ChartModules).forEach((mod) => {
-            if (typeof mod?.update === "function") mod.update();
+          Object.entries(ChartModules).forEach(([sid, mod]) => {
+            try {
+              if (typeof mod?.update === "function") mod.update();
+            } catch (err) {
+              console.error(`[chart ${sid}] update failed:`, err);
+            }
           });
         }, 150);
       },
@@ -1818,8 +1827,16 @@ function initExtraCharts() {
     }
 
     wireControls();
-    if (sectionOn("scrolly-1")) updateStage1();
-    if (sectionOn("scrolly-2")) updateStage2(true);
+    try {
+      if (sectionOn("scrolly-1")) updateStage1();
+    } catch (err) {
+      console.error("[chart map1] render failed:", err);
+    }
+    try {
+      if (sectionOn("scrolly-2")) updateStage2(true);
+    } catch (err) {
+      console.error("[chart map2] render failed:", err);
+    }
     initExtraCharts();
     initScrollama();
   }

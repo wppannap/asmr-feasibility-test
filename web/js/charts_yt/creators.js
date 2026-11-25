@@ -3,9 +3,9 @@
  * Cluster AREA ∝ top-5% share; uniform core density, soft feathered edges.
  * Named countries only (title_only); no Rule toggle.
  */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126u";
-import { themeColors } from "../theme.js?v=20261126u";
-import { renderReviewBanner } from "./review.js?v=20261126u";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126v";
+import { themeColors } from "../theme.js?v=20261126v";
+import { renderReviewBanner } from "./review.js?v=20261126v";
 
 /** Harmonious starlight tints for named countries. */
 const PALETTE = [
