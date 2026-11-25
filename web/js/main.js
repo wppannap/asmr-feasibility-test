@@ -1,13 +1,13 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126t";
-import { themeColors } from "./theme.js?v=20261126t";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126u";
+import { themeColors } from "./theme.js?v=20261126u";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261126t";
+} from "./sections.js?v=20261126u";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -23,6 +23,11 @@ async function loadChartModules() {
 
 const GROWTH_LABEL = "ASMR search growth (latest 12 months ÷ first 12 months − 1)";
 const GROWTH_DOMAIN_PCT = [-50, 150]; // colour only; values clipped
+/** Map 1 · 60-month peak playback step (ms per month). */
+const MAP1_PLAY_MS = { 1: 150, 2: 85 };
+const MAP1_NOTE_TWEEN_MS = 130;
+const MAP1_RIPPLE_MS = 650;
+const MAP1_RIPPLE_MAX = 36;
 
 /** Editorial KPI callouts — values from trends payload meta only. */
 function fillTrendKpis(meta) {
@@ -59,6 +64,8 @@ const state = {
   monthIndex: 0,
   playing: false,
   map1Playing: false,
+  map1PlaySpeed: 1, // 1× → 150ms/mo · 2× → 85ms/mo
+  map1PrevPeak: {}, // iso3 → prior month value (crest / threshold detect)
   lands: null,
   countryV2ByIso: new Map(),
   creatorsByIso: new Map(),
@@ -971,6 +978,13 @@ async function loadAll() {
 
     map.dorlingCache = nodes;
     const filter = state.map1Filter || "all";
+    const animatePeak =
+      mode === "peak" &&
+      !!opts.animate &&
+      !prefersReducedMotion() &&
+      reuse;
+    if (!map.prevPeakScales) map.prevPeakScales = new Map();
+    if (!map.prevPeakOps) map.prevPeakOps = new Map();
 
     // Which notes get external ISO3+% labels
     const byAbs = nodes
@@ -988,6 +1002,7 @@ async function loadAll() {
         const g = enter.append("g").attr("class", "dorling-node score-note");
         g.append("circle").attr("class", "dorling-hover-ring");
         g.append("circle").attr("class", "dorling-focus-ring");
+        g.append("circle").attr("class", "peak-halo");
         g.append("circle").attr("class", "dorling-orbit");
         g.append("g").attr("class", "note-glyph");
         g.append("text").attr("class", "dorling-label score-label");
@@ -997,7 +1012,7 @@ async function loadAll() {
 
     sel.attr("transform", (d) => `translate(${d.x},${d.y})`);
 
-    // First pass: draw glyphs
+    // First pass: draw glyphs (smooth scale/opacity tween in peak playback)
     sel.each(function (d) {
       const g = d3.select(this);
       const color = noteColor(d, c);
@@ -1007,17 +1022,60 @@ async function loadAll() {
       const orbit = g.select(".dorling-orbit");
       const hoverRing = g.select(".dorling-hover-ring");
       const focusRing = g.select(".dorling-focus-ring");
+      const halo = g.select(".peak-halo");
       const glyph = g.select(".note-glyph");
       const hit = g.select(".dorling-hit");
 
       drawNoteGlyph(glyph, d.noteType, d.scale, color, c);
 
-      // peak glow pulse
+      // Peak: opacity tracks monthly value (0.25→1.0); soft halo above 75
+      let targetOp = 1;
       if (d.kind === "peak") {
-        glyph.attr("opacity", 0.45 + 0.55 * (Math.max(0, d.value || 0) / 100));
+        const v = Math.max(0, Math.min(100, d.value || 0));
+        targetOp = 0.25 + 0.75 * (v / 100);
+        if (v >= 75) {
+          halo
+            .attr("r", d.r + 5)
+            .attr("fill", color)
+            .attr("stroke", "none")
+            .attr("pointer-events", "none");
+          const haloOp = 0.08 + 0.14 * ((v - 75) / 25);
+          if (animatePeak) {
+            halo
+              .transition()
+              .duration(MAP1_NOTE_TWEEN_MS)
+              .ease(d3.easeCubicInOut)
+              .attr("opacity", haloOp);
+          } else {
+            halo.attr("opacity", haloOp);
+          }
+        } else {
+          halo.interrupt().attr("r", 0).attr("opacity", 0);
+        }
       } else {
-        glyph.attr("opacity", 1);
+        halo.interrupt().attr("r", 0).attr("opacity", 0);
       }
+
+      glyph.interrupt();
+      if (animatePeak && d.kind === "peak") {
+        const prevS = map.prevPeakScales.get(d.iso3);
+        const prevO = map.prevPeakOps.get(d.iso3);
+        const fromRatio =
+          prevS != null && d.scale > 0.01 ? prevS / d.scale : 1;
+        glyph
+          .attr("transform", `scale(${fromRatio})`)
+          .attr("opacity", prevO != null ? prevO : targetOp);
+        glyph
+          .transition()
+          .duration(MAP1_NOTE_TWEEN_MS)
+          .ease(d3.easeCubicInOut)
+          .attr("transform", "scale(1)")
+          .attr("opacity", targetOp);
+      } else {
+        glyph.attr("transform", null).attr("opacity", targetOp);
+      }
+      map.prevPeakScales.set(d.iso3, d.scale);
+      map.prevPeakOps.set(d.iso3, targetOp);
 
       orbit.attr("r", 0).attr("fill", "none").attr("stroke", "none");
       if (d.row.small_base && d.kind !== "lowvol") {
@@ -1058,6 +1116,13 @@ async function loadAll() {
         })
         .on("click", (event) => showTip(event, d.feature, "trends"));
     });
+
+    if (mode === "peak" && opts.animate && !prefersReducedMotion()) {
+      emitPeakRipples(map, nodes, c.accent);
+    } else if (mode !== "peak") {
+      clearPeakRipples(map);
+      state.map1PrevPeak = {};
+    }
 
     // Collision-aware external labels — keep close to each note's own centroid
     const placed = [];
@@ -1259,7 +1324,14 @@ async function loadAll() {
 
     if (!state.maps.trends) return;
     const reuse = !!(peakMode && opts.reuseLayout && state.maps.trends.dorlingPositions);
-    paintDorling(state.maps.trends, state.displayValues.trends, { reuseLayout: reuse });
+    if (peakMode && !opts.animate) {
+      // Seed crest detector so Play doesn't fire a ripple storm on start
+      state.map1PrevPeak = { ...state.displayValues.trends };
+    }
+    paintDorling(state.maps.trends, state.displayValues.trends, {
+      reuseLayout: reuse,
+      animate: !!(peakMode && opts.animate),
+    });
     drawLegend(
       document.getElementById("legend-trends"),
       tScale,
@@ -1396,6 +1468,96 @@ async function loadAll() {
   }
 
   let map1PlayTimer = null;
+
+  function map1PlayDelay() {
+    if (prefersReducedMotion()) return 900;
+    const sp = state.map1PlaySpeed === 2 ? 2 : 1;
+    return MAP1_PLAY_MS[sp] || MAP1_PLAY_MS[1];
+  }
+
+  function ensureRippleLayer(map) {
+    if (!map.rippleG && map.svg) {
+      map.rippleG = map.svg
+        .append("g")
+        .attr("class", "peak-ripples")
+        .attr("pointer-events", "none");
+    }
+    return map.rippleG;
+  }
+
+  function clearPeakRipples(map) {
+    if (!map?.rippleG) return;
+    map.rippleG.selectAll("circle.peak-ripple").interrupt().remove();
+  }
+
+  /** Delicate expanding rings on peak crests / ≥85 crossings during playback. */
+  function emitPeakRipples(map, nodes, accent) {
+    if (!state.map1Playing || prefersReducedMotion()) return;
+    const layer = ensureRippleLayer(map);
+    if (!layer) return;
+    const series = state.monthly?.series?.own_peak_asmr || {};
+    const idx = state.monthIndex ?? 0;
+    const prevMap = state.map1PrevPeak || {};
+    const nextPrev = { ...prevMap };
+
+    nodes.forEach((d) => {
+      if (d.kind !== "peak" || d.value == null) return;
+      const v = d.value;
+      const arr = series[d.iso3];
+      const prev = prevMap[d.iso3];
+      const next = arr && idx < arr.length - 1 ? arr[idx + 1] : null;
+      const crossed85 = prev != null && prev < 85 && v >= 85;
+      const hot = v >= 85;
+      const localCrest =
+        prev != null &&
+        next != null &&
+        v >= prev &&
+        v >= next &&
+        v >= 55;
+      if (!(crossed85 || (hot && (prev == null || v >= prev)) || localCrest)) {
+        nextPrev[d.iso3] = v;
+        return;
+      }
+      // Avoid re-firing every frame on sustained ≥85 — only on rise or crest
+      if (hot && !crossed85 && !localCrest && prev != null && v <= prev + 0.01) {
+        nextPrev[d.iso3] = v;
+        return;
+      }
+
+      while (layer.selectAll("circle.peak-ripple").size() >= MAP1_RIPPLE_MAX) {
+        layer.select("circle.peak-ripple").interrupt().remove();
+      }
+      const grow = 18 + ((hashIso(d.iso3) % 7) / 6) * 6;
+      layer
+        .append("circle")
+        .attr("class", "peak-ripple")
+        .attr("cx", d.x)
+        .attr("cy", d.y)
+        .attr("r", Math.max(3, d.r * 0.35))
+        .attr("fill", "none")
+        .attr("stroke", accent)
+        .attr("stroke-width", 1)
+        .attr("opacity", 0.55)
+        .attr("pointer-events", "none")
+        .transition()
+        .duration(MAP1_RIPPLE_MS)
+        .ease(d3.easeCubicOut)
+        .attr("r", Math.max(3, d.r * 0.35) + grow)
+        .attr("opacity", 0)
+        .on("end", function () {
+          d3.select(this).remove();
+        });
+      nextPrev[d.iso3] = v;
+    });
+    state.map1PrevPeak = nextPrev;
+  }
+
+  function hashIso(iso) {
+    let h = 0;
+    for (let i = 0; i < iso.length; i++) h = (h * 31 + iso.charCodeAt(i)) | 0;
+    return Math.abs(h);
+  }
+
   function startMap1Play() {
     if (!state.monthly?.months?.length) return;
     state.map1Playing = true;
@@ -1406,10 +1568,11 @@ async function loadAll() {
       btn.setAttribute("aria-pressed", "true");
       btn.setAttribute("aria-label", "Pause");
     }
-    const delay = prefersReducedMotion() ? 1100 : 650;
+    if (map1PlayTimer) clearInterval(map1PlayTimer);
+    const delay = map1PlayDelay();
     map1PlayTimer = setInterval(() => {
       state.monthIndex = (state.monthIndex + 1) % state.monthly.months.length;
-      updateStage1({ reuseLayout: true, skipTable: true });
+      updateStage1({ reuseLayout: true, skipTable: true, animate: true });
     }, delay);
   }
   function stopMap1Play() {
@@ -1423,6 +1586,7 @@ async function loadAll() {
     }
     if (map1PlayTimer) clearInterval(map1PlayTimer);
     map1PlayTimer = null;
+    if (state.maps.trends) clearPeakRipples(state.maps.trends);
   }
 
   function wireControls() {
@@ -1466,6 +1630,19 @@ async function loadAll() {
         else startMap1Play();
       });
     }
+
+    document.querySelectorAll("#map1-speed button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#map1-speed button").forEach((b) => {
+          b.classList.remove("is-active");
+          b.setAttribute("aria-pressed", "false");
+        });
+        btn.classList.add("is-active");
+        btn.setAttribute("aria-pressed", "true");
+        state.map1PlaySpeed = btn.dataset.speed === "2" ? 2 : 1;
+        if (state.map1Playing) startMap1Play(); // restart interval at new speed
+      });
+    });
 
     document.querySelectorAll("#layer-mode button").forEach((btn) => {
       btn.addEventListener("click", () => {

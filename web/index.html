@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <!-- cachebust:20261126t -->
+  <!-- cachebust:20261126u -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ASMR · sleep — late-night listening</title>
-  <link rel="stylesheet" href="css/theme.css?v=20261126t" />
-  <link rel="stylesheet" href="css/styles.css?v=20261126t" />
+  <link rel="stylesheet" href="css/theme.css?v=20261126u" />
+  <link rel="stylesheet" href="css/styles.css?v=20261126u" />
   <!-- pages-redeploy g4 -->
 </head>
 <body>
@@ -72,6 +72,10 @@
         </div>
         <div class="control-row timeline-row map1-peak-row" id="map1-peak-controls" hidden>
           <button type="button" class="play-btn" id="map1-play-btn" aria-label="Play" aria-pressed="false">Play</button>
+          <div class="seg map1-speed-seg" id="map1-speed" role="group" aria-label="Playback speed">
+            <button type="button" class="is-active" data-speed="1" aria-pressed="true">1×</button>
+            <button type="button" data-speed="2" aria-pressed="false">2×</button>
+          </div>
           <input type="range" id="map1-month-scrubber" min="0" max="1" value="0" step="1" aria-label="Month scrubber" />
           <span class="month-label" id="map1-month-label" aria-live="polite">—</span>
         </div>
@@ -168,15 +172,15 @@
     <p>TODO: my text</p>
   </footer>
 
-  <script src="js/vendor/d3.min.js?v=20261126t"></script>
-  <script src="js/vendor/topojson-client.min.js?v=20261126t"></script>
-  <script src="js/vendor/scrollama.js?v=20261126t"></script>
-  <script src="js/vendor/gsap.min.js?v=20261126t"></script>
-  <script src="js/vendor/ScrollTrigger.min.js?v=20261126t"></script>
-  <script src="js/iso.js?v=20261126t"></script>
-  <script src="js/waveform.js?v=20261126t"></script>
-  <script src="js/motion.js?v=20261126t"></script>
-  <script type="module" src="js/main.js?v=20261126t"></script>
+  <script src="js/vendor/d3.min.js?v=20261126u"></script>
+  <script src="js/vendor/topojson-client.min.js?v=20261126u"></script>
+  <script src="js/vendor/scrollama.js?v=20261126u"></script>
+  <script src="js/vendor/gsap.min.js?v=20261126u"></script>
+  <script src="js/vendor/ScrollTrigger.min.js?v=20261126u"></script>
+  <script src="js/iso.js?v=20261126u"></script>
+  <script src="js/waveform.js?v=20261126u"></script>
+  <script src="js/motion.js?v=20261126u"></script>
+  <script type="module" src="js/main.js?v=20261126u"></script>
   <script>
     (function () {
       const el = document.getElementById("scroll-progress");

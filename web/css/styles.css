@@ -241,6 +241,16 @@ input[type="range"] {
   min-width: 120px;
 }
 
+.map1-speed-seg {
+  flex: 0 0 auto;
+}
+
+.map1-speed-seg button {
+  min-width: 2.1rem;
+  padding: 0.25rem 0.45rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .month-label {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
