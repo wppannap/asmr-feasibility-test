@@ -779,7 +779,14 @@ input[type="range"] {
 
 #scrolly-9 .chart-toolbar {
   justify-content: flex-end;
-  padding-inline: 0;
+  padding-inline: 0 2px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+#scrolly-9 .table-toggle {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .chart-plot {

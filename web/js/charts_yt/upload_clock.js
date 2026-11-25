@@ -1,7 +1,7 @@
-/* Midnight-centered 24h upload waves — crisp Dusk-to-Midnight indigo sky. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126c";
-import { themeColors } from "../theme.js?v=20261126c";
-import { renderReviewBanner } from "./review.js?v=20261126c";
+/* Midnight-centered 24h upload waves — soft pastel dusk-to-midnight sky. */
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126e";
+import { themeColors } from "../theme.js?v=20261126e";
+import { renderReviewBanner } from "./review.js?v=20261126e";
 
 const RULES = [
   { id: "strict", label: "strict" },
@@ -196,17 +196,17 @@ function draw() {
   clear(mount);
   const w = Math.max(300, mount.clientWidth || 640);
   const mobile = w < 520;
-  // Extra right margin so peak leaders + table toggle never clip
-  const margin = { top: 28, right: mobile ? 88 : 118, bottom: 40, left: mobile ? 36 : 48 };
+  // Extra margins so sun/moon icons, peak leaders, and table toggle never clip
+  const margin = { top: 34, right: mobile ? 108 : 128, bottom: 40, left: mobile ? 40 : 48 };
   const stripH = mobile ? 78 : 94;
   const gap = 12;
   const n = REGIONS.length;
   const ih = n * stripH + (n - 1) * gap;
   const iw = w - margin.left - margin.right;
   const c = themeColors();
-  const paper = c.bg || "#fdfcfa";
-  const nightSky = c.nightBg || "#141b2d";
-  const nightInk = c.nightInk || "#f4f1ea";
+  const paper = "#fdfcfa";
+  const ink = c.ink || "#121622";
+  const duskInk = "#262e40";
   const nightAccent = c.nightAccent || "#f4a259";
   const curveTeal = "#4db6c7";
 
@@ -215,12 +215,13 @@ function draw() {
     .append("svg")
     .attr("viewBox", `0 0 ${w} ${ih + margin.top + margin.bottom}`)
     .attr("width", "100%")
+    .attr("overflow", "visible")
     .attr("role", "img")
     .attr("aria-label", "Midnight-centered 24-hour upload waves by region");
 
   const defs = svg.append("defs");
-  // Clean Dusk → Midnight → Dawn sky (opaque stops — no muddy overlays)
-  // display: 0=12:00, 4.5≈16:30, 6=18:00, 8=20:00, 12=00:00, 14=02:00, 18=06:00, 19.5≈07:30, 24=12:00
+  // Soft pastel dusk → midnight → dawn (no black pillar)
+  // 0%=12:00, 16%=16:00, 30%=19:00, 50%=00:00, 70%=05:00, 84%=08:00, 100%=12:00
   const sky = defs
     .append("linearGradient")
     .attr("id", "dusk-midnight-sky")
@@ -230,17 +231,13 @@ function draw() {
     .attr("y1", 0)
     .attr("y2", 0);
   const stops = [
-    [0, paper],
-    [4.5 / 24, "#eef1f7"],
-    [6 / 24, "#cbd4e6"],
-    [7.5 / 24, "#8a96b0"],
-    [8 / 24, nightSky],
-    [12 / 24, nightSky],
-    [14 / 24, nightSky],
-    [14.5 / 24, "#8a96b0"],
-    [18 / 24, "#cbd4e6"],
-    [19.5 / 24, "#eef1f7"],
-    [1, paper],
+    [0, "#fdfcfa"],
+    [0.16, "#f6f6f9"],
+    [0.3, "#dfe5f1"],
+    [0.5, "#b8c5de"],
+    [0.7, "#dfe5f1"],
+    [0.84, "#f6f6f9"],
+    [1, "#fdfcfa"],
   ];
   stops.forEach(([t, color]) => {
     sky
@@ -255,7 +252,7 @@ function draw() {
   const x = d3.scaleLinear().domain([0, 24]).range([0, iw]);
   const midX = x(12);
 
-  // Full-width sky only — no terracotta wash
+  // Full-width soft twilight sky
   g.append("rect")
     .attr("class", "sky-backdrop")
     .attr("x", 0)
@@ -265,28 +262,44 @@ function draw() {
     .attr("fill", "url(#dusk-midnight-sky)")
     .attr("rx", 2);
 
-  // Top time-ruler icons
-  const iconY = -16;
-  drawSunIcon(g, x(0), iconY, 6, c.muted);
-  drawSunIcon(g, x(24), iconY, 6, c.muted);
-  drawMoonIcon(g, midX - 2, iconY, 5.5, nightInk);
+  // Hairline dashed boundary for 20:00–02:00 (display 8..14) — no heavy block
+  const nightX0 = x(8);
+  const nightX1 = x(14);
+  [nightX0, nightX1].forEach((nx) => {
+    g.append("line")
+      .attr("class", "night-window-edge")
+      .attr("x1", nx)
+      .attr("x2", nx)
+      .attr("y1", -8)
+      .attr("y2", ih + 4)
+      .attr("stroke", duskInk)
+      .attr("stroke-width", 0.7)
+      .attr("stroke-dasharray", "2.5 3.5")
+      .attr("opacity", 0.28);
+  });
 
-  // Crisp midnight rule (night-ink over indigo)
+  // Top time-ruler icons (dark ink — readable on pastel sky)
+  const iconY = -16;
+  drawSunIcon(g, x(0) + 7, iconY, 6, c.muted);
+  drawSunIcon(g, x(24) - 7, iconY, 6, c.muted);
+  drawMoonIcon(g, midX - 2, iconY, 5.5, ink);
+
+  // Midnight rule + label in crisp dark ink over soft twilight
   g.append("line")
     .attr("x1", midX)
     .attr("x2", midX)
     .attr("y1", -4)
     .attr("y2", ih + 4)
-    .attr("stroke", nightInk)
-    .attr("stroke-width", 1.25)
-    .attr("opacity", 0.9);
+    .attr("stroke", ink)
+    .attr("stroke-width", 1.15)
+    .attr("opacity", 0.85);
   g.append("text")
     .attr("x", midX + 8)
     .attr("y", -2)
     .attr("font-size", 10)
     .attr("font-variant-numeric", "tabular-nums")
     .attr("font-weight", 600)
-    .attr("fill", nightInk)
+    .attr("fill", ink)
     .text("00:00 Midnight");
 
   // Shared hour ticks (bottom axis stays on paper)
@@ -359,12 +372,12 @@ function draw() {
       .x((p) => x(p[0]))
       .y((p) => y(p[1]));
 
-    // sleep_title: accent fill + night-accent stroke for glow on indigo
+    // sleep_title: soft accent wash + accent stroke on pastel sky
     strip
       .append("path")
       .attr("d", area(sleepPts))
       .attr("fill", nightAccent)
-      .attr("opacity", 0.28);
+      .attr("opacity", 0.22);
 
     strip
       .append("path")
@@ -400,8 +413,9 @@ function draw() {
       const nightTxt =
         night != null ? `night ${fmt(night * 100, 0)}%` : `share ${fmt(peakVal, 3)}`;
       const peakInNight = inNightWindow(peakIdx);
-      const labelFill = peakInNight ? nightInk : c.muted;
-      const leaderStroke = peakInNight ? "rgba(244,241,234,0.45)" : c.line;
+      // Dark ink on soft twilight — never white-on-white
+      const labelFill = peakInNight ? duskInk : c.muted;
+      const leaderStroke = peakInNight ? "rgba(38,46,64,0.35)" : c.line;
 
       strip
         .append("circle")
@@ -409,22 +423,25 @@ function draw() {
         .attr("cy", py)
         .attr("r", 8)
         .attr("fill", nightAccent)
-        .attr("opacity", 0.28);
+        .attr("opacity", 0.22);
       strip
         .append("circle")
         .attr("cx", px)
         .attr("cy", py)
         .attr("r", 3.5)
         .attr("fill", nightAccent)
-        .attr("stroke", peakInNight ? nightSky : c.bg)
+        .attr("stroke", paper)
         .attr("stroke-width", 1.3);
 
-      const lx = Math.min(iw - 4, px + (mobile ? 36 : 54));
+      const label = `${String(ph).padStart(2, "0")}:00 · ${nightTxt}`;
+      const approxW = label.length * 5.4;
+      const maxLx = iw + margin.right - 10 - approxW;
+      const lx = Math.min(maxLx, Math.max(4, px + (mobile ? 32 : 50)));
       const ly = Math.max(10, py - 16);
       strip
         .append("path")
         .attr("class", "anno-leader")
-        .attr("d", `M${px + 4},${py - 2} Q${px + 18},${ly} ${lx - 4},${ly}`)
+        .attr("d", `M${px + 4},${py - 2} Q${px + 18},${ly} ${lx - 2},${ly}`)
         .attr("fill", "none")
         .attr("stroke", leaderStroke)
         .attr("stroke-width", 0.9);
@@ -437,7 +454,7 @@ function draw() {
         .attr("font-variant-numeric", "tabular-nums")
         .attr("font-weight", peakInNight ? 600 : 400)
         .attr("fill", labelFill)
-        .text(`${String(ph).padStart(2, "0")}:00 · ${nightTxt}`);
+        .text(label);
     }
 
     strip
