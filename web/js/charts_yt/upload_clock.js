@@ -20,15 +20,12 @@ export function render(container, data) {
 
   const wrap = d3.select(container);
   wrap.append("h3").attr("class", "chart-section-title").text("Upload clock · local hour");
-  const ok = renderReviewBanner(wrap, meta);
-  setCaveat(caveatEl, meta.caveats || []);
-  if (meta.jp_depends_on_rule) {
-    wrap.append("p").attr("class", "chart-note").text("JP result depends on the rule");
-  }
   wrap
     .append("p")
-    .attr("class", "chart-note")
-    .text("Exact :00/:30 times often mean scheduled publishing.");
+    .attr("class", "chart-subtitle")
+    .text(meta.scope_line || "videos labelled as ASMR (excluding ambient-noise content)");
+  const ok = renderReviewBanner(wrap, meta);
+  setCaveat(caveatEl, meta.caveats || []);
   if (!ok) return;
 
   ctx = { rows, profiles, rule: "strict", meta };

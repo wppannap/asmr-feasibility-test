@@ -31,13 +31,16 @@ VIEWPORTS = [
 SECTIONS = [
     ("scrolly-1", "map1"),
     ("scrolly-2", "map2"),
+    ("scrolly-3", "creators"),
     ("scrolly-4", "association"),
+    ("scrolly-5", "duration"),
     ("scrolly-6", "wiki"),
+    ("scrolly-9", "upload_clock"),
 ]
 
 CHECK_JS = r"""
 () => {
-  const sections = ["scrolly-1", "scrolly-2", "scrolly-4", "scrolly-6"];
+  const sections = ["scrolly-1", "scrolly-2", "scrolly-3", "scrolly-4", "scrolly-5", "scrolly-6", "scrolly-9"];
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const failures = [];

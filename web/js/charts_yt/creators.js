@@ -18,6 +18,10 @@ export function render(container, data) {
 
   const wrap = d3.select(container);
   wrap.append("h3").attr("class", "chart-section-title").text("Creators · declared country");
+  wrap
+    .append("p")
+    .attr("class", "chart-subtitle")
+    .text(meta.scope_line || "videos labelled as ASMR (excluding ambient-noise content)");
   const ok = renderReviewBanner(wrap, meta);
   setCaveat(caveatEl, meta.caveats || []);
   if (!ok) return;

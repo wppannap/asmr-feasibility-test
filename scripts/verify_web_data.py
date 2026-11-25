@@ -35,6 +35,13 @@ EXPECTED_FILES = [
     "scatter_points_v3c.json",
     "wiki_lang.json",
 ]
+
+# Optional YouTube payloads — required only when the matching section is enabled.
+OPTIONAL_YT_FILES = {
+    "scrolly-3": "yt_creators.json",
+    "scrolly-5": "yt_duration.json",
+    "scrolly-9": "yt_upload_clock.json",
+}
 TOPO_FILE = "countries-50m.json"
 
 FORBIDDEN_NOISE_PHRASE_RE = re.compile(
@@ -49,9 +56,10 @@ FORBIDDEN_METRIC_RE = re.compile(
 )
 
 # Forbidden content patterns (authors / ids / urls / free text fields)
+# Key-name match only (word-ish); avoid false hits like hourly_profiles ⊃ "url".
 FORBIDDEN_KEY_RE = re.compile(
-    r"(author|caption|title|text|nickname|channelid|channel_id|url|aweme_id|"
-    r"videoid|commentid|creator_hash|description|cover_url|download_url)",
+    r"(^|_)(author|caption|title|text|nickname|channelid|channel_id|url|aweme_id|"
+    r"videoid|commentid|creator_hash|description|cover_url|download_url)($|_)",
     re.I,
 )
 URL_RE = re.compile(r"https?://", re.I)
@@ -551,7 +559,13 @@ def main() -> int:
     results: list[tuple[str, bool, str]] = []
 
     # file presence + size
-    for name in EXPECTED_FILES:
+    enabled = enabled_sections()
+    required = list(EXPECTED_FILES)
+    for sid, fname in OPTIONAL_YT_FILES.items():
+        if sid in enabled:
+            required.append(fname)
+
+    for name in required:
         path = WEB / name
         if not path.exists():
             results.append((f"exists {name}", False, "missing"))

@@ -8,8 +8,11 @@ export const ENABLED_SECTIONS = [
   "top",
   "scrolly-1",
   "scrolly-2",
+  "scrolly-3",
   "scrolly-4",
+  "scrolly-5",
   "scrolly-6",
+  "scrolly-9",
 ];
 
 /** Data files required by enabled sections only. */
@@ -20,8 +23,9 @@ export const ENABLED_DATA = {
   scatter: "data/correlations_v3c.json",
   scatter_points: "data/scatter_points_v3c.json",
   wiki: "data/wiki_lang.json",
-  // Populated by scripts/enable_yt_charts.py when a YouTube section is enabled:
-  // yt_creators / yt_duration / yt_upload_clock
+  yt_creators: "data/yt_creators.json",
+  yt_duration: "data/yt_duration.json",
+  yt_upload_clock: "data/yt_upload_clock.json",
 };
 
 /** Chart module paths loaded only when the matching section id is enabled. */
