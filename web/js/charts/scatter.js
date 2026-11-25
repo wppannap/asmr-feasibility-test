@@ -8,6 +8,7 @@ import {
   setCaveat,
   sizeOf,
 } from "./util.js";
+import { themeColors } from "../theme.js";
 
 const PAIR_ROWS = [
   { key: "growth_vs_internet", label: "Growth vs internet users %" },
@@ -290,7 +291,7 @@ function drawScatter() {
       .attr("x2", innerW)
       .attr("y1", y(0))
       .attr("y2", y(0))
-      .attr("stroke", "#667788")
+      .attr("stroke", themeColors().muted)
       .attr("stroke-width", 1)
       .attr("stroke-dasharray", "4 3");
   }
@@ -318,9 +319,9 @@ function drawScatter() {
     .attr("tabindex", 0)
     .attr("role", "img")
     .attr("aria-label", tip)
-    .attr("fill", (d) => (significant(d) ? "#1b6ca8" : "none"))
+    .attr("fill", (d) => (significant(d) ? themeColors().accent : "none"))
     .attr("fill-opacity", (d) => (significant(d) ? 0.85 : 0))
-    .attr("stroke", "#1b6ca8")
+    .attr("stroke", themeColors().accent)
     .attr("stroke-width", (d) => (d.small_base ? 1.6 : 1.2))
     .attr("stroke-dasharray", (d) => (d.small_base ? "2 1.5" : null));
 
@@ -335,7 +336,7 @@ function drawScatter() {
         .attr("x", x(d[opt.field]) + 6)
         .attr("y", y(d.growth_clipped) + 3)
         .attr("font-size", 10)
-        .attr("fill", "#1a242c")
+        .attr("fill", themeColors().ink)
         .text("TWN");
     });
 }

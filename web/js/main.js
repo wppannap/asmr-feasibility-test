@@ -1,5 +1,6 @@
-/* global d3, topojson, scrollama, gsap, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
+/* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
 import { attachTableToggle, prefersReducedMotion } from "./charts/util.js";
+import { themeColors } from "./theme.js";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
@@ -23,10 +24,16 @@ async function loadChartModules() {
 const GROWTH_LABEL = "ASMR search growth (latest 12 months ÷ first 12 months − 1)";
 const GROWTH_DOMAIN_PCT = [-50, 150]; // colour only; values clipped
 
-// Color-blind–safe sequential (cividis via d3.interpolateCividis)
-const colorSeq = d3.interpolateCividis;
-// Diverging for growth (centred on 0)
-const colorDiv = d3.interpolateRdBu;
+function colorSeq(t) {
+  const c = themeColors();
+  return d3.interpolateRgb(c.nodata, c.accent)(t);
+}
+function colorDiv(t) {
+  // t in [0,1]; 0.5 ≈ zero growth
+  const c = themeColors();
+  if (t < 0.5) return d3.interpolateRgb(c.neg, c.neutral)(t * 2);
+  return d3.interpolateRgb(c.neutral, c.accent)((t - 0.5) * 2);
+}
 
 const state = {
   layerMode: "trends", // trends | creators | compare
@@ -199,7 +206,7 @@ async function loadAll() {
     const clean = values.filter((v) => v != null && Number.isFinite(v));
     if (!clean.length) {
       return {
-        scale: () => "#aebbc6",
+        scale: () => themeColors().nodata,
         domain: [0, 1],
         log: false,
         diverging: false,
@@ -297,7 +304,7 @@ async function loadAll() {
       const midRamp =
         scaleInfo?.scale && Number.isFinite(scaleInfo.scale(0))
           ? scaleInfo.scale(0)
-          : "#f7f7f7";
+          : themeColors().neutral;
       const solid = root.append("div").attr("class", "legend-swatch-row");
       solid
         .append("span")
@@ -305,12 +312,13 @@ async function loadAll() {
         .style("background", midRamp);
       solid.append("span").text(legendCopy.solid || "Statistically significant trend");
       const hatch = root.append("div").attr("class", "legend-swatch-row");
+      const ink = themeColors().ink;
       hatch
         .append("span")
         .attr("class", "legend-swatch legend-swatch-hatch")
         .style(
           "background",
-          `repeating-linear-gradient(45deg, ${midRamp}, ${midRamp} 2px, #1a242c 2px, #1a242c 3.2px)`
+          `repeating-linear-gradient(45deg, ${midRamp}, ${midRamp} 2px, ${ink} 2px, ${ink} 3.2px)`
         );
       hatch.append("span").text(
         legendCopy.hatch_flat || "Estimated growth shown; no statistically significant trend"
@@ -373,7 +381,7 @@ async function loadAll() {
       .attr("y1", 0)
       .attr("x2", 0)
       .attr("y2", 6)
-      .attr("stroke", "#1a242c")
+      .attr("stroke", themeColors().ink)
       .attr("stroke-width", 1.5)
       .attr("stroke-opacity", 0.55);
     const dots = defs
@@ -382,13 +390,13 @@ async function loadAll() {
       .attr("patternUnits", "userSpaceOnUse")
       .attr("width", 5)
       .attr("height", 5);
-    dots.append("rect").attr("width", 5).attr("height", 5).attr("fill", "#d7dee4");
+    dots.append("rect").attr("width", 5).attr("height", 5).attr("fill", themeColors().nodata);
     dots
       .append("circle")
       .attr("cx", 1.5)
       .attr("cy", 1.5)
       .attr("r", 0.9)
-      .attr("fill", "#9aa7b2");
+      .attr("fill", themeColors().muted);
 
     const projection = d3.geoNaturalEarth1().fitSize([width, height], state.lands);
     const path = d3.geoPath(projection);
@@ -526,7 +534,7 @@ async function loadAll() {
           return `url(#${map.lowvolPatternId})`;
         }
         const v = iso ? valueMap[iso] : null;
-        if (v == null || !Number.isFinite(v)) return "#dce3e8";
+        if (v == null || !Number.isFinite(v)) return themeColors().nodata;
         if (scaleInfo.log && v <= 0) return scaleInfo.scale(scaleInfo.domain[0]);
         return scaleInfo.scale(v);
       });
@@ -706,32 +714,36 @@ async function loadAll() {
       return;
     }
 
-    if (state.tween) state.tween.kill();
+    if (state.tween) {
+      cancelAnimationFrame(state.tween);
+      state.tween = null;
+    }
     const from = { ...state.displayValues.monthly };
-    const proxy = { t: 0 };
-    state.tween = gsap.to(proxy, {
-      t: 1,
-      duration: 0.45,
-      ease: "power2.out",
-      onUpdate: () => {
-        const blended = {};
-        const isos = new Set([...Object.keys(from), ...Object.keys(target)]);
-        isos.forEach((iso) => {
-          const a = from[iso];
-          const b = target[iso];
-          if (a == null && b == null) return;
-          if (a == null) blended[iso] = b;
-          else if (b == null) blended[iso] = a;
-          else blended[iso] = a + (b - a) * proxy.t;
-        });
-        state.displayValues.monthly = blended;
-        paintMap("monthly", blended, fixed);
-      },
-      onComplete: () => {
+    const t0 = performance.now();
+    const dur = prefersReducedMotion() ? 0 : 450;
+    const step = (now) => {
+      const t = dur <= 0 ? 1 : Math.min(1, (now - t0) / dur);
+      const eased = t * (2 - t);
+      const blended = {};
+      const isos = new Set([...Object.keys(from), ...Object.keys(target)]);
+      isos.forEach((iso) => {
+        const a = from[iso];
+        const b = target[iso];
+        if (a == null && b == null) return;
+        if (a == null) blended[iso] = b;
+        else if (b == null) blended[iso] = a;
+        else blended[iso] = a + (b - a) * eased;
+      });
+      state.displayValues.monthly = blended;
+      paintMap("monthly", blended, fixed);
+      if (t < 1) state.tween = requestAnimationFrame(step);
+      else {
+        state.tween = null;
         state.displayValues.monthly = target;
         paintMap("monthly", target, fixed);
-      },
-    });
+      }
+    };
+    state.tween = requestAnimationFrame(step);
     drawLegend(
       document.getElementById("legend-monthly"),
       fixed,

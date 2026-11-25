@@ -1,6 +1,6 @@
 # DATA_FREEZE
 
-SHA-256 of files under `web/data/` at publish time (2026-11-25T10:04:20Z).
+SHA-256 of files under `web/data/` at publish time (2026-11-25T10:12:47Z).
 
 - `data/correlations_v3c.json`: `76662e3a38e622540a012014772544834502ddc2cc5d7d8a44c38375435720d5`
 - `data/countries-50m.json`: `04342cdc1e3016bcd7db1630de95684d67b79fe3c8c460321e87aef469502394`

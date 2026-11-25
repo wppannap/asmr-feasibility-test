@@ -1,0 +1,26 @@
+/* Design tokens — colour, type, spacing only */
+:root {
+  --bg: #14161a;
+  --bg2: #1b1e24;
+  --ink: #e8e4da;
+  --muted: #9096a0;
+  --line: #2b2f37;
+  --accent: #e0a43a;
+  --neg: #3fa7a0;
+  --neutral: #3a3f48;
+  --nodata: #1f2328;
+
+  --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --measure: 62ch;
+  --radius: 2px;
+  --rail: 2.5rem;
+}

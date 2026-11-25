@@ -1,5 +1,6 @@
 /* Duration: log-axis overlaid densities + ratio table (unpublished). */
 import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js";
+import { themeColors } from "../theme.js";
 import { renderReviewBanner } from "./review.js";
 
 const WEIGHTS = [
@@ -144,19 +145,21 @@ function draw() {
     .attr("transform", `translate(0,${hists.length * ridgeH})`)
     .call(d3.axisBottom(x).ticks(6, "~s"));
 
+  const c = themeColors();
   ctx.markers.forEach((sec) => {
     g.append("line")
       .attr("x1", x(sec))
       .attr("x2", x(sec))
       .attr("y1", 0)
       .attr("y2", hists.length * ridgeH)
-      .attr("stroke", "#1a242c")
+      .attr("stroke", c.muted)
       .attr("stroke-dasharray", "3 3")
-      .attr("opacity", 0.35);
+      .attr("opacity", 0.55);
     g.append("text")
       .attr("x", x(sec) + 2)
       .attr("y", 10)
       .attr("font-size", 10)
+      .attr("fill", c.muted)
       .text(sec === 3600 ? "1 h" : sec === 28800 ? "8 h" : `${sec}s`);
   });
 
@@ -168,16 +171,17 @@ function draw() {
       .attr("text-anchor", "end")
       .attr("dominant-baseline", "middle")
       .attr("font-size", 11)
+      .attr("fill", c.ink)
       .text(hist.script_group.replace(" script", "").replace(" (mostly Chinese)", ""));
-    drawArea(g, hist.sleep, x, y0, ridgeH, "#3d6b8b", 0.45);
-    drawArea(g, hist.not, x, y0, ridgeH, "#8a6b4a", 0.35);
+    drawArea(g, hist.sleep, x, y0, ridgeH, c.accent, 0.45);
+    drawArea(g, hist.not, x, y0, ridgeH, c.neg, 0.35);
     if (hist.sleep?.median) {
       g.append("line")
         .attr("x1", x(hist.sleep.median))
         .attr("x2", x(hist.sleep.median))
         .attr("y1", y0 + 8)
         .attr("y2", y0 + ridgeH - 8)
-        .attr("stroke", "#3d6b8b")
+        .attr("stroke", c.accent)
         .attr("stroke-width", 1.5);
     }
     if (hist.not?.median) {
@@ -186,7 +190,7 @@ function draw() {
         .attr("x2", x(hist.not.median))
         .attr("y1", y0 + 8)
         .attr("y2", y0 + ridgeH - 8)
-        .attr("stroke", "#8a6b4a")
+        .attr("stroke", c.neg)
         .attr("stroke-width", 1.5)
         .attr("stroke-dasharray", "2 2");
     }

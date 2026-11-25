@@ -1,5 +1,6 @@
 /* Creators by declared country + unknown (unpublished). */
 import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js";
+import { themeColors } from "../theme.js";
 import { renderReviewBanner } from "./review.js";
 
 const RULES = [
@@ -105,6 +106,7 @@ function draw() {
     .range([0, iw]);
   g.append("g").call(d3.axisLeft(y));
   g.append("g").attr("transform", `translate(0,${ih})`).call(d3.axisBottom(x).ticks(5));
+  const c = themeColors();
   g.selectAll("rect")
     .data(data)
     .join("rect")
@@ -112,7 +114,7 @@ function draw() {
     .attr("height", y.bandwidth())
     .attr("x", 0)
     .attr("width", (d) => x(d.n_channels || 0))
-    .attr("fill", (d) => (d.country === "unknown" ? "#9aa7b2" : "#6b5b4a"));
+    .attr("fill", (d) => (d.country === "unknown" ? c.muted : c.accent));
   g.selectAll("text.share")
     .data(data)
     .join("text")
@@ -121,6 +123,7 @@ function draw() {
     .attr("y", (d) => y(d.country) + y.bandwidth() / 2)
     .attr("dy", "0.35em")
     .attr("font-size", 11)
+    .attr("fill", c.ink)
     .text((d) =>
       d.share_videos_from_top5pct_channels != null
         ? `top5% ${fmt(d.share_videos_from_top5pct_channels * 100, 0)}%`

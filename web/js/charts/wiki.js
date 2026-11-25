@@ -1,5 +1,6 @@
 /* Wikipedia language small multiples — indexed series; shared-y toggle */
 import { attachTableToggle, clear, setCaveat, sizeOf } from "./util.js";
+import { themeColors } from "../theme.js";
 
 let ctx = null;
 
@@ -102,7 +103,7 @@ function draw() {
   langs.forEach((lang) => {
     const vals = series[lang] || [];
     const isLow = lowTraffic.has(lang);
-    const stroke = isLow ? "#9aa5ad" : "#0b6e4f";
+    const stroke = isLow ? themeColors().muted : themeColors().accent;
     const cell = d3
       .select(grid)
       .append("div")

@@ -1,5 +1,6 @@
 /* Upload clock: 24h radial profiles JP/KR/TW/HK (unpublished). */
 import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js";
+import { themeColors } from "../theme.js";
 import { renderReviewBanner } from "./review.js";
 
 const RULES = [
@@ -96,6 +97,7 @@ function draw() {
     .attr("role", "img")
     .attr("aria-label", "24-hour upload radial profiles");
 
+  const c = themeColors();
   REGIONS.forEach((region, i) => {
     const col = i % 2;
     const row = Math.floor(i / 2);
@@ -107,6 +109,7 @@ function draw() {
       .attr("y", -cell / 2 + 14)
       .attr("font-size", 12)
       .attr("font-weight", 700)
+      .attr("fill", c.ink)
       .text(region);
     const sleep = ctx.profiles.find(
       (p) => p.rule === ctx.rule && p.region === region && p.arm === "sleep"
@@ -114,8 +117,8 @@ function draw() {
     const not = ctx.profiles.find(
       (p) => p.rule === ctx.rule && p.region === region && p.arm === "not"
     );
-    drawRadial(g, sleep?.profile, cell * 0.38, "#3d6b8b");
-    drawRadial(g, not?.profile, cell * 0.38, "#8a6b4a", true);
+    drawRadial(g, sleep?.profile, cell * 0.38, c.accent);
+    drawRadial(g, not?.profile, cell * 0.38, c.neg, true);
   });
 }
 

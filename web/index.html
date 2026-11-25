@@ -4,9 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ASMR · sleep — scrolly map</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/theme.css" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -54,6 +52,7 @@
           <p class="map-panel-title" id="trends-panel-title">ASMR search growth (latest 12 months ÷ first 12 months − 1)</p>
           <p class="map-panel-subtitle" id="trends-window-subtitle">Window: Nov 2021 to Oct 2026</p>
           <div class="map-svg-wrap" id="map-trends"></div>
+          <p class="fig-caption">Fig. 1 — ASMR search growth</p>
           <div class="map-below">
             <div class="legend" id="legend-trends"></div>
             <p class="map-caption" id="trends-map-caption" aria-live="polite"></p>
@@ -93,6 +92,7 @@
           <p class="map-panel-title">ASMR own-peak time-lapse</p>
           <p class="map-panel-subtitle" id="monthly-window-subtitle">Window: Nov 2021 to Oct 2026</p>
           <div class="map-svg-wrap" id="map-monthly"></div>
+          <p class="fig-caption">Fig. 2 — ASMR own-peak time-lapse</p>
           <div class="map-below">
             <div class="legend" id="legend-monthly"></div>
             <details class="notes-details" id="notes-2" open>
@@ -115,6 +115,7 @@
   <section class="scrolly" id="scrolly-3" data-chart="creators_yt">
     <figure class="stage stage-chart">
       <div class="chart-root" id="chart-creators-yt"></div>
+      <p class="fig-caption">Fig. 3 — Creators by declared country</p>
       <details class="notes-details" id="notes-3" open>
         <summary>Notes and limits</summary>
         <p class="caveat" id="caveat-3">Loading…</p>
@@ -129,6 +130,7 @@
   <section class="scrolly" id="scrolly-4" data-chart="scatter">
     <figure class="stage stage-chart">
       <div class="chart-root" id="chart-scatter"></div>
+      <p class="fig-caption">Fig. 4 — Association</p>
       <details class="notes-details" id="notes-4" open>
         <summary>Notes and limits</summary>
         <p class="caveat" id="caveat-4">Loading…</p>
@@ -144,6 +146,7 @@
   <section class="scrolly" id="scrolly-5" data-chart="duration_yt">
     <figure class="stage stage-chart stage-tall">
       <div class="chart-root chart-scroll" id="chart-duration-yt"></div>
+      <p class="fig-caption">Fig. 5 — Duration</p>
       <details class="notes-details" id="notes-5" open>
         <summary>Notes and limits</summary>
         <p class="caveat" id="caveat-5">Loading…</p>
@@ -159,6 +162,7 @@
   <section class="scrolly" id="scrolly-6" data-chart="wiki">
     <figure class="stage stage-chart stage-tall">
       <div class="chart-root" id="chart-wiki"></div>
+      <p class="fig-caption">Fig. 6 — Wikipedia ASMR pageviews</p>
       <details class="notes-details" id="notes-6" open>
         <summary>Notes and limits</summary>
         <p class="caveat" id="caveat-6">Loading…</p>
@@ -174,6 +178,7 @@
   <section class="scrolly" id="scrolly-9" data-chart="upload_clock">
     <figure class="stage stage-chart stage-tall">
       <div class="chart-root chart-scroll" id="chart-upload-clock"></div>
+      <p class="fig-caption">Fig. 7 — Upload clock</p>
       <details class="notes-details" id="notes-9" open>
         <summary>Notes and limits</summary>
         <p class="caveat" id="caveat-9">Loading…</p>
@@ -190,10 +195,9 @@
     <p>TODO: my text</p>
   </footer>
 
-  <script src="https://unpkg.com/d3@7.9.0/dist/d3.min.js"></script>
-  <script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
-  <script src="https://unpkg.com/scrollama@3.2.0/build/scrollama.js"></script>
-  <script src="https://unpkg.com/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="js/vendor/d3.min.js"></script>
+  <script src="js/vendor/topojson-client.min.js"></script>
+  <script src="js/vendor/scrollama.js"></script>
   <script src="js/iso.js"></script>
   <script type="module" src="js/main.js"></script>
 </body>
