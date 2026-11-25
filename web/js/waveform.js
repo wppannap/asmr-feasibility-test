@@ -76,8 +76,8 @@
     const p = forceAmp != null ? 1 - forceAmp : heroProgress();
     const amp = 1 - Math.pow(p, 0.8);
     const mid = h * 0.52;
-    const accent = cssVar("--accent", "#e0a43a");
-    const neg = cssVar("--neg", "#3fa7a0");
+    const accent = cssVar("--accent", "#c45d2c");
+    const neg = cssVar("--neg", "#246a68");
     const time = (performance.now() - t0) / 1000;
 
     // Soft ambient particles (fade with amp)

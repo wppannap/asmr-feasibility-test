@@ -1,6 +1,6 @@
 /* 23 horizon wave strips — borderless joyplot stack (ASMR wiki editions). */
-import { attachTableToggle, clear, setCaveat, sizeOf } from "./util.js";
-import { themeColors } from "../theme.js";
+import { attachTableToggle, clear, setCaveat, sizeOf } from "./util.js?v=20261125b";
+import { themeColors } from "../theme.js?v=20261125b";
 
 let ctx = null;
 

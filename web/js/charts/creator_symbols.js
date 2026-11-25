@@ -7,8 +7,8 @@ import {
   fmt,
   setCaveat,
   sizeOf,
-} from "./util.js";
-import { pickExpansionCaveat } from "./config.js";
+} from "./util.js?v=20261125b";
+import { pickExpansionCaveat } from "./config.js?v=20261125b";
 
 let ctx = null;
 

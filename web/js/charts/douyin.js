@@ -6,7 +6,7 @@ import {
   fmt,
   setCaveat,
   sizeOf,
-} from "./util.js";
+} from "./util.js?v=20261125b";
 
 let ctx = null;
 

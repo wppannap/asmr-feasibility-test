@@ -6,7 +6,7 @@ import {
   fmt,
   setCaveat,
   sizeOf,
-} from "./util.js";
+} from "./util.js?v=20261125b";
 import {
   formatCheck,
   langCheckLabel,
@@ -14,7 +14,7 @@ import {
   themeMeta,
   themeVisible,
   verifiedThemeIds,
-} from "./config.js";
+} from "./config.js?v=20261125b";
 
 const THEME_COLORS = {
   insomnia: "#0b6e4f",

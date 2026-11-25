@@ -1,14 +1,14 @@
-/* Design tokens — colour, type, spacing only */
+/* Design tokens — warm-paper light editorial */
 :root {
-  --bg: #14161a;
-  --bg2: #1b1e24;
-  --ink: #e8e4da;
-  --muted: #9096a0;
-  --line: #2b2f37;
-  --accent: #e0a43a;
-  --neg: #3fa7a0;
-  --neutral: #3a3f48;
-  --nodata: #1f2328;
+  --bg: #faf8f4;
+  --bg2: #f1ede4;
+  --ink: #1a1c20;
+  --muted: #5c626d;
+  --line: #dad3c5;
+  --accent: #c45d2c;
+  --neg: #246a68;
+  --neutral: #d8d2c7;
+  --nodata: #ebe6dc;
 
   --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: Georgia, "Times New Roman", serif;

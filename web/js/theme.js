@@ -8,14 +8,14 @@ export function cssVar(name, fallback = "") {
 
 export function themeColors() {
   return {
-    bg: cssVar("--bg", "#14161a"),
-    bg2: cssVar("--bg2", "#1b1e24"),
-    ink: cssVar("--ink", "#e8e4da"),
-    muted: cssVar("--muted", "#9096a0"),
-    line: cssVar("--line", "#2b2f37"),
-    accent: cssVar("--accent", "#e0a43a"),
-    neg: cssVar("--neg", "#3fa7a0"),
-    neutral: cssVar("--neutral", "#3a3f48"),
-    nodata: cssVar("--nodata", "#1f2328"),
+    bg: cssVar("--bg", "#faf8f4"),
+    bg2: cssVar("--bg2", "#f1ede4"),
+    ink: cssVar("--ink", "#1a1c20"),
+    muted: cssVar("--muted", "#5c626d"),
+    line: cssVar("--line", "#dad3c5"),
+    accent: cssVar("--accent", "#c45d2c"),
+    neg: cssVar("--neg", "#246a68"),
+    neutral: cssVar("--neutral", "#d8d2c7"),
+    nodata: cssVar("--nodata", "#ebe6dc"),
   };
 }

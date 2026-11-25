@@ -130,12 +130,12 @@ body::before {
 }
 
 .steps {
-  padding-top: 20vh;
-  padding-bottom: 40vh;
+  padding-top: 8vh;
+  padding-bottom: 12vh;
 }
 
 .step {
-  margin: 0 0 36vh;
+  margin: 0 0 18vh;
   padding: 1.25rem 1.1rem;
   background: var(--bg);
   border: 1px solid var(--stroke);
@@ -613,13 +613,13 @@ input[type="range"] {
   }
 
   .steps {
-    padding: 1rem 0.85rem 30vh;
+    padding: 1rem 0.85rem 12vh;
     position: relative;
     z-index: 10;
   }
 
   .step {
-    margin-bottom: 24vh;
+    margin-bottom: 12vh;
     background: var(--bg);
   }
 
@@ -1350,8 +1350,8 @@ input[type="range"] {
   border-radius: 50%;
 }
 .country.coast-only {
-  fill: transparent !important;
-  stroke: #252a34 !important;
+  fill: var(--bg2) !important;
+  stroke: #b8b0a2 !important;
   stroke-width: 0.5px !important;
 }
 .pulse-node .pulse-hit:focus-visible {

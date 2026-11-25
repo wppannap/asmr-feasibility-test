@@ -6,12 +6,12 @@ import {
   fmt,
   setCaveat,
   sizeOf,
-} from "./util.js";
+} from "./util.js?v=20261125b";
 import {
   DURATION_MARKERS,
   DURATION_TAG_FOOTNOTE,
   pickExpansionCaveat,
-} from "./config.js";
+} from "./config.js?v=20261125b";
 
 const GROUP_STYLE = {
   asmr_and_sleep: { color: "#0b6e4f", key: "asmr_and_sleep" },

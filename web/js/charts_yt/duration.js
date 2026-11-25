@@ -1,7 +1,7 @@
 /* Vertical acoustic spindles — log-time densities as symmetric soundwave columns. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js";
-import { themeColors } from "../theme.js";
-import { renderReviewBanner } from "./review.js";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261125b";
+import { themeColors } from "../theme.js?v=20261125b";
+import { renderReviewBanner } from "./review.js?v=20261125b";
 
 const WEIGHTS = [
   { id: "video", label: "video" },

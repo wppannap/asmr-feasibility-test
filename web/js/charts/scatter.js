@@ -7,8 +7,8 @@ import {
   fmt,
   setCaveat,
   sizeOf,
-} from "./util.js";
-import { themeColors } from "../theme.js";
+} from "./util.js?v=20261125b";
+import { themeColors } from "../theme.js?v=20261125b";
 
 const PAIR_ROWS = [
   { key: "growth_vs_internet", label: "Growth vs internet users %" },

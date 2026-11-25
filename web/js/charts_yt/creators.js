@@ -1,7 +1,7 @@
 /* Dual-core orbital bubbles — pack layout by n_channels + top5% core. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js";
-import { themeColors } from "../theme.js";
-import { renderReviewBanner } from "./review.js";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261125b";
+import { themeColors } from "../theme.js?v=20261125b";
+import { renderReviewBanner } from "./review.js?v=20261125b";
 
 const RULES = [
   { id: "strict", label: "strict" },

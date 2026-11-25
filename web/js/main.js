@@ -1,13 +1,13 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js";
-import { themeColors } from "./theme.js";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261125b";
+import { themeColors } from "./theme.js?v=20261125b";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js";
+} from "./sections.js?v=20261125b";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -281,46 +281,13 @@ async function loadAll() {
     const root = d3.select(el);
     root.selectAll("*").remove();
     root.append("span").attr("class", "legend-title").text(label);
-    const w = 180;
-    const h = 10;
-    const block = root.append("div").attr("class", "legend-scale");
-    const svg = block.append("svg").attr("width", w).attr("height", h + 18);
-    const defs = svg.append("defs");
-    const id = `lg-${Math.random().toString(36).slice(2, 8)}`;
-    const grad = defs.append("linearGradient").attr("id", id);
-    d3.range(0, 1.01, 0.05).forEach((t) => {
-      const x = scaleInfo.domain[0] + t * (scaleInfo.domain[1] - scaleInfo.domain[0]);
-      grad.append("stop").attr("offset", `${t * 100}%`).attr("stop-color", scaleInfo.scale(x));
-    });
-    svg.append("rect").attr("width", w).attr("height", h).attr("fill", `url(#${id})`).attr("rx", 2);
-    // End labels only, under the ramp (never over the colour band).
-    const endTicks = growthTicks
-      ? [growthTicks[0], growthTicks[growthTicks.length - 1]]
-      : [scaleInfo.domain[0], scaleInfo.domain[1]];
-    const tickY = h + 12;
-    endTicks.forEach((tv, i) => {
-      const x = i === 0 ? 0 : w;
-      const anchor = i === 0 ? "start" : "end";
-      const label =
-        scaleInfo.diverging || growthTicks
-          ? `${tv > 0 ? "+" : ""}${tv}%`
-          : formatNum(tv, 0);
-      svg
-        .append("text")
-        .attr("x", x)
-        .attr("y", tickY)
-        .attr("class", "legend-tick")
-        .attr("text-anchor", anchor)
-        .text(label);
-    });
     const legendCopy = state.trendsMeta?.map1_legend || {};
     if (map1Full) {
       // Acoustic constellation node grammar (no continuous ramp)
-      const c = themeColors();
-      const row = (cls, label) => {
+      const row = (cls, lab) => {
         const r = root.append("div").attr("class", "legend-swatch-row");
         r.append("span").attr("class", `legend-swatch ${cls}`);
-        r.append("span").text(label);
+        r.append("span").text(lab);
       };
       row("legend-node-rising", legendCopy.solid || "Rising (significant)");
       row("legend-node-falling", "Falling (significant)");
@@ -344,6 +311,37 @@ async function loadAll() {
         .text("Node size ∝ |clipped growth|; coastline is geographic context only.");
       return;
     }
+    const w = 180;
+    const h = 10;
+    const block = root.append("div").attr("class", "legend-scale");
+    const svg = block.append("svg").attr("width", w).attr("height", h + 18);
+    const defs = svg.append("defs");
+    const id = `lg-${Math.random().toString(36).slice(2, 8)}`;
+    const grad = defs.append("linearGradient").attr("id", id);
+    d3.range(0, 1.01, 0.05).forEach((t) => {
+      const x = scaleInfo.domain[0] + t * (scaleInfo.domain[1] - scaleInfo.domain[0]);
+      grad.append("stop").attr("offset", `${t * 100}%`).attr("stop-color", scaleInfo.scale(x));
+    });
+    svg.append("rect").attr("width", w).attr("height", h).attr("fill", `url(#${id})`).attr("rx", 2);
+    const endTicks = growthTicks
+      ? [growthTicks[0], growthTicks[growthTicks.length - 1]]
+      : [scaleInfo.domain[0], scaleInfo.domain[1]];
+    const tickY = h + 12;
+    endTicks.forEach((tv, i) => {
+      const x = i === 0 ? 0 : w;
+      const anchor = i === 0 ? "start" : "end";
+      const lab =
+        scaleInfo.diverging || growthTicks
+          ? `${tv > 0 ? "+" : ""}${tv}%`
+          : formatNum(tv, 0);
+      svg
+        .append("text")
+        .attr("x", x)
+        .attr("y", tickY)
+        .attr("class", "legend-tick")
+        .attr("text-anchor", anchor)
+        .text(lab);
+    });
     if (showMiss) {
       const row = root.append("div").attr("class", "legend-swatch-row");
       row.append("span").attr("class", "legend-swatch legend-swatch-miss");
@@ -419,8 +417,8 @@ async function loadAll() {
       .attr("d", path)
       .attr("aria-hidden", "true")
       .attr("data-iso3", (d) => d.properties.iso3 || "")
-      .attr("fill", isConstellation ? "transparent" : null)
-      .attr("stroke", isConstellation ? "#252a34" : null)
+      .attr("fill", isConstellation ? themeColors().bg2 : null)
+      .attr("stroke", isConstellation ? "#b8b0a2" : null)
       .attr("stroke-width", isConstellation ? 0.5 : null)
       .attr("pointer-events", isConstellation ? "none" : "auto");
 
