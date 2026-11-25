@@ -1,13 +1,13 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261125e";
-import { themeColors } from "./theme.js?v=20261125e";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126a";
+import { themeColors } from "./theme.js?v=20261126a";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261125e";
+} from "./sections.js?v=20261126a";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};

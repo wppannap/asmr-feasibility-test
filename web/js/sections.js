@@ -24,9 +24,9 @@ export const ENABLED_DATA = {
 
 /** Chart module paths loaded only when the matching section id is enabled. */
 export const SECTION_CHART_MODULES = {
-  "scrolly-3": "./charts_yt/creators.js?v=20261125e",
-  "scrolly-5": "./charts_yt/duration.js?v=20261125e",
-  "scrolly-9": "./charts_yt/upload_clock.js?v=20261125e",
+  "scrolly-3": "./charts_yt/creators.js?v=20261126a",
+  "scrolly-5": "./charts_yt/duration.js?v=20261126a",
+  "scrolly-9": "./charts_yt/upload_clock.js?v=20261126a",
 };
 
 /** Map caption notes (not hardcoded in HTML). */
