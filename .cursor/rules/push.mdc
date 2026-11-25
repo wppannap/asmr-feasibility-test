@@ -14,3 +14,9 @@ C. Hooks: ensure `.git/hooks/commit-msg` exists, is executable, and strips Co-au
 D. Safety scan before staging: list tracked files and files about to be added. Abort (do not stage) if any of these appear among tracked or staged paths: `data/`; `_archive/`; `trial_scrapers/`; `.env*`; `browser_data/`; any `*.csv` outside `config/`; files > 5 MB; strings matching `AIza` or other API-key patterns. Print repo visibility if `gh` is available. Do not rewrite history.
 
 E. Commit with a short imperative message of your own (no trailers). Run `git log -1 --format=full` and show that `git log -1 --format=%B | grep -ic co-authored` prints 0. Push with a normal `git push origin main` only (no `--force`). Print commit hash, branch, remote URL, and the Pages URL.
+
+F. Pages live refresh (always, after every `web/` push — do not skip even if the user said “fast” earlier):
+   1. Bump the `?v=YYYYMMDDx` cache stamp on CSS/JS imports in `web/index.html` and `web/js/sections.js` (and matching imports in changed modules) whenever shipping UI changes.
+   2. After `git push origin main`, wait for the GitHub Actions “Deploy GitHub Pages” run for that commit to finish **success** (`gh run list` / `gh run view`). If it fails (e.g. API 500), retry (workflow_dispatch or a tiny `web/` touch + push) until success — do not stop at “pushed to main.”
+   3. Confirm the **live** site actually serves the new stamp: `curl` https://wppannap.github.io/asmr-feasibility-test/ and key assets (`js/main.js?v=…`, changed chart modules) return 200 and contain a marker from this change.
+   4. In the user report, include the live URL and explicitly tell them to hard-refresh if the UI might still look cached (`Cmd+Shift+R` / `Ctrl+Shift+R` or an incognito window).
