@@ -1,4 +1,4 @@
-/* Sleep audio-track timeline — log-time densities as sound-bar waveforms. */
+/* Vertical acoustic spindles — log-time densities as symmetric soundwave columns. */
 import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js";
 import { themeColors } from "../theme.js";
 import { renderReviewBanner } from "./review.js";
@@ -15,6 +15,13 @@ const TIERS = [
 const RULES = [
   { id: "strict", label: "strict" },
   { id: "title_only", label: "title_only" },
+];
+
+const SCRIPT_ORDER = [
+  { match: /Korean/i, label: "Korean" },
+  { match: /Japanese/i, label: "Japanese" },
+  { match: /Han|Chinese/i, label: "Han" },
+  { match: /Latin/i, label: "Latin" },
 ];
 
 let ctx = null;
@@ -56,8 +63,8 @@ export function render(container, data) {
     .append("p")
     .attr("class", "chart-inline-legend")
     .html(
-      `<span class="leg-swatch leg-sleep"></span> sleep_title` +
-        ` <span class="leg-swatch leg-not"></span> not`
+      `<span class="leg-swatch leg-sleep"></span> sleep_title (left)` +
+        ` <span class="leg-swatch leg-not"></span> not (right)`
     );
 
   ctx.ratioEl = wrap.append("p").attr("class", "chart-note").node();
@@ -90,7 +97,21 @@ function filteredRows() {
 }
 
 function filteredHists() {
-  return ctx.histograms.filter((h) => h.rule === ctx.rule && h.series === ctx.tier);
+  const raw = ctx.histograms.filter((h) => h.rule === ctx.rule && h.series === ctx.tier);
+  const ordered = [];
+  SCRIPT_ORDER.forEach((spec) => {
+    const hit = raw.find((h) => spec.match.test(h.script_group || ""));
+    if (hit) ordered.push({ ...hit, short: spec.label });
+  });
+  raw.forEach((h) => {
+    if (!ordered.some((o) => o.script_group === h.script_group)) {
+      ordered.push({
+        ...h,
+        short: (h.script_group || "").replace(" script", "").replace(" (mostly Chinese)", ""),
+      });
+    }
+  });
+  return ordered;
 }
 
 function ratioOf(r) {
@@ -149,132 +170,128 @@ function draw() {
     ctx.ratioEl.textContent = bits.join(" · ");
   }
 
-  const w = Math.max(280, mount.clientWidth || 560);
-  const left = w < 520 ? 76 : 110;
-  const trackH = 64;
-  const h = 48 + hists.length * trackH;
+  const w = Math.max(300, mount.clientWidth || 560);
+  const n = Math.max(1, hists.length);
+  const margin = { top: 28, right: 12, bottom: 36, left: w < 520 ? 36 : 48 };
+  const ih = w < 520 ? 360 : 420;
+  const iw = w - margin.left - margin.right;
+  const colW = iw / n;
+  const c = themeColors();
+
+  const allBins = (hists[0]?.sleep?.bins || hists[0]?.not?.bins || [30, 3600]).map(Number);
+  const y = d3
+    .scaleLog()
+    .domain([allBins[0], allBins[allBins.length - 1]])
+    .range([0, ih]); // top = short, bottom = long
+
   const svg = d3
     .select(mount)
     .append("svg")
-    .attr("viewBox", `0 0 ${w} ${h}`)
+    .attr("viewBox", `0 0 ${w} ${ih + margin.top + margin.bottom}`)
     .attr("width", "100%")
     .attr("role", "img")
-    .attr("aria-label", "Duration audio-track densities by script group");
-  const margin = { top: 18, right: 16, bottom: 28, left };
-  const iw = Math.max(40, w - margin.left - margin.right);
+    .attr("aria-label", "Vertical acoustic spindles of duration density");
   const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
-  const allBins = (hists[0]?.sleep?.bins || hists[0]?.not?.bins || [30, 3600]).map(Number);
-  const x = d3.scaleLog().domain([allBins[0], allBins[allBins.length - 1]]).range([0, iw]);
+  // Y axis
   g.append("g")
-    .attr("transform", `translate(0,${hists.length * trackH})`)
-    .call(d3.axisBottom(x).ticks(6, "~s"))
+    .call(d3.axisLeft(y).ticks(6, "~s"))
     .selectAll("text")
-    .attr("fill", themeColors().muted);
+    .attr("fill", c.muted);
 
-  const c = themeColors();
-  // Milestone lines 1h / 8h
+  // Milestone strings
   ctx.markers.forEach((sec) => {
+    const yy = y(sec);
     const label = sec === 3600 ? "1 h" : sec === 28800 ? "8 h · full night" : `${sec}s`;
-    const x0 = x(sec);
     g.append("line")
-      .attr("class", "track-milestone")
-      .attr("x1", x0)
-      .attr("x2", x0)
-      .attr("y1", -4)
-      .attr("y2", hists.length * trackH)
+      .attr("x1", 0)
+      .attr("x2", iw)
+      .attr("y1", yy)
+      .attr("y2", yy)
       .attr("stroke", c.accent)
-      .attr("stroke-width", 1.25)
-      .attr("opacity", 0.55);
-    const lx = Math.min(iw - 4, x0 + 6);
+      .attr("stroke-width", 1)
+      .attr("opacity", 0.45);
     g.append("text")
       .attr("class", "anno-label")
-      .attr("x", lx)
-      .attr("y", -2)
+      .attr("x", iw - 4)
+      .attr("y", yy - 4)
+      .attr("text-anchor", "end")
       .attr("fill", c.muted)
       .text(label);
   });
 
   hists.forEach((hist, i) => {
-    const y0 = i * trackH;
-    // Track bed
-    g.append("rect")
-      .attr("x", 0)
-      .attr("y", y0 + 8)
-      .attr("width", iw)
-      .attr("height", trackH - 16)
-      .attr("fill", c.bg2)
-      .attr("stroke", c.line)
-      .attr("stroke-width", 1);
-
+    const cx = colW * i + colW / 2;
+    const maxHalf = colW * 0.42;
     g.append("text")
-      .attr("x", -8)
-      .attr("y", y0 + trackH / 2)
-      .attr("text-anchor", "end")
-      .attr("dominant-baseline", "middle")
-      .attr("font-size", 11)
+      .attr("x", cx)
+      .attr("y", -10)
+      .attr("text-anchor", "middle")
+      .attr("font-size", 12)
+      .attr("font-family", "Georgia, serif")
       .attr("fill", c.ink)
-      .text(hist.script_group.replace(" script", "").replace(" (mostly Chinese)", ""));
+      .text(hist.short);
 
-    drawWave(g, hist.sleep, x, y0, trackH, c.accent, 0.55);
-    drawWave(g, hist.not, x, y0, trackH, c.neg, 0.4, true);
+    // Center spine
+    g.append("line")
+      .attr("x1", cx)
+      .attr("x2", cx)
+      .attr("y1", 0)
+      .attr("y2", ih)
+      .attr("stroke", c.line)
+      .attr("stroke-width", 0.75);
+
+    drawHalf(g, hist.sleep, y, cx, maxHalf, c.accent, -1);
+    drawHalf(g, hist.not, y, cx, maxHalf, c.neg, 1);
 
     if (hist.sleep?.median) {
-      g.append("line")
-        .attr("x1", x(hist.sleep.median))
-        .attr("x2", x(hist.sleep.median))
-        .attr("y1", y0 + 10)
-        .attr("y2", y0 + trackH - 10)
-        .attr("stroke", c.accent)
-        .attr("stroke-width", 1.5);
+      g.append("circle")
+        .attr("cx", cx - 3)
+        .attr("cy", y(hist.sleep.median))
+        .attr("r", 3.2)
+        .attr("fill", c.accent)
+        .append("title")
+        .text(`sleep median ${fmt(hist.sleep.median, 0)}s`);
     }
     if (hist.not?.median) {
-      g.append("line")
-        .attr("x1", x(hist.not.median))
-        .attr("x2", x(hist.not.median))
-        .attr("y1", y0 + 10)
-        .attr("y2", y0 + trackH - 10)
-        .attr("stroke", c.neg)
-        .attr("stroke-width", 1.5)
-        .attr("stroke-dasharray", "2 2");
+      g.append("circle")
+        .attr("cx", cx + 3)
+        .attr("cy", y(hist.not.median))
+        .attr("r", 3.2)
+        .attr("fill", c.neg)
+        .append("title")
+        .text(`not median ${fmt(hist.not.median, 0)}s`);
     }
   });
 }
 
-function drawWave(g, arm, x, y0, trackH, color, opacity, dashed = false) {
+function drawHalf(g, arm, y, cx, maxHalf, color, side) {
   if (!arm?.bins || !arm?.density) return;
   const bins = arm.bins.map(Number);
   const dens = arm.density.map(Number);
   const maxD = d3.max(dens) || 1;
-  const mid = y0 + trackH / 2;
-  const amp = (trackH - 20) / 2;
-  const y = d3.scaleLinear().domain([0, maxD]).range([0, amp]);
+  const xScale = d3.scaleLinear().domain([0, maxD]).range([0, maxHalf]);
   const pts = dens.map((d, i) => {
-    const midBin = Math.sqrt(bins[i] * bins[i + 1]);
-    return [x(midBin), y(d)];
+    const mid = Math.sqrt(bins[i] * bins[i + 1]);
+    return [cx + side * xScale(d), y(mid)];
   });
-  // Symmetric sound-bar area around track midline
   const area = d3
     .area()
     .curve(d3.curveBasis)
-    .x((p) => p[0])
-    .y0((p) => mid - p[1])
-    .y1((p) => mid + p[1]);
-  g.append("path")
-    .attr("d", area(pts))
-    .attr("fill", color)
-    .attr("opacity", opacity * 0.55);
+    .x0(cx)
+    .x1((p) => p[0])
+    .y((p) => p[1]);
+  g.append("path").attr("d", area(pts)).attr("fill", color).attr("opacity", 0.35);
   const line = d3
     .line()
     .curve(d3.curveBasis)
     .x((p) => p[0])
-    .y((p) => mid - p[1]);
+    .y((p) => p[1]);
   g.append("path")
     .attr("d", line(pts))
     .attr("fill", "none")
     .attr("stroke", color)
-    .attr("stroke-width", 1.25)
-    .attr("stroke-dasharray", dashed ? "3 2" : null);
+    .attr("stroke-width", 1.25);
 }
 
 export function update() {

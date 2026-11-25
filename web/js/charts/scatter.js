@@ -277,11 +277,23 @@ function drawScatter() {
     .nice()
     .range([innerH, 0]);
 
-  g.append("g")
+  const ax = g
+    .append("g")
+    .attr("class", "scatter-axis")
     .attr("transform", `translate(0,${innerH})`)
-    .call(d3.axisBottom(x).ticks(5))
+    .call(d3.axisBottom(x).ticks(5).tickSize(-innerH))
     .attr("aria-hidden", "true");
-  g.append("g").call(d3.axisLeft(y).ticks(5)).attr("aria-hidden", "true");
+  ax.select(".domain").attr("stroke", themeColors().line).attr("stroke-width", 0.75);
+  ax.selectAll(".tick line").attr("stroke", themeColors().line).attr("stroke-opacity", 0.35);
+  ax.selectAll(".tick text").attr("fill", themeColors().muted);
+  const ay = g
+    .append("g")
+    .attr("class", "scatter-axis")
+    .call(d3.axisLeft(y).ticks(5).tickSize(-innerW))
+    .attr("aria-hidden", "true");
+  ay.select(".domain").attr("stroke", themeColors().line).attr("stroke-width", 0.75);
+  ay.selectAll(".tick line").attr("stroke", themeColors().line).attr("stroke-opacity", 0.35);
+  ay.selectAll(".tick text").attr("fill", themeColors().muted);
 
   // Horizontal reference at growth_clipped = 0 (no regression line)
   if (y.domain()[0] <= 0 && y.domain()[1] >= 0) {
@@ -326,28 +338,46 @@ function drawScatter() {
     .attr("class", "scatter-pt")
     .attr("cx", (d) => x(d[opt.field]))
     .attr("cy", (d) => y(d.growth_clipped))
-    .attr("r", 4)
+    .attr("r", (d) => (significant(d) ? 4.5 : 3.2))
     .attr("tabindex", 0)
     .attr("role", "img")
     .attr("aria-label", tip)
-    .attr("fill", (d) => (significant(d) ? themeColors().accent : "none"))
-    .attr("fill-opacity", (d) => (significant(d) ? 0.85 : 0))
-    .attr("stroke", themeColors().accent)
-    .attr("stroke-width", (d) => (d.small_base ? 1.6 : 1.2))
+    .attr("fill", (d) =>
+      significant(d)
+        ? d.mk_class === "falling"
+          ? themeColors().neg
+          : themeColors().accent
+        : themeColors().muted
+    )
+    .attr("fill-opacity", (d) => (significant(d) ? 0.55 : 0.28))
+    .attr("stroke", (d) =>
+      significant(d)
+        ? d.mk_class === "falling"
+          ? themeColors().neg
+          : themeColors().accent
+        : themeColors().muted
+    )
+    .attr("stroke-width", (d) => (d.small_base ? 1.6 : 1))
     .attr("stroke-dasharray", (d) => (d.small_base ? "2 1.5" : null));
 
   nodes.append("title").text(tip);
 
-  // Label TWN
+  // Curved leader for TWN
   points
     .filter((d) => d.iso3 === "TWN" || (d.flags || []).includes("TWN"))
     .forEach((d) => {
+      const px = x(d[opt.field]);
+      const py = y(d.growth_clipped);
+      const lx = Math.min(innerW - 4, px + 28);
+      const ly = Math.max(10, py - 16);
+      g.append("path")
+        .attr("class", "anno-leader")
+        .attr("d", `M${px + 4},${py - 2} C${px + 14},${ly} ${lx - 8},${ly} ${lx},${ly}`);
       g.append("text")
-        .attr("class", "scatter-label")
-        .attr("x", x(d[opt.field]) + 6)
-        .attr("y", y(d.growth_clipped) + 3)
-        .attr("font-size", 10)
-        .attr("fill", themeColors().ink)
+        .attr("class", "anno-label")
+        .attr("x", lx + 2)
+        .attr("y", ly + 3)
+        .attr("fill", themeColors().muted)
         .text("TWN");
     });
 }

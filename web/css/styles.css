@@ -1331,3 +1331,48 @@ input[type="range"] {
   .kpi-row { gap: 1rem 1.5rem; }
   .section-head { padding: 2rem 1rem 0.75rem; }
 }
+
+/* —— Acoustic constellation legend —— */
+.legend-node-rising {
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.legend-node-falling {
+  background: transparent;
+  border: 2px solid var(--neg);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--bg), 0 0 0 1px var(--neg);
+}
+.legend-node-flat {
+  background: transparent;
+  border: 1.5px solid var(--muted);
+  border-radius: 50%;
+}
+.country.coast-only {
+  fill: transparent !important;
+  stroke: #252a34 !important;
+  stroke-width: 0.5px !important;
+}
+.pulse-node .pulse-hit:focus-visible {
+  outline: 1px solid var(--accent);
+}
+
+/* Wiki horizon strips */
+.wiki-horizon-grid { width: 100%; }
+.wiki-strip-row {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: 0.4rem;
+  align-items: center;
+  min-height: 28px;
+}
+.wiki-strip-lang {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.wiki-strip.is-focus .wiki-strip-lang { color: var(--accent); }
+.wiki-cell { border: none; background: transparent; box-shadow: none; }
+
+.scatter-axis .domain { stroke: var(--line); }

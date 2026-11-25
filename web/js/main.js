@@ -315,47 +315,33 @@ async function loadAll() {
     });
     const legendCopy = state.trendsMeta?.map1_legend || {};
     if (map1Full) {
-      if (legendCopy.ramp) {
-        root.append("span").attr("class", "legend-hatch-note").text(legendCopy.ramp);
-      }
-      // Mid-ramp colour (0% growth) so swatches match the map ramp, not a fixed green.
-      const midRamp =
-        scaleInfo?.scale && Number.isFinite(scaleInfo.scale(0))
-          ? scaleInfo.scale(0)
-          : themeColors().neutral;
-      const solid = root.append("div").attr("class", "legend-swatch-row");
-      solid
-        .append("span")
-        .attr("class", "legend-swatch legend-swatch-solid")
-        .style("background", midRamp);
-      solid.append("span").text(legendCopy.solid || "Statistically significant trend");
-      const hatch = root.append("div").attr("class", "legend-swatch-row");
-      const ink = themeColors().ink;
-      hatch
-        .append("span")
-        .attr("class", "legend-swatch legend-swatch-hatch")
-        .style(
-          "background",
-          `repeating-linear-gradient(45deg, ${midRamp}, ${midRamp} 2px, ${ink} 2px, ${ink} 3.2px)`
-        );
-      hatch.append("span").text(
-        legendCopy.hatch_flat || "Estimated growth shown; no statistically significant trend"
+      // Acoustic constellation node grammar (no continuous ramp)
+      const c = themeColors();
+      const row = (cls, label) => {
+        const r = root.append("div").attr("class", "legend-swatch-row");
+        r.append("span").attr("class", `legend-swatch ${cls}`);
+        r.append("span").text(label);
+      };
+      row("legend-node-rising", legendCopy.solid || "Rising (significant)");
+      row("legend-node-falling", "Falling (significant)");
+      row(
+        "legend-node-flat",
+        legendCopy.hatch_flat || "No statistically significant trend"
       );
-      const low = root.append("div").attr("class", "legend-swatch-row");
-      low.append("span").attr("class", "legend-swatch legend-swatch-lowvol");
-      low.append("span").text(legendCopy.low_volume || "Too few searches to measure");
-      const miss = root.append("div").attr("class", "legend-swatch-row");
-      miss.append("span").attr("class", "legend-swatch legend-swatch-miss");
-      miss.append("span").text(
+      row("legend-swatch-lowvol", legendCopy.low_volume || "Too few searches to measure");
+      row(
+        "legend-swatch-miss",
         legendCopy.no_data ||
           "No data (including mainland China: Google is not accessible there)"
       );
-      const small = root.append("div").attr("class", "legend-swatch-row");
-      small.append("span").attr("class", "legend-swatch legend-swatch-smallbase");
-      small.append("span").text(legendCopy.small_base || "Small base");
+      row("legend-swatch-smallbase", legendCopy.small_base || "Small base");
       if (legendCopy.clip_note) {
         root.append("span").attr("class", "legend-hatch-note").text(legendCopy.clip_note);
       }
+      root
+        .append("span")
+        .attr("class", "legend-hatch-note")
+        .text("Node size ∝ |clipped growth|; coastline is geographic context only.");
       return;
     }
     if (showMiss) {
@@ -377,14 +363,19 @@ async function loadAll() {
     const wrap = document.querySelector(containerSel);
     const width = 960;
     const height = 480;
+    const isConstellation = key === "trends";
     const svg = d3
       .select(wrap)
       .append("svg")
       .attr("viewBox", `0 0 ${width} ${height}`)
       .attr("role", "img")
-      .attr("aria-label", "World choropleth map");
+      .attr(
+        "aria-label",
+        isConstellation
+          ? "Acoustic constellation map of ASMR search growth"
+          : "World choropleth map"
+      );
 
-    // Hatch (flat MK) + dotted fill (low_volume) patterns
     const defs = svg.append("defs");
     const pat = defs
       .append("pattern")
@@ -424,33 +415,43 @@ async function loadAll() {
       .selectAll("path.country")
       .data(state.lands.features)
       .join("path")
-      .attr("class", "country is-miss")
+      .attr("class", isConstellation ? "country coast-only" : "country is-miss")
       .attr("d", path)
       .attr("aria-hidden", "true")
       .attr("data-iso3", (d) => d.properties.iso3 || "")
-      .on("pointerenter", function (event, d) {
-        d3.select(this).classed("is-hover", true);
-        showTip(event, d, key);
-      })
-      .on("pointermove", function (event, d) {
-        showTip(event, d, key);
-      })
-      .on("pointerleave", function () {
-        d3.select(this).classed("is-hover", false);
-        tooltip.attr("hidden", true);
-      })
-      .on("click", function (event, d) {
-        showTip(event, d, key);
-      });
+      .attr("fill", isConstellation ? "transparent" : null)
+      .attr("stroke", isConstellation ? "#252a34" : null)
+      .attr("stroke-width", isConstellation ? 0.5 : null)
+      .attr("pointer-events", isConstellation ? "none" : "auto");
+
+    if (!isConstellation) {
+      paths
+        .on("pointerenter", function (event, d) {
+          d3.select(this).classed("is-hover", true);
+          showTip(event, d, key);
+        })
+        .on("pointermove", function (event, d) {
+          showTip(event, d, key);
+        })
+        .on("pointerleave", function () {
+          d3.select(this).classed("is-hover", false);
+          tooltip.attr("hidden", true);
+        })
+        .on("click", function (event, d) {
+          showTip(event, d, key);
+        });
+    }
 
     const hatchG = svg.append("g").attr("class", "hatch-overlay").attr("pointer-events", "none");
     const hatchPaths = hatchG
       .selectAll("path")
-      .data(state.lands.features)
+      .data(isConstellation ? [] : state.lands.features)
       .join("path")
       .attr("d", path)
       .attr("fill", "none")
       .attr("opacity", 0);
+
+    const pulseG = svg.append("g").attr("class", "pulse-nodes");
 
     if (key === "trends") {
       const [cx, cy] = projection([105, 35]);
@@ -474,10 +475,12 @@ async function loadAll() {
       svg,
       paths,
       hatchPaths,
+      pulseG,
       projection,
       path,
       width,
       height,
+      constellation: isConstellation,
       hatchId: `hatch-${key}`,
       lowvolPatternId: `dots-lowvol-${key}`,
     };
@@ -543,19 +546,22 @@ async function loadAll() {
   function paintMap(mapKey, valueMap, scaleInfo) {
     const map = state.maps[mapKey];
     if (!map) return;
+
+    if (map.constellation) {
+      paintConstellation(map, valueMap);
+      return;
+    }
+
     map.paths
       .attr("class", (d) => {
         const iso = d.properties.iso3;
         const row = iso ? state.countryV2ByIso.get(iso) : null;
         const bits = ["country"];
-        if (mapKey === "trends" || mapKey === "monthly") {
+        if (mapKey === "monthly") {
           if (row?.quality === "low_volume") bits.push("is-lowvol");
           else {
             const v = iso ? valueMap[iso] : null;
             if (v == null || !Number.isFinite(v)) bits.push("is-miss");
-          }
-          if (mapKey === "trends" && row?.small_base && row?.quality === "ok") {
-            bits.push("is-smallbase");
           }
         } else {
           const v = iso ? valueMap[iso] : null;
@@ -574,34 +580,109 @@ async function loadAll() {
         if (scaleInfo.log && v <= 0) return scaleInfo.scale(scaleInfo.domain[0]);
         return scaleInfo.scale(v);
       });
-    if (map.hatchPaths) {
-      map.hatchPaths
-        .attr("fill", (d) => {
-          const iso = d.properties.iso3;
-          const row = iso ? state.countryV2ByIso.get(iso) : null;
-          const v = iso ? valueMap[iso] : null;
-          if (
-            mapKey === "trends" &&
-            shouldHatchFlat(row) &&
-            v != null &&
-            Number.isFinite(v)
-          ) {
-            return `url(#${map.hatchId})`;
-          }
-          return "none";
-        })
-        .attr("opacity", (d) => {
-          const iso = d.properties.iso3;
-          const row = iso ? state.countryV2ByIso.get(iso) : null;
-          const v = iso ? valueMap[iso] : null;
-          return mapKey === "trends" &&
-            shouldHatchFlat(row) &&
-            v != null &&
-            Number.isFinite(v)
-            ? 1
-            : 0;
-        });
-    }
+  }
+
+  /** Acoustic constellation nodes for Map 1 (Trends). */
+  function paintConstellation(map, valueMap) {
+    const c = themeColors();
+    const feats = state.lands.features.filter((f) => f.properties.iso3);
+    const sizeOf = (v) => {
+      const a = Math.abs(v ?? 0);
+      return 1.6 + Math.min(10, Math.sqrt(a) * 0.55);
+    };
+
+    const nodes = map.pulseG
+      .selectAll("g.pulse-node")
+      .data(feats, (d) => d.properties.iso3)
+      .join((enter) => {
+        const g = enter.append("g").attr("class", "pulse-node");
+        g.append("circle").attr("class", "pulse-orbit");
+        g.append("circle").attr("class", "pulse-ring");
+        g.append("circle").attr("class", "pulse-core");
+        g.append("circle").attr("class", "pulse-hit").attr("fill", "transparent");
+        return g;
+      });
+
+    nodes.attr("transform", (d) => {
+      const pt = d3.geoPath(map.projection).centroid(d);
+      if (!pt || !Number.isFinite(pt[0])) return "translate(-99,-99)";
+      return `translate(${pt[0]},${pt[1]})`;
+    });
+
+    nodes.each(function (d) {
+      const iso = d.properties.iso3;
+      const row = state.countryV2ByIso.get(iso);
+      const v = valueMap[iso];
+      const g = d3.select(this);
+      const core = g.select(".pulse-core");
+      const ring = g.select(".pulse-ring");
+      const orbit = g.select(".pulse-orbit");
+      const hit = g.select(".pulse-hit");
+
+      orbit.attr("r", 0).attr("fill", "none").attr("stroke", "none");
+      ring.attr("r", 0).attr("fill", "none").attr("stroke", "none");
+      core.attr("r", 0).attr("fill", "none").attr("stroke", "none");
+
+      if (!row || (row.quality !== "ok" && row.quality !== "low_volume")) {
+        // no data — omit node (coastline only)
+        hit.attr("r", 0).attr("pointer-events", "none");
+        return;
+      }
+
+      if (row.quality === "low_volume") {
+        core.attr("r", 1.2).attr("fill", c.muted).attr("opacity", 0.35);
+        hit.attr("r", 6);
+      } else if (row.mk_class === "rising") {
+        const r = sizeOf(v);
+        core.attr("r", r).attr("fill", c.accent).attr("opacity", 0.92);
+        ring
+          .attr("r", r + 3.2)
+          .attr("fill", "none")
+          .attr("stroke", c.accent)
+          .attr("stroke-width", 1)
+          .attr("opacity", 0.45);
+        hit.attr("r", r + 6);
+      } else if (row.mk_class === "falling") {
+        const r = sizeOf(v);
+        core.attr("r", r * 0.55).attr("fill", "none").attr("stroke", c.neg).attr("stroke-width", 1.4);
+        ring
+          .attr("r", r + 2.5)
+          .attr("fill", "none")
+          .attr("stroke", c.neg)
+          .attr("stroke-width", 1.1)
+          .attr("opacity", 0.85);
+        hit.attr("r", r + 6);
+      } else {
+        // flat / no significant trend
+        const r = sizeOf(v);
+        core
+          .attr("r", r)
+          .attr("fill", "none")
+          .attr("stroke", c.muted)
+          .attr("stroke-width", 1.1)
+          .attr("opacity", 0.85);
+        hit.attr("r", r + 5);
+      }
+
+      if (row.small_base && row.quality === "ok") {
+        const r = sizeOf(v);
+        orbit
+          .attr("r", r + 5.5)
+          .attr("fill", "none")
+          .attr("stroke", c.accent)
+          .attr("stroke-width", 1)
+          .attr("stroke-dasharray", "2 2")
+          .attr("opacity", 0.7);
+      }
+
+      hit
+        .attr("pointer-events", "all")
+        .attr("cursor", "pointer")
+        .on("pointerenter", (event) => showTip(event, d, "trends"))
+        .on("pointermove", (event) => showTip(event, d, "trends"))
+        .on("pointerleave", () => tooltip.attr("hidden", true))
+        .on("click", (event) => showTip(event, d, "trends"));
+    });
   }
 
   function collectTrendsValues() {
