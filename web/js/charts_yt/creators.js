@@ -1,7 +1,7 @@
 /* Creators · declared country — deep-night starfield constellations. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126q";
-import { themeColors } from "../theme.js?v=20261126q";
-import { renderReviewBanner } from "./review.js?v=20261126q";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126r";
+import { themeColors } from "../theme.js?v=20261126r";
+import { renderReviewBanner } from "./review.js?v=20261126r";
 
 const RULES = [
   { id: "strict", label: "strict" },
@@ -158,21 +158,20 @@ function constellationEdges(stars, rand) {
 }
 
 /**
- * Spread strongly tracks top-5% share so ~50% (TW) is ~2.2–2.5× ~23% (DE).
- * Channel count is only a light densify term.
+ * Dramatic share→radius map: DE~23% ≈ 30px, TW~50% ≈ 73px (~2.4×).
  */
 function clusterSpread(row, mobile) {
   const share = shareOf(row);
   const t = Math.max(0, Math.min(1, (share - 0.22) / (0.5 - 0.22)));
-  const mul = 1 + Math.pow(t, 0.8) * 1.65; // ~1.0 @22% → ~2.65 @50%
-  const base = mobile ? 22 : 28;
-  const channelTerm = Math.sqrt(row.n_channels || 30) * (mobile ? 0.08 : 0.12);
-  return base * mul + channelTerm;
+  const lo = mobile ? 22 : 30;
+  const hi = mobile ? 54 : 76;
+  const channelTerm = Math.sqrt(row.n_channels || 30) * (mobile ? 0.03 : 0.06);
+  return lo + Math.pow(t, 0.92) * (hi - lo) + channelTerm;
 }
 
 /** Outer radius including star envelope + label clearance under the cloud. */
 function outerRadius(spread, mobile) {
-  return spread * 1.02 + (mobile ? 14 : 16);
+  return spread * 1.02 + (mobile ? 12 : 14);
 }
 
 function countClusterOverlaps(nodes) {
@@ -181,7 +180,8 @@ function countClusterOverlaps(nodes) {
     for (let j = i + 1; j < nodes.length; j++) {
       const a = nodes[i];
       const b = nodes[j];
-      const need = a.outerRadius + b.outerRadius + 52; // each collide radius = outer+26
+      // collide radius = outerRadius + 20 each
+      const need = a.outerRadius + b.outerRadius + 40;
       if (Math.hypot(a.x - b.x, a.y - b.y) < need - 0.5) n++;
     }
   }
@@ -189,67 +189,40 @@ function countClusterOverlaps(nodes) {
 }
 
 /**
- * Organic seeds + d3.forceCollide so constellations never overlap
- * (including label clearance) and stay in the dark inner sky.
+ * Asymmetric random seeds in the solid dark rectangle + forceCollide.
+ * No radial ring / strong centering — only rectangular bounds clamps.
  */
 function placeAnchors(rows, iw, ih, mobile) {
-  const rand = mulberry32(hashSeed(`sky-anchors-${ctx.rule}-${rows.length}-v5`));
-  const slots = [
-    [0.3, 0.26],
-    [0.58, 0.2],
-    [0.76, 0.3],
-    [0.36, 0.4],
-    [0.68, 0.44],
-    [0.22, 0.54],
-    [0.5, 0.56],
-    [0.76, 0.62],
-    [0.32, 0.72],
-    [0.54, 0.76],
-    [0.7, 0.7],
-  ];
-  const x0 = iw * 0.18;
-  const x1 = iw * 0.82;
-  const y0 = ih * 0.18;
-  const y1 = ih * 0.82;
-  const packW = x1 - x0;
-  const packH = y1 - y0;
+  const rand = mulberry32(hashSeed(`sky-anchors-${ctx.rule}-${rows.length}-v6`));
+  const x0 = iw * 0.2;
+  const x1 = iw * 0.8;
+  const y0 = ih * 0.2;
+  const y1 = ih * 0.8;
 
-  let sizeScale = 1;
-  // Fit collide disks into the dark core; keep relative share sizing
-  {
-    const raw = rows.map((r) => outerRadius(clusterSpread(r, mobile), mobile) + 26);
-    const sumR = raw.reduce((s, r) => s + r, 0);
-    const maxDim = Math.min(packW, packH) * 0.92;
-    // Heuristic: sum of diameters along a loose packing path
-    if (sumR * 1.35 > packW + packH) {
-      sizeScale = Math.max(0.55, (packW + packH) / (sumR * 1.35));
-    }
-    const maxR = Math.max(...raw) * sizeScale;
-    if (maxR * 2.2 > maxDim) sizeScale *= maxDim / (maxR * 2.2);
-    sizeScale = Math.max(0.52, Math.min(1, sizeScale));
-  }
-
-  const nodes = rows.map((r, i) => {
-    const spread = clusterSpread(r, mobile) * sizeScale;
+  const nodes = rows.map((r) => {
+    const spread = clusterSpread(r, mobile);
     const or = outerRadius(spread, mobile);
-    const slot = slots[i % slots.length];
-    let x = iw * (slot[0] + (rand() - 0.5) * 0.06);
-    let y = ih * (slot[1] + (rand() - 0.5) * 0.06);
-    x = Math.max(x0 + or * 0.4, Math.min(x1 - or * 0.4, x));
-    y = Math.max(y0 + or * 0.4, Math.min(y1 - or * 0.4, y));
+    // True scatter across the inner rectangle (not a circle/ring)
+    let x = x0 + rand() * (x1 - x0);
+    let y = y0 + rand() * (y1 - y0);
+    // Extra corner/gap jitter so it never reads as a lattice
+    x += (rand() - 0.5) * iw * 0.06;
+    y += (rand() - 0.5) * ih * 0.06;
+    x = Math.max(x0 + or * 0.35, Math.min(x1 - or * 0.35, x));
+    y = Math.max(y0 + or * 0.35, Math.min(y1 - or * 0.35, y));
     return { row: r, x, y, spread, outerRadius: or };
   });
 
-  function clampSoft() {
+  function clampRect() {
     nodes.forEach((d) => {
-      const m = d.outerRadius * 0.15;
+      const m = Math.max(8, d.outerRadius * 0.2);
       d.x = Math.max(x0 + m, Math.min(x1 - m, d.x));
       d.y = Math.max(y0 + m, Math.min(y1 - m, d.y));
     });
   }
 
   function hardSeparate() {
-    for (let iter = 0; iter < 120; iter++) {
+    for (let iter = 0; iter < 140; iter++) {
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
           const a = nodes[i];
@@ -257,7 +230,7 @@ function placeAnchors(rows, iw, ih, mobile) {
           let dx = b.x - a.x;
           let dy = b.y - a.y;
           let dist = Math.hypot(dx, dy) || 0.01;
-          const minD = a.outerRadius + b.outerRadius + 52;
+          const minD = a.outerRadius + b.outerRadius + 40;
           if (dist < minD) {
             const push = ((minD - dist) / dist) * 0.55;
             dx *= push;
@@ -269,40 +242,44 @@ function placeAnchors(rows, iw, ih, mobile) {
           }
         }
       }
-      clampSoft();
+      clampRect();
     }
   }
 
-  function runSim() {
-    const sim = d3
-      .forceSimulation(nodes)
-      .force("x", d3.forceX(iw * 0.5).strength(0.03))
-      .force("y", d3.forceY(ih * 0.5).strength(0.028))
-      .force(
-        "collide",
-        d3
-          .forceCollide((d) => d.outerRadius + 26)
-          .iterations(5)
-          .strength(1)
-      )
-      .stop();
-    for (let i = 0; i < 250; i++) sim.tick();
-    hardSeparate();
-    clampSoft();
+  const sim = d3
+    .forceSimulation(nodes)
+    .force(
+      "collide",
+      d3
+        .forceCollide((d) => d.outerRadius + 20)
+        .iterations(4)
+        .strength(1)
+    )
+    .stop();
+  for (let i = 0; i < 260; i++) {
+    sim.tick();
+    clampRect();
   }
+  hardSeparate();
+  clampRect();
 
-  runSim();
-  // Shrink & retry until zero overlaps (keep relative share sizing)
+  // If still packed too tight, gently shrink (keep relative share ratios) and re-separate
   let guard = 0;
-  while (countClusterOverlaps(nodes) > 0 && guard < 6) {
+  let sizeScale = 1;
+  while (countClusterOverlaps(nodes) > 0 && guard < 10) {
     guard++;
     sizeScale *= 0.9;
     nodes.forEach((d) => {
-      const spread = clusterSpread(d.row, mobile) * sizeScale;
-      d.spread = spread;
-      d.outerRadius = outerRadius(spread, mobile);
+      d.spread = clusterSpread(d.row, mobile) * sizeScale;
+      d.outerRadius = outerRadius(d.spread, mobile);
     });
-    runSim();
+    // Re-seed slightly so shrinks can re-flow
+    nodes.forEach((d) => {
+      d.x += (rand() - 0.5) * 8;
+      d.y += (rand() - 0.5) * 8;
+    });
+    hardSeparate();
+    clampRect();
   }
   return nodes;
 }
@@ -386,10 +363,12 @@ function draw() {
   const mount = ctx.mount;
   clear(mount);
   const rows = filtered();
-  const w = Math.max(320, mount.clientWidth || 640);
-  const mobile = w < 560;
-  const h = mobile ? 560 : 640;
-  const pad = 12;
+  // Sticky chart column is narrow; use viewport width for desktop vs mobile sky room
+  const mobile = (typeof window !== "undefined" ? window.innerWidth : 800) < 700;
+  // Generous fixed viewBox so the solid dark core has room for all 11 clusters
+  const w = mobile ? 420 : 820;
+  const h = mobile ? 620 : 660;
+  const pad = 14;
 
   const svg = d3
     .select(mount)
@@ -403,39 +382,29 @@ function draw() {
 
   const defs = svg.append("defs");
 
-  // Clean deep midnight indigo fill (colour never mixes to paper grey)
+  // Clean deep midnight indigo — solid #11182b field
   const skyGrad = defs
     .append("radialGradient")
     .attr("id", "creators-midnight-sky")
     .attr("cx", "50%")
     .attr("cy", "50%")
-    .attr("r", "55%");
+    .attr("r", "70%");
   skyGrad.append("stop").attr("offset", "0%").attr("stop-color", "#1a2642");
   skyGrad.append("stop").attr("offset", "100%").attr("stop-color", "#11182b");
 
-  // Ultra-smooth alpha mask — dissolves before SVG edges (no oval ring / grey box)
+  // Large solid core (0→62%), soft feather to transparent before edges (62→96%)
   const feather = defs
     .append("radialGradient")
     .attr("id", "creators-sky-feather-grad")
     .attr("cx", "50%")
     .attr("cy", "50%")
-    .attr("r", "46%");
-  feather.append("stop").attr("offset", "0%").attr("stop-color", "#ffffff");
-  feather.append("stop").attr("offset", "36%").attr("stop-color", "#ffffff");
-  feather.append("stop").attr("offset", "56%").attr("stop-color", "#b8b8b8");
-  feather.append("stop").attr("offset", "74%").attr("stop-color", "#555555");
-  feather.append("stop").attr("offset", "88%").attr("stop-color", "#181818");
-  feather.append("stop").attr("offset", "98%").attr("stop-color", "#000000");
-  feather.append("stop").attr("offset", "100%").attr("stop-color", "#000000");
-
-  const maskBlur = defs
-    .append("filter")
-    .attr("id", "creators-mask-blur")
-    .attr("x", "-20%")
-    .attr("y", "-20%")
-    .attr("width", "140%")
-    .attr("height", "140%");
-  maskBlur.append("feGaussianBlur").attr("stdDeviation", 12).attr("result", "blur");
+    .attr("r", "72%");
+  feather.append("stop").attr("offset", "0%").attr("stop-color", "#fff").attr("stop-opacity", 1);
+  feather.append("stop").attr("offset", "62%").attr("stop-color", "#fff").attr("stop-opacity", 1);
+  feather.append("stop").attr("offset", "78%").attr("stop-color", "#fff").attr("stop-opacity", 0.45);
+  feather.append("stop").attr("offset", "88%").attr("stop-color", "#fff").attr("stop-opacity", 0.12);
+  feather.append("stop").attr("offset", "96%").attr("stop-color", "#000").attr("stop-opacity", 0);
+  feather.append("stop").attr("offset", "100%").attr("stop-color", "#000").attr("stop-opacity", 0);
 
   const mask = defs
     .append("mask")
@@ -445,14 +414,7 @@ function draw() {
     .append("rect")
     .attr("width", w)
     .attr("height", h)
-    .attr("fill", "#000");
-  mask
-    .append("circle")
-    .attr("cx", w * 0.5)
-    .attr("cy", h * 0.5)
-    .attr("r", Math.min(w, h) * 0.62)
-    .attr("fill", "url(#creators-sky-feather-grad)")
-    .attr("filter", "url(#creators-mask-blur)");
+    .attr("fill", "url(#creators-sky-feather-grad)");
 
   const glow = defs
     .append("filter")
@@ -485,22 +447,19 @@ function draw() {
   const ih = h - pad * 2;
   const cx0 = iw * 0.5;
   const cy0 = ih * 0.5;
-  // Fade envelope for field stars (matches mask radius roughly)
-  const fadeR = Math.min(iw, ih) * 0.48;
+  // Solid-core envelope (~62% of mask radius)
+  const solidR = Math.min(iw, ih) * 0.55;
 
   const fieldRand = mulberry32(0xc0ffee ^ hashSeed(ctx.rule));
   let fieldDrawn = 0;
   let attempts = 0;
-  while (fieldDrawn < 240 && attempts < 900) {
+  while (fieldDrawn < 240 && attempts < 1000) {
     attempts++;
-    // Bias toward center so stars sit in the opaque sky
-    const ang = fieldRand() * Math.PI * 2;
-    const rad = fadeR * Math.pow(fieldRand(), 0.55) * 0.98;
-    const fx = cx0 + Math.cos(ang) * rad;
-    const fy = cy0 + Math.sin(ang) * rad * (0.85 + fieldRand() * 0.3);
-    const dist = Math.hypot(fx - cx0, fy - cy0) / fadeR;
-    const edgeFade = dist < 0.5 ? 1 : dist > 1 ? 0 : 1 - (dist - 0.5) / 0.5;
-    if (edgeFade <= 0.04) continue;
+    const fx = fieldRand() * iw;
+    const fy = fieldRand() * ih;
+    const dist = Math.hypot(fx - cx0, fy - cy0) / solidR;
+    const edgeFade = dist < 0.85 ? 1 : dist > 1.25 ? 0 : 1 - (dist - 0.85) / 0.4;
+    if (edgeFade <= 0.05) continue;
     g.append("circle")
       .attr("class", "field-star")
       .attr("cx", fx)
@@ -512,8 +471,8 @@ function draw() {
   }
 
   [
-    { cx: iw * 0.36, cy: ih * 0.52, r: Math.min(iw, ih) * 0.42 },
-    { cx: iw * 0.66, cy: ih * 0.4, r: Math.min(iw, ih) * 0.3 },
+    { cx: iw * 0.38, cy: ih * 0.52, r: Math.min(iw, ih) * 0.38 },
+    { cx: iw * 0.64, cy: ih * 0.4, r: Math.min(iw, ih) * 0.28 },
   ].forEach((arc, i) => {
     g.append("circle")
       .attr("class", "celestial-arc")
@@ -540,12 +499,12 @@ function draw() {
     const share = shareOf(row);
     const spread = anchor.spread;
     const nStars = Math.round(6 + Math.min(26, Math.sqrt(nCh) * 0.95) + share * 10);
-    const rand = mulberry32(hashSeed(`${ctx.rule}-${code}-stars-v5`));
+    const rand = mulberry32(hashSeed(`${ctx.rule}-${code}-stars-v6`));
     const stars = buildStars(anchor, nStars, spread, share, rand);
 
     const hitCx = anchor.x;
     const hitCy = anchor.y;
-    const hitR = Math.max(spread * 1.08, spread + (mobile ? 2 : 3));
+    const hitR = spread * 1.06;
 
     const cg = constellations
       .append("g")
@@ -564,7 +523,6 @@ function draw() {
       .attr("opacity", 0)
       .attr("pointer-events", "all");
 
-    // Collision probe (for tests): exact outer radius used by forceCollide
     cg.append("circle")
       .attr("class", "constellation-bounds")
       .attr("cx", hitCx)
@@ -607,19 +565,19 @@ function draw() {
         : code === "UNKNOWN"
           ? "unknown"
           : code;
-    // Label sits just under the star envelope, inside the collide radius
-    const labelY = Math.min(ih * 0.82, hitCy + spread * 0.92 + 14);
-    const labelX = Math.max(iw * 0.18, Math.min(iw * 0.82, hitCx));
+    // Keep labels inside the solid dark zone (20%–80%)
+    const labelY = Math.max(ih * 0.2 + 10, Math.min(ih * 0.8 - 4, hitCy + spread * 0.9 + 14));
+    const labelX = Math.max(iw * 0.2, Math.min(iw * 0.8, hitCx));
     cg.append("text")
       .attr("class", "constellation-label")
       .attr("x", labelX)
       .attr("y", labelY)
       .attr("text-anchor", "middle")
-      .attr("font-size", mobile ? 10 : 11)
+      .attr("font-size", mobile ? 10 : 12)
       .attr("font-family", 'Georgia, "Times New Roman", serif')
       .attr("letter-spacing", "0.04em")
       .attr("fill", "#eef1f7")
-      .attr("opacity", 0.92)
+      .attr("opacity", 0.94)
       .attr("pointer-events", "none")
       .text(label);
 
