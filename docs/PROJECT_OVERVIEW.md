@@ -8,28 +8,29 @@ Git branch: `main`. Freeze hashes: `config/DATA_FREEZE.md`. Live site: https://w
 
 ## 1. Page map
 
-Scroll order from `web/index.html`. **Published** FE loads (`web/js/sections.js` → `ENABLED_DATA`): `countries-50m.json`, `trends_country_v3c.json`, `trends_monthly_v3c.json`, `correlations_v3c.json`, `wiki_lang.json`.
+Scroll order from `web/index.html`. **Published** FE loads (`web/js/sections.js` → `ENABLED_DATA`): `countries-50m.json`, `trends_country_v3c.json`, `trends_monthly_v3c.json`, `correlations_v3c.json`, `scatter_points_v3c.json`, `wiki_lang.json`, `yt_creators.json`, `yt_duration.json`, `yt_upload_clock.json`.
 
-Hidden section HTML lives under `src_hidden/sections_hidden/` (outside `web/`, not deployed). YouTube / Douyin / comment payloads stay under `data/unpublished/` (gitignored).
+Hidden section HTML for remaining charts lives under `src_hidden/sections_hidden/` (outside `web/`, not deployed). Douyin / comment / other unpublished payloads stay under `data/unpublished/` (gitignored).
 
 | # | id | Chart | Data | Status | Default |
 |---|-----|-------|------|--------|---------|
-| 0 | `top` | none | — | published | hero |
+| 0 | `top` | none | — | published | hero + waveform |
 | 1 | `scrolly-1` | choropleth + legend/caption/notes | trends_country_v3c, topo | **published** | growth_ratio_clipped colour; MK hatch |
 | 2 | `scrolly-2` | monthly choropleth | trends_monthly_v3c | **published** | own_peak_asmr scrubber |
-| 3 | `scrolly-3` | creators (disabled) | unpublished | **hidden** | — |
+| 3 | `scrolly-3` | creators by declared country | yt_creators | **published** | rule toggle; review banner |
 | 4 | `scrolly-4` | corr table + scatter | correlations_v3c | **published** | table on; frames measured/strict |
-| 5 | `scrolly-5` | duration (disabled) | unpublished | **hidden** | — |
+| 5 | `scrolly-5` | duration densities | yt_duration | **published** | rule / tier / weight toggles |
 | 6 | `scrolly-6` | wiki small multiples | wiki_lang | **published** | concept `ASMR` only |
 | 7 | `scrolly-7` | Douyin (disabled) | unpublished | **hidden** | — |
 | 8 | `scrolly-8` | comments (disabled) | unpublished | **hidden** | — |
+| 9 | `scrolly-9` | upload clock | yt_upload_clock | **published** | JP/KR/TW/HK radials |
 
 ### Visible claim-like strings (verbatim)
 
 **`web/index.html`**
 - Brand / title: `ASMR · sleep`
 - Placeholders: `TODO: my text` (hero, steps, footer) — do not replace without author copy
-- Nav: Top, Map 1, Map 2, Scatter, Wiki
+- Nav: Top, Map 1, Map 2, Creators, Scatter, Duration, Wiki, Upload clock
 - Map 1 caption/legend from JSON; Notes and limits in `<details>` (open desktop / closed ≤820px)
 - Caveat slots `#caveat-*` filled from JSON `meta.caveats`
 
@@ -47,16 +48,16 @@ No finished key-findings prose.
 
 | Visible / meta number | Source | Value now |
 |-----------------------|--------|-----------|
-| Measured / too few / no data / small base | `trends_country_v3c.meta.counts` + caption | **103** / **97** / **30** / **6** |
+| Measured / too few / no data / small base | `trends_country_v3c.meta.counts` + caption | **103** / **97** / **30** / **10** |
 | Rising / flat / falling | `counts_by_mk_class` | **74** / **26** / **3** |
 | Median growth (IQR) | `growth_ratio_ok` | **25.4%** (9.6%–43.0%) |
 | Strict-ok | `counts.strict_ok` | **82** |
-| Small-base threshold | `config/trends_display.yaml` | mean_first_12 &lt; **10** |
+| Small-base threshold | `config/trends_display.yaml` / payload meta | mean_first_12 &lt; **15** (`small_base` count **10**) |
 | Correlation n (measured · with TWN) | `correlations_v3c` | **103**; Holm p ≈ 0.42 both pairs |
 | Wiki concepts | `wiki_lang` | `["ASMR"]`; 23 languages |
 | Wiki low_traffic | `meta.low_traffic_languages_asmr` | hi, id, ms, th, uk, vi |
 
-Creator / Douyin / TikTok / comment / duration headline numbers are **not** on the published page.
+YouTube creators / duration / upload-clock charts are **published** (review-gated). Douyin / TikTok / comment headline numbers remain off the page.
 
 ---
 
@@ -81,6 +82,9 @@ Creator / Douyin / TikTok / comment / duration headline numbers are **not** on t
 | `trends_monthly_v3c.json` | Map 2 series (measured geos) |
 | `correlations_v3c.json` | Association frames + scatter points |
 | `wiki_lang.json` | Wiki small multiples |
+| `yt_creators.json` | Creators by declared country |
+| `yt_duration.json` | Duration densities + ratios |
+| `yt_upload_clock.json` | Upload-hour radials JP/KR/TW/HK |
 | `countries-50m.json` | world-atlas TopoJSON |
 
 Hashes: `config/DATA_FREEZE.md`.
@@ -92,7 +96,7 @@ Hashes: `config/DATA_FREEZE.md`.
 - **Growth:** mean(latest 12 months) / mean(first 12 months) − 1; colour uses clipped ratio ∈ [−0.5, 1.5].
 - **MK class:** Mann–Kendall on monthly series; Benjamini–Hochberg q = 0.05 → rising / flat / falling.
 - **Quality:** measured vs too few searches vs no data; pop gate downgrades &lt;1M (or unknown) to too few searches; mainland China not measured.
-- **Small base:** among measured, mean_first_12 &lt; threshold (default 10) → unstable ratio outline.
+- **Small base:** among measured, mean_first_12 &lt; threshold (15) → unstable ratio outline (`counts.small_base` = 10).
 - **Correlations:** Spearman ± Holm (2 pairs); partial controls for noise.
 - **Classes v3.2:** white-noise family strict vs title_only; nature title-only + inflections; script groups from title.
 
@@ -100,8 +104,9 @@ Hashes: `config/DATA_FREEZE.md`.
 
 ## 5. Front-end layout notes
 
-- Desktop: sticky stage beside steps.
-- Mobile (≤820px): stage in normal flow; map ≤45vh; legend / caption / notes below map; notes `<details>` closed; no absolute captions; chart roots scroll inside max 45vh.
+- Desktop: sticky stage beside steps; chart stages size to content (no forced 72vh min-height).
+- Mobile (≤820px): stage in normal flow; legend / caption / notes below map; notes `<details>` closed; chart roots (scrolly-3/4/5/6/9) flow with the page (no 45vh inner scroll cage).
+- Night theme tokens in `web/css/theme.css`; charts read colours via `getComputedStyle`.
 - Layout regression: `scripts/layout_screenshot_test.py` (Playwright).
 
 ---
@@ -118,10 +123,9 @@ Hashes: `config/DATA_FREEZE.md`.
 
 ## 7. Open items
 
-1. Human review for `UNSET` rows in `config/review_log.csv`  
-2. Optional unpublished YouTube chart modules (not in `ENABLED_SECTIONS`)  
-3. Re-enable hidden sections only after review  
-4. Author story copy for `TODO: my text`  
-5. Wiki timeline decision  
+1. Human review for remaining `UNSET` rows in `config/review_log.csv`  
+2. Douyin / comments / other modules stay hidden until review  
+3. Author story copy for `TODO: my text`  
+4. Wiki timeline decision  
 
 See also `docs/HANDOFF.md`.

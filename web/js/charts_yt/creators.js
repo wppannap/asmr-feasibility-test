@@ -9,6 +9,7 @@ const RULES = [
 ];
 
 let ctx = null;
+let resizeBound = false;
 
 export function render(container, data) {
   clear(container);
@@ -48,6 +49,20 @@ export function render(container, data) {
   const tableApi = attachTableToggle(wrap.node(), () => tableRows());
   ctx.mount = tableApi.visual;
   draw();
+  if (!resizeBound) {
+    resizeBound = true;
+    let t = 0;
+    window.addEventListener(
+      "resize",
+      () => {
+        clearTimeout(t);
+        t = setTimeout(() => {
+          if (ctx?.mount) draw();
+        }, 150);
+      },
+      { passive: true }
+    );
+  }
 }
 
 function filtered() {
@@ -151,4 +166,6 @@ function draw() {
   if (unk) annotate(unk, "unknown");
 }
 
-export function update() {}
+export function update() {
+  if (ctx?.mount) draw();
+}

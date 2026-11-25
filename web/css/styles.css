@@ -135,7 +135,7 @@ body::before {
 }
 
 .step {
-  margin: 0 0 60vh;
+  margin: 0 0 36vh;
   padding: 1.25rem 1.1rem;
   background: var(--bg);
   border: 1px solid var(--stroke);
@@ -222,8 +222,8 @@ input[type="range"]:focus-visible {
   top: -3rem;
   z-index: 100;
   padding: 0.4rem 0.7rem;
-  background: var(--ink);
-  color: var(--ink);
+  background: var(--accent);
+  color: var(--bg);
   font-weight: 700;
   text-decoration: none;
   border-radius: var(--radius);
@@ -619,25 +619,38 @@ input[type="range"] {
   }
 
   .step {
-    margin-bottom: 35vh;
+    margin-bottom: 24vh;
     background: var(--bg);
   }
 
+  /* Tall chart sections: flow with the page; no inner scroll cage. */
+  #scrolly-3 .stage-chart .chart-root,
+  #scrolly-3 .chart-root,
+  #scrolly-4 .stage-chart .chart-root,
+  #scrolly-4 .chart-root,
+  #scrolly-5 .stage-tall .chart-root,
+  #scrolly-5 .chart-root,
+  #scrolly-9 .stage-tall .chart-root,
+  #scrolly-9 .chart-root,
   .stage-chart .chart-root,
   .stage-tall .chart-root {
     min-height: 0;
-    max-height: 45vh;
-    overflow: auto;
+    max-height: none;
+    overflow: visible;
   }
 
   .chart-plot {
-    height: min(40vh, 300px);
+    height: auto;
     min-height: 180px;
   }
 
+  #scrolly-3 .chart-scroll,
+  #scrolly-4 .chart-scroll,
+  #scrolly-5 .chart-scroll,
+  #scrolly-9 .chart-scroll,
   .chart-scroll {
-    max-height: 45vh;
-    overflow: auto;
+    max-height: none;
+    overflow: visible;
   }
 
   .table-host,
@@ -671,19 +684,27 @@ input[type="range"] {
 }
 
 /* —— Extra chart stages —— */
+.stage.stage-chart,
+.stage.stage-tall {
+  min-height: 0;
+}
+
+.stage-chart {
+  min-height: 0;
+}
+
 .stage-chart .chart-root {
-  flex: 1;
-  min-height: 320px;
+  flex: 0 1 auto;
+  min-height: 0;
   width: 100%;
   position: relative;
   min-width: 0;
-  /* Keep room for notes-details sibling inside .stage */
-  max-height: calc(100% - 3.5rem);
-  overflow: hidden;
+  max-height: none;
+  overflow: visible;
 }
 
 #scrolly-4 .chart-root {
-  overflow: auto;
+  overflow: visible;
 }
 
 .scatter-host {
@@ -699,12 +720,47 @@ input[type="range"] {
 }
 
 .stage-tall .chart-root {
-  min-height: 420px;
+  min-height: 0;
 }
 
 .chart-scroll {
-  max-height: min(62vh, 560px);
-  overflow: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+.chart-inline-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  margin: 0.15rem 0 0.45rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.chart-inline-legend .leg-swatch {
+  display: inline-block;
+  width: 1.4rem;
+  height: 0;
+  border-top: 2px solid var(--accent);
+  vertical-align: middle;
+  margin-right: 0.25rem;
+}
+
+.chart-inline-legend .leg-sleep {
+  border-top-color: var(--accent);
+  border-top-style: solid;
+}
+
+.chart-inline-legend .leg-not {
+  border-top-color: var(--neg);
+  border-top-style: dashed;
+}
+
+.chart-note-jp {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin: 0.2rem 0 0.4rem;
 }
 
 .chart-controls {

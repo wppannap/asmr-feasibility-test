@@ -29,6 +29,7 @@ VIEWPORTS = [
 ]
 
 SECTIONS = [
+    ("top", "top"),
     ("scrolly-1", "map1"),
     ("scrolly-2", "map2"),
     ("scrolly-3", "creators"),
@@ -40,7 +41,7 @@ SECTIONS = [
 
 CHECK_JS = r"""
 () => {
-  const sections = ["scrolly-1", "scrolly-2", "scrolly-3", "scrolly-4", "scrolly-5", "scrolly-6", "scrolly-9"];
+  const sections = ["top", "scrolly-1", "scrolly-2", "scrolly-3", "scrolly-4", "scrolly-5", "scrolly-6", "scrolly-9"];
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const failures = [];
@@ -192,7 +193,11 @@ def main() -> int:
 
     all_failures = []
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        try:
+            browser = p.chromium.launch(headless=True)
+        except Exception:
+            # Fall back to system Chrome when Playwright browsers are missing
+            browser = p.chromium.launch(headless=True, channel="chrome")
         for w, h, label in VIEWPORTS:
             page = browser.new_page(viewport={"width": w, "height": h})
             page.goto(base, wait_until="networkidle", timeout=120_000)

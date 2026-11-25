@@ -1,4 +1,4 @@
-/* Upload clock: 24h radial profiles JP/KR/TW/HK (unpublished). */
+/* Upload clock: 24h radial profiles JP/KR/TW/HK. */
 import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js";
 import { themeColors } from "../theme.js";
 import { renderReviewBanner } from "./review.js";
@@ -10,6 +10,7 @@ const RULES = [
 const REGIONS = ["JP", "KR", "TW", "HK"];
 
 let ctx = null;
+let resizeBound = false;
 
 export function render(container, data) {
   clear(container);
@@ -29,7 +30,14 @@ export function render(container, data) {
   setCaveat(caveatEl, meta.caveats || []);
   if (!ok) return;
 
-  ctx = { rows, profiles, rule: "strict", meta };
+  if (meta.jp_depends_on_rule) {
+    wrap
+      .append("p")
+      .attr("class", "chart-note chart-note-jp")
+      .text("JP result depends on the classification rule");
+  }
+
+  ctx = { rows, profiles, rule: "strict", meta, wrapEl: wrap };
   const controls = wrap.append("div").attr("class", "control-row chart-controls");
   controls.append("span").attr("class", "control-label").text("Rule");
   const seg = controls.append("div").attr("class", "seg");
@@ -47,9 +55,17 @@ export function render(container, data) {
       });
   });
 
+  // Compact legend (HTML, above SVG)
+  const legend = wrap.append("p").attr("class", "chart-inline-legend");
+  legend.html(
+    `<span class="leg-swatch leg-sleep"></span> sleep_title` +
+      ` <span class="leg-swatch leg-not"></span> not`
+  );
+
   const tableApi = attachTableToggle(wrap.node(), () => tableRows());
   ctx.mount = tableApi.visual;
   draw();
+  bindResize();
 }
 
 function tableRows() {
@@ -84,15 +100,35 @@ function fmtCI(ci) {
   return `[${fmt(ci[0], 3)}, ${fmt(ci[1], 3)}]`;
 }
 
+function bindResize() {
+  if (resizeBound) return;
+  resizeBound = true;
+  let t = 0;
+  window.addEventListener(
+    "resize",
+    () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        if (ctx?.mount) draw();
+      }, 150);
+    },
+    { passive: true }
+  );
+}
+
 function draw() {
   const mount = ctx.mount;
   clear(mount);
-  const w = Math.max(320, mount.clientWidth || 640);
-  const cell = Math.min(280, Math.floor(w / 2) - 8);
+  const w = Math.max(280, mount.clientWidth || 640);
+  // Pad cells so hour ticks + night-band annotation stay inside viewBox
+  const gap = 12;
+  const cell = Math.max(150, Math.min(260, Math.floor((w - gap) / 2)));
+  const pad = 18;
+  const svgH = cell * 2 + pad * 2;
   const svg = d3
     .select(mount)
     .append("svg")
-    .attr("viewBox", `0 0 ${w} ${cell * 2 + 16}`)
+    .attr("viewBox", `0 0 ${w} ${svgH}`)
     .attr("width", "100%")
     .attr("role", "img")
     .attr("aria-label", "24-hour upload radial profiles");
@@ -101,12 +137,12 @@ function draw() {
   REGIONS.forEach((region, i) => {
     const col = i % 2;
     const row = Math.floor(i / 2);
-    const g = svg
-      .append("g")
-      .attr("transform", `translate(${col * cell + cell / 2},${row * cell + cell / 2 + 8})`);
+    const cx = col * cell + cell / 2 + (col === 0 ? 0 : gap / 2);
+    const cy = row * cell + cell / 2 + pad;
+    const g = svg.append("g").attr("transform", `translate(${cx},${cy})`);
     g.append("text")
       .attr("text-anchor", "middle")
-      .attr("y", -cell / 2 + 14)
+      .attr("y", -cell / 2 + 12)
       .attr("font-size", 12)
       .attr("font-weight", 700)
       .attr("fill", c.ink)
@@ -117,23 +153,22 @@ function draw() {
     const not = ctx.profiles.find(
       (p) => p.rule === ctx.rule && p.region === region && p.arm === "not"
     );
-    drawRadial(g, sleep?.profile, cell * 0.38, c.accent);
-    drawRadial(g, not?.profile, cell * 0.38, c.neg, true);
+    // Leave room for ticks + optional annotation inside the cell
+    const R = Math.min(cell * 0.32, cell / 2 - 28);
+    drawRadial(g, sleep?.profile, R, c.accent);
+    drawRadial(g, not?.profile, R, c.neg, true);
     if (i === 0) {
-      const R = cell * 0.38;
-      const mid = ((20 / 24) * 2 * Math.PI + (2 / 24) * 2 * Math.PI) / 2 - Math.PI / 2;
-      const lx = Math.cos(mid) * (R + 36);
-      const ly = Math.sin(mid) * (R + 36);
+      // Place night-band label inside the lower-right of the cell (avoids clip)
+      const lx = Math.min(cell / 2 - 8, R + 22);
+      const ly = Math.min(cell / 2 - 10, R + 8);
       g.append("path")
         .attr("class", "anno-leader")
-        .attr(
-          "d",
-          `M${Math.cos(mid) * R},${Math.sin(mid) * R} Q${Math.cos(mid) * (R + 18)},${Math.sin(mid) * (R + 18)} ${lx},${ly}`
-        );
+        .attr("d", `M${R * 0.55},${R * 0.55} Q${R * 0.85},${R * 0.9} ${lx},${ly}`);
       g.append("text")
         .attr("class", "anno-label")
-        .attr("x", lx + 2)
-        .attr("y", ly)
+        .attr("x", lx)
+        .attr("y", ly + 3)
+        .attr("text-anchor", "end")
         .attr("fill", c.muted)
         .text("20:00–02:00");
     }
@@ -142,6 +177,7 @@ function draw() {
 
 function drawRadial(g, profile, R, color, dashed = false) {
   if (!profile?.mean) return;
+  const c = themeColors();
   const angle = d3.scaleLinear().domain([0, 24]).range([0, 2 * Math.PI]);
   const max = d3.max(profile.mean) || 0.1;
   const r = d3.scaleLinear().domain([0, max]).range([0, R]);
@@ -150,7 +186,6 @@ function drawRadial(g, profile, R, color, dashed = false) {
     .angle((d, i) => angle(i))
     .radius((d) => r(d))
     .curve(d3.curveCardinalClosed);
-  // band
   if (profile.ci95_low && profile.ci95_high) {
     const area = d3
       .areaRadial()
@@ -169,17 +204,20 @@ function drawRadial(g, profile, R, color, dashed = false) {
     .attr("stroke", color)
     .attr("stroke-width", 1.5)
     .attr("stroke-dasharray", dashed ? "3 2" : null);
-  // hour ticks
   for (let h = 0; h < 24; h += 6) {
     const a = angle(h) - Math.PI / 2;
+    const tickR = R + 9;
     g.append("text")
-      .attr("x", Math.cos(a) * (R + 10))
-      .attr("y", Math.sin(a) * (R + 10))
+      .attr("x", Math.cos(a) * tickR)
+      .attr("y", Math.sin(a) * tickR)
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "middle")
       .attr("font-size", 9)
+      .attr("fill", c.muted)
       .text(`${h}`);
   }
 }
 
-export function update() {}
+export function update() {
+  if (ctx?.mount) draw();
+}

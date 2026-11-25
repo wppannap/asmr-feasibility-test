@@ -897,15 +897,25 @@ function initExtraCharts() {
     });
 
     const nav = document.getElementById("site-nav");
+    // Night theme: no box shadows on nav
+    if (nav) nav.style.boxShadow = "none";
+    window.addEventListener("resize", syncNotesOpen);
+    syncNotesOpen();
+
+    // Debounced redraw for width-dependent chart SVGs
+    let chartResizeT = 0;
     window.addEventListener(
-      "scroll",
+      "resize",
       () => {
-        nav.style.boxShadow = window.scrollY > 8 ? "0 4px 16px rgba(26,36,44,0.08)" : "none";
+        clearTimeout(chartResizeT);
+        chartResizeT = setTimeout(() => {
+          Object.values(ChartModules).forEach((mod) => {
+            if (typeof mod?.update === "function") mod.update();
+          });
+        }, 150);
       },
       { passive: true }
     );
-    window.addEventListener("resize", syncNotesOpen);
-    syncNotesOpen();
   }
 
   async function main() {

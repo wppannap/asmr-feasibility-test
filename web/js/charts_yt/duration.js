@@ -1,4 +1,4 @@
-/* Duration: log-axis overlaid densities + ratio table (unpublished). */
+/* Duration: log-axis overlaid densities + ratio table. */
 import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js";
 import { themeColors } from "../theme.js";
 import { renderReviewBanner } from "./review.js";
@@ -18,6 +18,7 @@ const RULES = [
 ];
 
 let ctx = null;
+let resizeBound = false;
 
 export function render(container, data) {
   clear(container);
@@ -52,10 +53,19 @@ export function render(container, data) {
   addSeg(controls, "Tier", TIERS, "tier");
   addSeg(controls, "Weight", WEIGHTS, "weight");
 
+  wrap
+    .append("p")
+    .attr("class", "chart-inline-legend")
+    .html(
+      `<span class="leg-swatch leg-sleep"></span> sleep_title` +
+        ` <span class="leg-swatch leg-not"></span> not`
+    );
+
   ctx.ratioEl = wrap.append("p").attr("class", "chart-note").node();
   const tableApi = attachTableToggle(wrap.node(), () => tableRows());
   ctx.mount = tableApi.visual;
   draw();
+  bindResize();
 }
 
 function addSeg(parent, label, opts, key) {
@@ -109,6 +119,22 @@ function tableRows() {
   };
 }
 
+function bindResize() {
+  if (resizeBound) return;
+  resizeBound = true;
+  let t = 0;
+  window.addEventListener(
+    "resize",
+    () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        if (ctx?.mount) draw();
+      }, 150);
+    },
+    { passive: true }
+  );
+}
+
 function draw() {
   const mount = ctx.mount;
   clear(mount);
@@ -125,7 +151,8 @@ function draw() {
     ctx.ratioEl.textContent = bits.join(" · ");
   }
 
-  const w = Math.max(320, mount.clientWidth || 560);
+  const w = Math.max(280, mount.clientWidth || 560);
+  const left = w < 520 ? 76 : 110;
   const ridgeH = 56;
   const h = 40 + hists.length * ridgeH;
   const svg = d3
@@ -135,8 +162,8 @@ function draw() {
     .attr("width", "100%")
     .attr("role", "img")
     .attr("aria-label", "Duration log densites by script group");
-  const margin = { top: 12, right: 16, bottom: 28, left: 120 };
-  const iw = w - margin.left - margin.right;
+  const margin = { top: 12, right: 16, bottom: 28, left };
+  const iw = Math.max(40, w - margin.left - margin.right);
   const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
   const allBins = (hists[0]?.sleep?.bins || hists[0]?.not?.bins || [30, 3600]).map(Number);
@@ -224,4 +251,6 @@ function drawArea(g, arm, x, y0, ridgeH, color, opacity) {
   g.append("path").attr("d", line(pts)).attr("fill", "none").attr("stroke", color).attr("stroke-width", 1);
 }
 
-export function update() {}
+export function update() {
+  if (ctx?.mount) draw();
+}
