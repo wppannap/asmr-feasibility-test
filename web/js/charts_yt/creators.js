@@ -1,32 +1,40 @@
-/* Creators · declared country — deep-night starfield constellations.
+/* Creators · declared country — star-cluster density field.
  *
- * System layout: large solid dark core first, full share-based sizes,
- * organic scatter with collision — never shrink the sky to fit.
+ * Cluster AREA ∝ top-5% share; uniform star density inside each cluster.
+ * No constellation lines, no hard borders.
  */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126u";
-import { themeColors } from "../theme.js?v=20261126u";
-import { renderReviewBanner } from "./review.js?v=20261126u";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126s";
+import { themeColors } from "../theme.js?v=20261126s";
+import { renderReviewBanner } from "./review.js?v=20261126s";
 
 const RULES = [
   { id: "strict", label: "strict" },
   { id: "title_only", label: "title_only" },
 ];
 
-/** Harmonious celestial palette; unknown is muted silver. */
-const PALETTE = ["#f4a259", "#66c2cf", "#e88d72", "#b4a7e8", "#8fb8ed", "#95c9a8", "#d4a574", "#7eb8c9", "#c9a0dc", "#a8c686"];
+/** Harmonious starlight tints; unknown is cool silver-slate. */
+const PALETTE = [
+  "#e8b86d", // warm gold
+  "#7ec8d8", // ice cyan
+  "#c4a8e8", // soft lavender
+  "#8fcdb0", // pale emerald
+  "#e89a8a", // coral
+  "#9eb6d4", // silver-blue
+  "#d4a574",
+  "#86c4c9",
+  "#b8a0d8",
+  "#a8c686",
+];
 const UNKNOWN_COLOR = "#8a94a8";
-const PAGE_IVORY = "#fdfcfa";
 
-/** Uniform composition scale (~+12%) — preserves share ratios. */
-const COMP_SCALE = 1.12;
-
-/** Share → spread: DE~23% ≈ 36px, TW~50% ≈ 87px (~2.4×). Never flattened. */
-const SPREAD_LO = 32 * COMP_SCALE;
-const SPREAD_HI = 78 * COMP_SCALE;
+/** Share → cluster radius (area ∝ share via sqrt mapping). DE~23%≈34, TW~50%≈88. */
+const R_LO = 34;
+const R_HI = 88;
 const SHARE_LO = 0.23;
 const SHARE_HI = 0.5;
-const COLLIDE_PAD = 18 * COMP_SCALE;
-const LABEL_CLEAR = 16 * COMP_SCALE;
+const STARS_PER_PX2 = 0.032;
+const COLLIDE_PAD = 24;
+const LABEL_GAP = 14;
 
 let ctx = null;
 let resizeBound = false;
@@ -44,7 +52,7 @@ export function render(container, data) {
     .append("p")
     .attr("class", "chart-subtitle chart-subtitle-plain")
     .text(
-      "Constellation size & bright stars = top 5% creators’ video share; star count = channels."
+      "Each cluster’s area scales with the top-5% creators’ video share (uniform star density inside each cluster)."
     );
   wrap
     .append("p")
@@ -148,106 +156,13 @@ function shareOf(row) {
   return s != null && Number.isFinite(s) ? s : 0.28;
 }
 
-/** Perceptually strong share→radius (full size — never flattened by packing). */
-function clusterSpread(row) {
+/** Radius from share so area scales clearly with percentage (sqrt of share). */
+function clusterRadius(row) {
   const share = shareOf(row);
   const t = Math.max(0, Math.min(1, (share - SHARE_LO) / (SHARE_HI - SHARE_LO)));
-  // Slight ease so mid-tier (35–39%) still reads larger than DE/US
-  return SPREAD_LO + Math.pow(t, 0.88) * (SPREAD_HI - SPREAD_LO);
-}
-
-function outerRadius(spread) {
-  return spread + LABEL_CLEAR;
-}
-
-function constellationEdges(stars, rand) {
-  const edges = [];
-  const used = new Set();
-  stars.forEach((a, i) => {
-    const dist = stars
-      .map((b, j) => ({ j, d: (a.x - b.x) ** 2 + (a.y - b.y) ** 2 }))
-      .filter((o) => o.j !== i)
-      .sort((u, v) => u.d - v.d);
-    const k = rand() < 0.35 ? 2 : 1;
-    for (let n = 0; n < k && n < dist.length; n++) {
-      const pick =
-        n === 0 && rand() < 0.22 && dist.length > 2
-          ? dist[1 + Math.floor(rand() * Math.min(2, dist.length - 1))]
-          : dist[n];
-      const j = pick.j;
-      const key = i < j ? `${i}-${j}` : `${j}-${i}`;
-      if (used.has(key)) continue;
-      used.add(key);
-      edges.push([i, j]);
-    }
-  });
-  return edges;
-}
-
-function buildStars(cx, cy, nStars, spread, share, rand) {
-  const stars = [];
-  const squash = 0.52 + rand() * 0.48;
-  const tilt = rand() * Math.PI;
-  const cosT = Math.cos(tilt);
-  const sinT = Math.sin(tilt);
-
-  const clumps = [];
-  const nClumps = 2 + (rand() < 0.5 ? 1 : 0);
-  for (let c = 0; c < nClumps; c++) {
-    const a = rand() * Math.PI * 2;
-    const rr = spread * (0.12 + rand() * 0.45);
-    clumps.push({
-      x: cx + Math.cos(a) * rr,
-      y: cy + Math.sin(a) * rr * squash,
-      w: 0.22 + rand() * 0.4,
-    });
-  }
-
-  const rimN = Math.max(2, Math.round(nStars * (0.22 + share * 0.28)));
-  for (let i = 0; i < nStars; i++) {
-    let x;
-    let y;
-    if (i < rimN) {
-      const a = (i / rimN) * Math.PI * 2 + rand() * 0.5;
-      const rr = spread * (0.76 + rand() * 0.24);
-      const lx = Math.cos(a) * rr;
-      const ly = Math.sin(a) * rr * squash;
-      x = cx + lx * cosT - ly * sinT;
-      y = cy + lx * sinT + ly * cosT;
-    } else if (rand() < 0.55) {
-      const cl = clumps[Math.floor(rand() * clumps.length)];
-      const a = rand() * Math.PI * 2;
-      const rr = spread * cl.w * (0.2 + rand() * 0.9);
-      x = cl.x + Math.cos(a) * rr;
-      y = cl.y + Math.sin(a) * rr * (0.6 + rand() * 0.5);
-    } else {
-      const a = rand() * Math.PI * 2;
-      const rr = spread * (0.25 + rand() * 0.7);
-      const lx = Math.cos(a) * rr;
-      const ly = Math.sin(a) * rr * squash;
-      x = cx + lx * cosT - ly * sinT;
-      y = cy + lx * sinT + ly * cosT;
-    }
-    const dx = x - cx;
-    const dy = y - cy;
-    const d = Math.hypot(dx, dy) || 0.01;
-    if (d > spread) {
-      x = cx + (dx / d) * spread;
-      y = cy + (dy / d) * spread;
-    }
-    stars.push({ x, y, anchor: rand() < 0.12 + share * 0.45 });
-  }
-
-  if (share >= 0.35 && !stars.some((s) => s.anchor)) stars[0].anchor = true;
-  const want = Math.max(1, Math.round(1 + share * 5));
-  let have = stars.filter((s) => s.anchor).length;
-  for (let i = 0; have < want && i < stars.length; i++) {
-    if (!stars[i].anchor) {
-      stars[i].anchor = true;
-      have++;
-    }
-  }
-  return stars;
+  // Amplify mid-tier a touch so 35–39% still reads larger than DE/US
+  const u = Math.pow(t, 0.92);
+  return R_LO + u * (R_HI - R_LO);
 }
 
 function countOverlaps(nodes) {
@@ -256,71 +171,55 @@ function countOverlaps(nodes) {
     for (let j = i + 1; j < nodes.length; j++) {
       const a = nodes[i];
       const b = nodes[j];
-      const need = a.r + b.r + COLLIDE_PAD * 2;
+      const need = a.R + b.R + COLLIDE_PAD * 2;
       if (Math.hypot(a.x - b.x, a.y - b.y) < need - 0.5) n++;
     }
   }
   return n;
 }
 
-/**
- * Choose canvas so the solid dark layout box fits all full-size collide disks.
- * Priority: enlarge sky — never shrink constellation radii.
- */
+/** Canvas sized so solid dark core fits all full-size collide disks. */
 function canvasFor(rows, mobile) {
-  const outers = rows.map((r) => outerRadius(clusterSpread(r)));
-  const area = outers.reduce((s, o) => s + Math.PI * (o + COLLIDE_PAD) ** 2, 0);
-  // Packing efficiency ~0.52 for irregular circles with gaps
-  const needSide = Math.sqrt(area / 0.5);
-  // Layout uses ~62% of canvas (18–80% band); solid core covers that
-  const layoutFrac = 0.62;
-  let side = Math.ceil(needSide / layoutFrac + 40);
-  side = Math.max(side, mobile ? 520 : 960);
-  // Extra margin so a long soft feather can breathe outside the solid core
-  side = Math.round(side * COMP_SCALE * 1.12);
-  const w = mobile ? Math.max(500, Math.round(side * 0.72)) : Math.max(1120, side);
-  const h = mobile ? Math.max(720, Math.round(side * 0.95)) : Math.max(840, Math.round(side * 0.78));
+  const radii = rows.map((r) => clusterRadius(r));
+  const area = radii.reduce((s, R) => s + Math.PI * (R + COLLIDE_PAD) ** 2, 0);
+  const needSide = Math.sqrt(area / 0.48);
+  const layoutFrac = 0.64; // 18–82% band
+  let side = Math.ceil(needSide / layoutFrac + 48);
+  side = Math.max(side, mobile ? 520 : 980);
+  const w = mobile ? Math.max(440, Math.round(side * 0.7)) : Math.max(960, side);
+  const h = mobile ? Math.max(640, Math.round(side * 0.92)) : Math.max(720, Math.round(side * 0.76));
   return { w, h };
 }
 
 /**
- * Organic rectangular scatter — no ring, no grid, no size flattening.
+ * Organic placement inside solid core (18–82%) with forceCollide(R+24).
  */
-function placeAnchors(rows, iw, ih) {
-  const rand = mulberry32(hashSeed(`sky-scatter-${ctx.rule}-${rows.length}-v7`));
-  // Fill the solid core; outer ~28% of the ellipse is colour feather only
-  const x0 = iw * 0.22;
-  const x1 = iw * 0.78;
-  const y0 = ih * 0.22;
-  const y1 = ih * 0.78;
+function placeClusters(rows, iw, ih) {
+  const rand = mulberry32(hashSeed(`cluster-field-${ctx.rule}-${rows.length}-v1`));
+  const x0 = iw * 0.18;
+  const x1 = iw * 0.82;
+  const y0 = ih * 0.18;
+  const y1 = ih * 0.82;
 
   const nodes = rows.map((r) => {
-    const spread = clusterSpread(r);
-    const or = outerRadius(spread);
-    // Deterministic irregular scatter across the rectangle
+    const R = clusterRadius(r);
     let x = x0 + rand() * (x1 - x0);
     let y = y0 + rand() * (y1 - y0);
-    x += (rand() - 0.5) * iw * 0.08;
-    y += (rand() - 0.5) * ih * 0.08;
-    return {
-      row: r,
-      x,
-      y,
-      spread,
-      r: or,
-    };
+    x += (rand() - 0.5) * iw * 0.06;
+    y += (rand() - 0.5) * ih * 0.06;
+    return { row: r, x, y, R };
   });
 
   function clamp() {
     nodes.forEach((d) => {
-      const m = d.r * 0.25 + 6;
+      const m = d.R * 0.35 + 8;
       d.x = Math.max(x0 + m, Math.min(x1 - m, d.x));
       d.y = Math.max(y0 + m, Math.min(y1 - m, d.y));
     });
   }
 
   function separate() {
-    for (let iter = 0; iter < 160; iter++) {
+    for (let iter = 0; iter < 180; iter++) {
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
           const a = nodes[i];
@@ -328,7 +227,7 @@ function placeAnchors(rows, iw, ih) {
           let dx = b.x - a.x;
           let dy = b.y - a.y;
           let dist = Math.hypot(dx, dy) || 0.01;
-          const minD = a.r + b.r + COLLIDE_PAD * 2;
+          const minD = a.R + b.R + COLLIDE_PAD * 2;
           if (dist < minD) {
             const push = ((minD - dist) / dist) * 0.55;
             dx *= push;
@@ -344,31 +243,29 @@ function placeAnchors(rows, iw, ih) {
     }
   }
 
-  // Collide only — weak / no centering so it never forms a ring
   const sim = d3
     .forceSimulation(nodes)
     .force(
       "collide",
       d3
-        .forceCollide((d) => d.r + COLLIDE_PAD)
+        .forceCollide((d) => d.R + COLLIDE_PAD)
         .iterations(4)
         .strength(1)
     )
     .stop();
-  for (let i = 0; i < 280; i++) {
+  for (let i = 0; i < 300; i++) {
     sim.tick();
     clamp();
   }
   separate();
   clamp();
 
-  // If still overlapping, jitter and separate again (sizes stay full)
   let guard = 0;
-  while (countOverlaps(nodes) > 0 && guard < 8) {
+  while (countOverlaps(nodes) > 0 && guard < 10) {
     guard++;
     nodes.forEach((d) => {
-      d.x += (rand() - 0.5) * 24;
-      d.y += (rand() - 0.5) * 24;
+      d.x += (rand() - 0.5) * 28;
+      d.y += (rand() - 0.5) * 28;
     });
     separate();
     clamp();
@@ -376,12 +273,32 @@ function placeAnchors(rows, iw, ih) {
   return nodes;
 }
 
+/** Soft radial density: r = R * rand()^0.58 — dense core, soft edge, no hard outline. */
+function buildClusterStars(cx, cy, R, rand) {
+  const area = Math.PI * R * R;
+  const n = Math.max(40, Math.round(area * STARS_PER_PX2));
+  const stars = [];
+  for (let i = 0; i < n; i++) {
+    const a = rand() * Math.PI * 2;
+    const rr = R * Math.pow(rand(), 0.58);
+    const bright = rand() < 0.07;
+    stars.push({
+      x: cx + Math.cos(a) * rr,
+      y: cy + Math.sin(a) * rr,
+      bright,
+      r: bright ? 1.15 + rand() * 1.35 : 0.35 + rand() * 0.7,
+      op: bright ? 0.72 + rand() * 0.26 : 0.28 + rand() * 0.42,
+    });
+  }
+  return stars;
+}
+
 function resolveLabelPositions(items, iw, ih) {
-  const x0 = iw * 0.22;
-  const x1 = iw * 0.78;
-  const y0 = ih * 0.22;
-  const y1 = ih * 0.78;
-  const lw = 56;
+  const x0 = iw * 0.18;
+  const x1 = iw * 0.82;
+  const y0 = ih * 0.18;
+  const y1 = ih * 0.82;
+  const lw = 58;
   const lh = 14;
   const labels = items.map((it) => ({
     ...it,
@@ -389,7 +306,7 @@ function resolveLabelPositions(items, iw, ih) {
     ly: Math.max(y0 + 12, Math.min(y1 - 6, it.preferY)),
   }));
 
-  for (let iter = 0; iter < 50; iter++) {
+  for (let iter = 0; iter < 55; iter++) {
     for (let i = 0; i < labels.length; i++) {
       for (let j = i + 1; j < labels.length; j++) {
         const a = labels[i];
@@ -410,15 +327,13 @@ function resolveLabelPositions(items, iw, ih) {
           }
         }
       }
-      // Keep label near its constellation and inside solid core
       const it = labels[i];
       it.lx = Math.max(x0 + 16, Math.min(x1 - 16, it.lx));
       it.ly = Math.max(y0 + 12, Math.min(y1 - 4, it.ly));
-      // Soft leash to constellation
       const mdx = it.lx - it.cx;
       const mdy = it.ly - it.cy;
       const md = Math.hypot(mdx, mdy);
-      const maxLeash = it.spread + 28;
+      const maxLeash = it.R + 32;
       if (md > maxLeash) {
         it.lx = it.cx + (mdx / md) * maxLeash;
         it.ly = it.cy + (mdy / md) * maxLeash;
@@ -434,7 +349,7 @@ function draw() {
   const rows = filtered();
   const mobile = (typeof window !== "undefined" ? window.innerWidth : 1000) < 700;
   const { w, h } = canvasFor(rows, mobile);
-  const pad = 16;
+  const pad = 12;
 
   const svg = d3
     .select(mount)
@@ -443,14 +358,13 @@ function draw() {
     .attr("viewBox", `0 0 ${w} ${h}`)
     .attr("width", "100%")
     .attr("role", "img")
-    .attr("aria-label", "Deep-night starfield of creator constellations by declared country")
+    .attr("aria-label", "Deep-night star-cluster density field by declared country")
     .style("overflow", "visible")
     .style("display", "block");
 
   const defs = svg.append("defs");
 
-  // objectBoundingBox radial = ellipse matching the SVG — soft on all four sides.
-  // Opaque indigo→ivory colour path (not alpha×indigo) so midtones never read as a grey halo.
+  // Deep indigo sky — solid dark core, soft radial fade (no hard border)
   const skyGrad = defs
     .append("radialGradient")
     .attr("id", "creators-midnight-sky")
@@ -458,37 +372,11 @@ function draw() {
     .attr("cx", "50%")
     .attr("cy", "48%")
     .attr("r", "50%");
-  // Large solid core; long outer dissolve (layout axis edge ≈ 0.56 elliptical).
-  const solidEnd = 0.58;
-  skyGrad.append("stop").attr("offset", "0%").attr("stop-color", "#1a2642");
-  skyGrad.append("stop").attr("offset", "40%").attr("stop-color", "#141b2e");
-  skyGrad.append("stop").attr("offset", `${solidEnd * 100}%`).attr("stop-color", "#1a2642");
-  // Dense blue-biased ramp → ivory. Many stops = no banding / no grey ring.
-  [
-    [0.08, "#1c2846"],
-    [0.16, "#1f2d4c"],
-    [0.24, "#243456"],
-    [0.32, "#2a3c62"],
-    [0.4, "#334872"],
-    [0.48, "#405886"],
-    [0.56, "#516998"],
-    [0.64, "#687eac"],
-    [0.72, "#8696b8"],
-    [0.8, "#a8b0c4"],
-    [0.86, "#c5c8d4"],
-    [0.91, "#dddce0"],
-    [0.95, "#efece8"],
-    [0.98, "#f8f6f2"],
-    [1, PAGE_IVORY],
-  ].forEach(([t, color]) => {
-    const offset = solidEnd + t * (1 - solidEnd);
-    skyGrad
-      .append("stop")
-      .attr("offset", `${(offset * 100).toFixed(1)}%`)
-      .attr("stop-color", color);
-  });
+  skyGrad.append("stop").attr("offset", "0%").attr("stop-color", "#16203a");
+  skyGrad.append("stop").attr("offset", "55%").attr("stop-color", "#0e1424");
+  skyGrad.append("stop").attr("offset", "100%").attr("stop-color", "#0e1424");
 
-  // Soft alpha only at the outermost rim — colour already ≈ ivory there, so no grey halo.
+  // Alpha mask: opaque 0→66%, feather to 0 by 97% (before SVG edge)
   const feather = defs
     .append("radialGradient")
     .attr("id", "creators-sky-feather-grad")
@@ -497,9 +385,23 @@ function draw() {
     .attr("cy", "48%")
     .attr("r", "50%");
   feather.append("stop").attr("offset", "0%").attr("stop-color", "#fff").attr("stop-opacity", 1);
-  feather.append("stop").attr("offset", "90%").attr("stop-color", "#fff").attr("stop-opacity", 1);
-  feather.append("stop").attr("offset", "96%").attr("stop-color", "#fff").attr("stop-opacity", 0.45);
-  feather.append("stop").attr("offset", "100%").attr("stop-color", "#fff").attr("stop-opacity", 0);
+  feather.append("stop").attr("offset", "66%").attr("stop-color", "#fff").attr("stop-opacity", 1);
+  const featherStops = [
+    [0.72, 0.88],
+    [0.78, 0.7],
+    [0.84, 0.48],
+    [0.9, 0.26],
+    [0.94, 0.1],
+    [0.97, 0],
+    [1, 0],
+  ];
+  featherStops.forEach(([off, op]) => {
+    feather
+      .append("stop")
+      .attr("offset", `${off * 100}%`)
+      .attr("stop-color", "#fff")
+      .attr("stop-opacity", op);
+  });
 
   defs
     .append("mask")
@@ -517,7 +419,7 @@ function draw() {
     .attr("y", "-80%")
     .attr("width", "260%")
     .attr("height", "260%");
-  glow.append("feGaussianBlur").attr("stdDeviation", 1.4).attr("result", "b");
+  glow.append("feGaussianBlur").attr("stdDeviation", 1.2).attr("result", "b");
   const merge = glow.append("feMerge");
   merge.append("feMergeNode").attr("in", "b");
   merge.append("feMergeNode").attr("in", "SourceGraphic");
@@ -541,48 +443,31 @@ function draw() {
   const ih = h - pad * 2;
   const cx0 = iw * 0.5;
   const cy0 = ih * 0.48;
-  const solidR = Math.min(iw, ih) * 0.58;
+  const solidR = Math.min(iw, ih) * 0.66;
 
-  // Field stars — dense in solid core, fade toward rim
+  // Background starfield — ~1200 tiny dim stars across the night sky
   const fieldRand = mulberry32(0xc0ffee ^ hashSeed(ctx.rule));
   let drawn = 0;
   let tries = 0;
-  const fieldTarget = Math.round(260 * COMP_SCALE * COMP_SCALE);
-  while (drawn < fieldTarget && tries < 1400) {
+  while (drawn < 1200 && tries < 6000) {
     tries++;
     const fx = fieldRand() * iw;
     const fy = fieldRand() * ih;
     const dist = Math.hypot(fx - cx0, fy - cy0) / solidR;
-    const fade = dist < 0.9 ? 1 : dist > 1.35 ? 0 : 1 - (dist - 0.9) / 0.45;
-    if (fade < 0.06) continue;
+    const fade = dist < 0.95 ? 1 : dist > 1.45 ? 0 : 1 - (dist - 0.95) / 0.5;
+    if (fade < 0.05) continue;
     g.append("circle")
       .attr("class", "field-star")
       .attr("cx", fx)
       .attr("cy", fy)
-      .attr("r", (0.35 + fieldRand() * 1.1) * COMP_SCALE)
+      .attr("r", 0.35 + fieldRand() * 0.65)
       .attr("fill", "#e8ecf5")
-      .attr("opacity", (0.12 + fieldRand() * 0.38) * fade);
+      .attr("opacity", (0.12 + fieldRand() * 0.28) * fade);
     drawn++;
   }
 
-  [
-    { cx: iw * 0.4, cy: ih * 0.5, r: Math.min(iw, ih) * 0.36 },
-    { cx: iw * 0.62, cy: ih * 0.42, r: Math.min(iw, ih) * 0.26 },
-  ].forEach((arc, i) => {
-    g.append("circle")
-      .attr("class", "celestial-arc")
-      .attr("cx", arc.cx)
-      .attr("cy", arc.cy)
-      .attr("r", arc.r)
-      .attr("fill", "none")
-      .attr("stroke", "#e8ecf5")
-      .attr("stroke-width", 0.65)
-      .attr("opacity", 0.055)
-      .attr("stroke-dasharray", i === 0 ? "2 14" : "1 16");
-  });
-
-  const anchors = placeAnchors(rows, iw, ih);
-  const constellations = g.append("g").attr("class", "constellations");
+  const anchors = placeClusters(rows, iw, ih);
+  const clusters = g.append("g").attr("class", "star-clusters");
   const groups = [];
   const labelItems = [];
 
@@ -591,64 +476,38 @@ function draw() {
     const code = String(row.country || "").toUpperCase();
     const color = countryColor(row.country, idx);
     const pct = sharePct(row);
-    const nCh = row.n_channels || 30;
-    const share = shareOf(row);
-    const spread = anchor.spread;
-    const nStars = Math.round(7 + Math.min(26, Math.sqrt(nCh) * 0.95) + share * 8);
-    const rand = mulberry32(hashSeed(`${ctx.rule}-${code}-stars-v7`));
-    const stars = buildStars(anchor.x, anchor.y, nStars, spread, share, rand);
+    const R = anchor.R;
+    const rand = mulberry32(hashSeed(`${ctx.rule}-${code}-cluster-v1`));
+    const stars = buildClusterStars(anchor.x, anchor.y, R, rand);
 
-    const cg = constellations
+    const cg = clusters
       .append("g")
-      .attr("class", `constellation c-${code}`)
+      .attr("class", `star-cluster c-${code}`)
       .attr("tabindex", 0)
-      .attr("data-spread", spread.toFixed(1))
+      .attr("data-r", R.toFixed(1))
       .style("outline", "none")
       .style("cursor", "pointer");
 
     cg.append("circle")
-      .attr("class", "constellation-hit")
+      .attr("class", "cluster-hit")
       .attr("cx", anchor.x)
       .attr("cy", anchor.y)
-      .attr("r", spread * 1.05)
+      .attr("r", R * 1.02)
       .attr("fill", color)
       .attr("opacity", 0)
       .attr("pointer-events", "all");
 
-    cg.append("circle")
-      .attr("class", "constellation-bounds")
-      .attr("cx", anchor.x)
-      .attr("cy", anchor.y)
-      .attr("r", anchor.r)
-      .attr("fill", "none")
-      .attr("stroke", "none")
-      .attr("pointer-events", "none");
-
-    constellationEdges(stars, rand).forEach(([i, j]) => {
-      cg.append("line")
-        .attr("class", "constellation-link")
-        .attr("x1", stars[i].x)
-        .attr("y1", stars[i].y)
-        .attr("x2", stars[j].x)
-        .attr("y2", stars[j].y)
-        .attr("stroke", color)
-        .attr("stroke-width", 0.75 * COMP_SCALE)
-        .attr("opacity", 0.42)
-        .attr("pointer-events", "none");
-    });
-
+    const starLayer = cg.append("g").attr("class", "cluster-stars").attr("pointer-events", "none");
     stars.forEach((s) => {
-      const isAnchor = s.anchor;
-      const glowBoost = 0.35 + share * 0.55;
-      cg.append("circle")
-        .attr("class", isAnchor ? "constellation-star anchor-star" : "constellation-star")
+      starLayer
+        .append("circle")
+        .attr("class", s.bright ? "cluster-star bright-star" : "cluster-star")
         .attr("cx", s.x)
         .attr("cy", s.y)
-        .attr("r", (isAnchor ? 1.6 + share * 2.2 : 0.85 + rand() * 0.5) * COMP_SCALE)
+        .attr("r", s.r)
         .attr("fill", color)
-        .attr("opacity", isAnchor ? Math.min(0.96, 0.52 + glowBoost * 0.42) : 0.4 + rand() * 0.28)
-        .attr("filter", isAnchor ? "url(#star-glow)" : null)
-        .attr("pointer-events", "none");
+        .attr("opacity", s.op)
+        .attr("filter", s.bright ? "url(#star-glow)" : null);
     });
 
     const label =
@@ -663,8 +522,8 @@ function draw() {
       label,
       cx: anchor.x,
       cy: anchor.y,
-      spread,
-      preferY: anchor.y + spread * 0.88 + 14,
+      R,
+      preferY: anchor.y + R * 0.72 + LABEL_GAP,
       tip:
         `${row.country}: ${row.n_channels} channels, ${row.n_videos} videos` +
         (pct != null ? `, top 5% share ${pct}%` : ""),
@@ -676,7 +535,7 @@ function draw() {
   placed.forEach((item) => {
     item.cg
       .append("text")
-      .attr("class", "constellation-label")
+      .attr("class", "cluster-label")
       .attr("x", item.lx)
       .attr("y", item.ly)
       .attr("text-anchor", "middle")
@@ -694,9 +553,9 @@ function draw() {
     groups.forEach((cg) => {
       const on = !active || cg.node() === active;
       cg.attr("opacity", on ? 1 : 0.22);
-      cg.selectAll(".constellation-link").attr("opacity", on ? 0.75 : 0.14);
-      cg.selectAll(".anchor-star").attr("opacity", on ? 1 : 0.28);
-      cg.selectAll(".constellation-label").attr("opacity", on ? 0.96 : 0.32);
+      cg.selectAll(".bright-star").attr("opacity", on ? 0.95 : 0.25);
+      cg.selectAll(".cluster-star:not(.bright-star)").attr("opacity", on ? null : 0.18);
+      cg.selectAll(".cluster-label").attr("opacity", on ? 0.96 : 0.3);
     });
   }
 
