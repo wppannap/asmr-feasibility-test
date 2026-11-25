@@ -10,10 +10,13 @@
 <body>
   <a class="skip-link" href="#scrolly-1">Skip to content</a>
 
+  <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
+
   <header class="hero" id="top">
     <p class="hero-brand">ASMR · sleep</p>
     <h1 class="hero-title">TODO: my text</h1>
     <p class="hero-dek">TODO: my text</p>
+    <canvas id="hero-waveform" class="hero-waveform" width="640" height="48"></canvas>
   </header>
 
   <nav class="site-nav" id="site-nav" aria-label="Section navigation">
@@ -199,6 +202,20 @@
   <script src="js/vendor/topojson-client.min.js"></script>
   <script src="js/vendor/scrollama.js"></script>
   <script src="js/iso.js"></script>
+  <script src="js/waveform.js"></script>
   <script type="module" src="js/main.js"></script>
+  <script>
+    (function () {
+      const el = document.getElementById("scroll-progress");
+      if (!el) return;
+      function upd() {
+        const doc = document.documentElement;
+        const max = Math.max(1, doc.scrollHeight - window.innerHeight);
+        el.style.width = (100 * window.scrollY / max) + "%";
+      }
+      window.addEventListener("scroll", upd, { passive: true });
+      upd();
+    })();
+  </script>
 </body>
 </html>
