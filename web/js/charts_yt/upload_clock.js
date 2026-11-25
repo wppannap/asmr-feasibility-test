@@ -1,7 +1,7 @@
 /* Midnight-centered 24h upload waves — soft pastel dusk-to-midnight sky. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126g";
-import { themeColors } from "../theme.js?v=20261126g";
-import { renderReviewBanner } from "./review.js?v=20261126g";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126h";
+import { themeColors } from "../theme.js?v=20261126h";
+import { renderReviewBanner } from "./review.js?v=20261126h";
 
 const RULES = [
   { id: "strict", label: "strict" },
@@ -146,16 +146,16 @@ function profileMeans(region, arm) {
   return p?.profile?.mean || [];
 }
 
-/** Decorative sun (~16px): solid center disk + 1.3px rays. */
+/** Decorative sun (~18–20px): warm golden disc + crisp rays. */
 function drawSunIcon(parent, cx, cy, r, color) {
   const g = parent.append("g").attr("class", "sky-icon sky-sun").attr("aria-hidden", "true");
   g.append("circle")
     .attr("cx", cx)
     .attr("cy", cy)
-    .attr("r", r * 0.38)
+    .attr("r", r * 0.4)
     .attr("fill", color)
     .attr("stroke", color)
-    .attr("stroke-width", 1.3);
+    .attr("stroke-width", 1.6);
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2;
     g.append("line")
@@ -164,12 +164,12 @@ function drawSunIcon(parent, cx, cy, r, color) {
       .attr("x2", cx + Math.cos(a) * r)
       .attr("y2", cy + Math.sin(a) * r)
       .attr("stroke", color)
-      .attr("stroke-width", 1.3)
+      .attr("stroke-width", 1.6)
       .attr("stroke-linecap", "round");
   }
 }
 
-/** Decorative crescent moon (~16px): solid warm fill. */
+/** Decorative crescent moon (~18–20px): solid moonlight blue. */
 function drawMoonIcon(parent, cx, cy, r, fill) {
   const g = parent.append("g").attr("class", "sky-icon sky-moon").attr("aria-hidden", "true");
   const d = [
@@ -195,8 +195,8 @@ function draw() {
   clear(mount);
   const w = Math.max(300, mount.clientWidth || 640);
   const mobile = w < 520;
-  // Extra margins so sun/moon icons, peak leaders, and table toggle never clip
-  const margin = { top: 34, right: mobile ? 108 : 128, bottom: 40, left: mobile ? 40 : 48 };
+  // Extra margins so larger sun/moon icons, peak leaders, and table toggle never clip
+  const margin = { top: 38, right: mobile ? 108 : 128, bottom: 40, left: mobile ? 40 : 48 };
   const stripH = mobile ? 78 : 94;
   const gap = 12;
   const n = REGIONS.length;
@@ -277,13 +277,14 @@ function draw() {
       .attr("opacity", 0.28);
   });
 
-  // Top time-ruler icons (~16px) — solid accent for glanceable sun/moon
-  const iconY = -14;
-  const iconR = 8;
-  const iconColor = c.accent || ink;
-  drawSunIcon(g, x(0) + iconR + 1, iconY, iconR, iconColor);
-  drawSunIcon(g, x(24) - iconR - 1, iconY, iconR, iconColor);
-  drawMoonIcon(g, midX - 2, iconY, iconR, iconColor);
+  // Top time-ruler icons (~18–20px) — golden suns + moonlight crescent
+  const iconY = -12;
+  const iconR = 9.5;
+  const sunColor = "#e6a119";
+  const moonColor = "#4f78b8";
+  drawSunIcon(g, x(0) + iconR + 1, iconY, iconR, sunColor);
+  drawSunIcon(g, x(24) - iconR - 1, iconY, iconR, sunColor);
+  drawMoonIcon(g, midX - 2, iconY, iconR, moonColor);
 
   // Midnight rule + label in crisp dark ink over soft twilight
   g.append("line")
@@ -475,4 +476,4 @@ export function update() {
   if (ctx?.mount) draw();
 }
 
-/* pages-redeploy: 20261126g */
+/* pages-redeploy: 20261126h */
