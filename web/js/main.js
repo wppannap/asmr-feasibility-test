@@ -1,13 +1,13 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126b";
-import { themeColors } from "./theme.js?v=20261126b";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126c";
+import { themeColors } from "./theme.js?v=20261126c";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261126b";
+} from "./sections.js?v=20261126c";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -490,8 +490,8 @@ async function loadAll() {
         .attr("d", path)
         .attr("aria-hidden", "true")
         .attr("fill", themeColors().bg2)
-        .attr("stroke", "#b8b0a2")
-        .attr("stroke-width", 0.45)
+        .attr("stroke", themeColors().line)
+        .attr("stroke-width", 0.5)
         .attr("opacity", 0.55)
         .attr("pointer-events", "none");
     } else {

@@ -765,6 +765,21 @@ input[type="range"] {
 
 .chart-controls {
   margin-bottom: 0.4rem;
+  flex-wrap: wrap;
+  max-width: 100%;
+  min-width: 0;
+}
+
+#scrolly-9 .chart-root,
+#scrolly-9 .chart-visual {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: visible;
+}
+
+#scrolly-9 .chart-toolbar {
+  justify-content: flex-end;
+  padding-inline: 0;
 }
 
 .chart-plot {
@@ -877,26 +892,37 @@ input[type="range"] {
 .chart-toolbar {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 0.25rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 0.35rem;
+  padding-right: 0;
+  min-width: 0;
 }
 
 .table-toggle {
   appearance: none;
-  border: 1px solid var(--stroke);
+  border: 1px solid var(--line);
   background: var(--bg2);
   color: var(--ink);
   font: inherit;
   font-size: 0.78rem;
   font-weight: 600;
-  padding: 0.22rem 0.5rem;
+  padding: 0.22rem 0.55rem;
   border-radius: var(--radius);
   cursor: pointer;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .table-toggle[aria-pressed="true"] {
   background: var(--accent);
   border-color: var(--accent);
-  color: var(--ink);
+  color: var(--bg);
 }
 
 .chart-table-wrap {
@@ -1360,8 +1386,8 @@ input[type="range"] {
 }
 .country.coast-only {
   fill: var(--bg2) !important;
-  stroke: #b8b0a2 !important;
-  stroke-width: 0.45px !important;
+  stroke: var(--line) !important;
+  stroke-width: 0.5px !important;
 }
 .score-label {
   paint-order: stroke fill;

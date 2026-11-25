@@ -1,7 +1,7 @@
-/* Midnight-centered 24h upload waves — dusk-to-midnight sky backdrop. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126a";
-import { themeColors } from "../theme.js?v=20261126a";
-import { renderReviewBanner } from "./review.js?v=20261126a";
+/* Midnight-centered 24h upload waves — crisp Dusk-to-Midnight indigo sky. */
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126c";
+import { themeColors } from "../theme.js?v=20261126c";
+import { renderReviewBanner } from "./review.js?v=20261126c";
 
 const RULES = [
   { id: "strict", label: "strict" },
@@ -172,7 +172,6 @@ function drawSunIcon(parent, cx, cy, r, stroke) {
 /** Decorative 1px stroked crescent moon (no fill). */
 function drawMoonIcon(parent, cx, cy, r, stroke) {
   const g = parent.append("g").attr("class", "sky-icon sky-moon").attr("aria-hidden", "true");
-  // Crescent via two arcs (outer then inner cut)
   const d = [
     `M ${cx + r * 0.15} ${cy - r}`,
     `A ${r} ${r} 0 1 0 ${cx + r * 0.15} ${cy + r}`,
@@ -187,22 +186,29 @@ function drawMoonIcon(parent, cx, cy, r, stroke) {
     .attr("stroke-linejoin", "round");
 }
 
+/** True when a display-x sits inside the 20:00–02:00 night window (display 8..14). */
+function inNightWindow(displayX) {
+  return displayX >= 8 && displayX <= 14;
+}
+
 function draw() {
   const mount = ctx.mount;
   clear(mount);
   const w = Math.max(300, mount.clientWidth || 640);
   const mobile = w < 520;
-  const margin = { top: 28, right: mobile ? 72 : 110, bottom: 40, left: mobile ? 36 : 48 };
+  // Extra right margin so peak leaders + table toggle never clip
+  const margin = { top: 28, right: mobile ? 88 : 118, bottom: 40, left: mobile ? 36 : 48 };
   const stripH = mobile ? 78 : 94;
   const gap = 12;
   const n = REGIONS.length;
   const ih = n * stripH + (n - 1) * gap;
   const iw = w - margin.left - margin.right;
   const c = themeColors();
-  const paper = c.bg || "#faf8f4";
-  const twilightWarm = "#e6dfd6";
-  const twilightCool = "#525d73";
-  const nightSky = "#1d2432";
+  const paper = c.bg || "#fdfcfa";
+  const nightSky = c.nightBg || "#141b2d";
+  const nightInk = c.nightInk || "#f4f1ea";
+  const nightAccent = c.nightAccent || "#f4a259";
+  const curveTeal = "#4db6c7";
 
   const svg = d3
     .select(mount)
@@ -213,7 +219,8 @@ function draw() {
     .attr("aria-label", "Midnight-centered 24-hour upload waves by region");
 
   const defs = svg.append("defs");
-  // Dusk → Midnight → Dawn sky across the full 24h axis (12→18→00→06→12)
+  // Clean Dusk → Midnight → Dawn sky (opaque stops — no muddy overlays)
+  // display: 0=12:00, 4.5≈16:30, 6=18:00, 8=20:00, 12=00:00, 14=02:00, 18=06:00, 19.5≈07:30, 24=12:00
   const sky = defs
     .append("linearGradient")
     .attr("id", "dusk-midnight-sky")
@@ -222,39 +229,33 @@ function draw() {
     .attr("x2", iw)
     .attr("y1", 0)
     .attr("y2", 0);
-  // display 0 = noon, 6 = dusk 18:00, 8 = 20:00, 12 = midnight, 14 = 02:00, 18 = dawn 06:00, 24 = noon
-  sky.append("stop").attr("offset", "0%").attr("stop-color", paper).attr("stop-opacity", 1);
-  sky.append("stop").attr("offset", "18%").attr("stop-color", twilightWarm).attr("stop-opacity", 0.2);
-  sky.append("stop").attr("offset", "25%").attr("stop-color", twilightCool).attr("stop-opacity", 0.22);
-  sky.append("stop").attr("offset", "33%").attr("stop-color", nightSky).attr("stop-opacity", 0.2);
-  sky.append("stop").attr("offset", "50%").attr("stop-color", nightSky).attr("stop-opacity", 0.26);
-  sky.append("stop").attr("offset", "58%").attr("stop-color", nightSky).attr("stop-opacity", 0.2);
-  sky.append("stop").attr("offset", "75%").attr("stop-color", twilightCool).attr("stop-opacity", 0.22);
-  sky.append("stop").attr("offset", "82%").attr("stop-color", twilightWarm).attr("stop-opacity", 0.2);
-  sky.append("stop").attr("offset", "100%").attr("stop-color", paper).attr("stop-opacity", 1);
-
-  // Warm accent wash only over the 20:00–02:00 night window (sleep_title glow)
-  const glow = defs
-    .append("linearGradient")
-    .attr("id", "night-glow")
-    .attr("gradientUnits", "userSpaceOnUse")
-    .attr("x1", 0)
-    .attr("x2", iw)
-    .attr("y1", 0)
-    .attr("y2", 0);
-  glow.append("stop").attr("offset", "0%").attr("stop-color", c.accent).attr("stop-opacity", 0);
-  glow.append("stop").attr("offset", "33%").attr("stop-color", c.accent).attr("stop-opacity", 0.1);
-  glow.append("stop").attr("offset", "50%").attr("stop-color", c.accent).attr("stop-opacity", 0.16);
-  glow.append("stop").attr("offset", "67%").attr("stop-color", c.accent).attr("stop-opacity", 0.1);
-  glow.append("stop").attr("offset", "100%").attr("stop-color", c.accent).attr("stop-opacity", 0);
+  const stops = [
+    [0, paper],
+    [4.5 / 24, "#eef1f7"],
+    [6 / 24, "#cbd4e6"],
+    [7.5 / 24, "#8a96b0"],
+    [8 / 24, nightSky],
+    [12 / 24, nightSky],
+    [14 / 24, nightSky],
+    [14.5 / 24, "#8a96b0"],
+    [18 / 24, "#cbd4e6"],
+    [19.5 / 24, "#eef1f7"],
+    [1, paper],
+  ];
+  stops.forEach(([t, color]) => {
+    sky
+      .append("stop")
+      .attr("offset", `${(t * 100).toFixed(2)}%`)
+      .attr("stop-color", color)
+      .attr("stop-opacity", 1);
+  });
 
   const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
-  // X: display 0..24 → hours 12..11..12 with midnight at center (12)
   const x = d3.scaleLinear().domain([0, 24]).range([0, iw]);
   const midX = x(12);
 
-  // Full-width dusk-to-midnight sky behind all tracks
+  // Full-width sky only — no terracotta wash
   g.append("rect")
     .attr("class", "sky-backdrop")
     .attr("x", 0)
@@ -264,43 +265,31 @@ function draw() {
     .attr("fill", "url(#dusk-midnight-sky)")
     .attr("rx", 2);
 
-  // Soft warm night-window wash (20:00–02:00 → display 8..14)
-  const nightX0 = x(8);
-  const nightW = x(14) - x(8);
-  g.append("rect")
-    .attr("class", "night-spotlight")
-    .attr("x", nightX0)
-    .attr("y", -10)
-    .attr("width", nightW)
-    .attr("height", ih + 16)
-    .attr("fill", "url(#night-glow)")
-    .attr("opacity", 0.9);
-
-  // Top time-ruler icons: suns at noon edges, crescent at midnight
+  // Top time-ruler icons
   const iconY = -16;
   drawSunIcon(g, x(0), iconY, 6, c.muted);
   drawSunIcon(g, x(24), iconY, 6, c.muted);
-  drawMoonIcon(g, midX - 2, iconY, 5.5, c.muted);
+  drawMoonIcon(g, midX - 2, iconY, 5.5, nightInk);
 
-  // Crisp midnight rule across all strips
+  // Crisp midnight rule (night-ink over indigo)
   g.append("line")
     .attr("x1", midX)
     .attr("x2", midX)
     .attr("y1", -4)
     .attr("y2", ih + 4)
-    .attr("stroke", c.ink)
-    .attr("stroke-width", 1.15)
-    .attr("opacity", 0.7);
+    .attr("stroke", nightInk)
+    .attr("stroke-width", 1.25)
+    .attr("opacity", 0.9);
   g.append("text")
     .attr("x", midX + 8)
     .attr("y", -2)
     .attr("font-size", 10)
     .attr("font-variant-numeric", "tabular-nums")
     .attr("font-weight", 600)
-    .attr("fill", c.ink)
+    .attr("fill", nightInk)
     .text("00:00 Midnight");
 
-  // Shared hour ticks
+  // Shared hour ticks (bottom axis stays on paper)
   const tickHours = [12, 18, 0, 6, 12];
   const tickDisplay = [0, 6, 12, 18, 24];
   const axisG = g.append("g").attr("transform", `translate(0,${ih + 10})`);
@@ -335,6 +324,7 @@ function draw() {
 
     const strip = g.append("g").attr("transform", `translate(0,${y0})`);
 
+    // Baseline: muted on day edges, night-ink hairline in night zone via two segments
     strip
       .append("line")
       .attr("x1", 0)
@@ -342,7 +332,8 @@ function draw() {
       .attr("y1", stripH - 8)
       .attr("y2", stripH - 8)
       .attr("stroke", c.line)
-      .attr("stroke-width", 0.75);
+      .attr("stroke-width", 0.75)
+      .attr("opacity", 0.7);
 
     const sleepPts = d3.range(0, 25).map((d) => {
       const h = hourAt(d === 24 ? 0 : d);
@@ -368,27 +359,28 @@ function draw() {
       .x((p) => x(p[0]))
       .y((p) => y(p[1]));
 
+    // sleep_title: accent fill + night-accent stroke for glow on indigo
     strip
       .append("path")
       .attr("d", area(sleepPts))
-      .attr("fill", c.accent)
-      .attr("opacity", 0.32);
+      .attr("fill", nightAccent)
+      .attr("opacity", 0.28);
 
     strip
       .append("path")
       .attr("d", line(sleepPts))
       .attr("fill", "none")
       .attr("stroke", c.accent)
-      .attr("stroke-width", 1.7);
+      .attr("stroke-width", 1.85);
 
     strip
       .append("path")
       .attr("d", line(notPts))
       .attr("fill", "none")
-      .attr("stroke", c.neg)
-      .attr("stroke-width", 1.35)
+      .attr("stroke", curveTeal)
+      .attr("stroke-width", 1.4)
       .attr("stroke-dasharray", "4 3")
-      .attr("opacity", 0.9);
+      .attr("opacity", 0.95);
 
     // Peak glowing dot + curved leader
     let peakIdx = 0;
@@ -407,34 +399,34 @@ function draw() {
       const night = nightShare(region);
       const nightTxt =
         night != null ? `night ${fmt(night * 100, 0)}%` : `share ${fmt(peakVal, 3)}`;
+      const peakInNight = inNightWindow(peakIdx);
+      const labelFill = peakInNight ? nightInk : c.muted;
+      const leaderStroke = peakInNight ? "rgba(244,241,234,0.45)" : c.line;
 
       strip
         .append("circle")
         .attr("cx", px)
         .attr("cy", py)
-        .attr("r", 7)
-        .attr("fill", c.accent)
-        .attr("opacity", 0.18);
+        .attr("r", 8)
+        .attr("fill", nightAccent)
+        .attr("opacity", 0.28);
       strip
         .append("circle")
         .attr("cx", px)
         .attr("cy", py)
-        .attr("r", 3.4)
-        .attr("fill", c.accent)
-        .attr("stroke", c.bg)
-        .attr("stroke-width", 1.2);
+        .attr("r", 3.5)
+        .attr("fill", nightAccent)
+        .attr("stroke", peakInNight ? nightSky : c.bg)
+        .attr("stroke-width", 1.3);
 
-      const lx = Math.min(iw + margin.right - 18, px + (mobile ? 36 : 54));
+      const lx = Math.min(iw - 4, px + (mobile ? 36 : 54));
       const ly = Math.max(10, py - 16);
       strip
         .append("path")
         .attr("class", "anno-leader")
-        .attr(
-          "d",
-          `M${px + 4},${py - 2} Q${px + 18},${ly} ${lx - 4},${ly}`
-        )
+        .attr("d", `M${px + 4},${py - 2} Q${px + 18},${ly} ${lx - 4},${ly}`)
         .attr("fill", "none")
-        .attr("stroke", c.line)
+        .attr("stroke", leaderStroke)
         .attr("stroke-width", 0.9);
       strip
         .append("text")
@@ -443,7 +435,8 @@ function draw() {
         .attr("y", ly + 3)
         .attr("font-size", 10)
         .attr("font-variant-numeric", "tabular-nums")
-        .attr("fill", c.muted)
+        .attr("font-weight", peakInNight ? 600 : 400)
+        .attr("fill", labelFill)
         .text(`${String(ph).padStart(2, "0")}:00 · ${nightTxt}`);
     }
 

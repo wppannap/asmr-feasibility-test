@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
-"""Print WCAG contrast ratios for theme tokens (text on --bg)."""
+"""Print WCAG contrast ratios for day + night theme tokens."""
 from __future__ import annotations
 
 TOKENS = {
-    "--bg": "#faf8f4",
-    "--bg2": "#f1ede4",
-    "--ink": "#1a1c20",
-    "--muted": "#5c626d",
-    "--line": "#dad3c5",
-    "--accent": "#c45d2c",
-    "--neg": "#246a68",
-    "--neutral": "#d8d2c7",
-    "--nodata": "#ebe6dc",
+    "--bg": "#fdfcfa",
+    "--bg2": "#f3f1ec",
+    "--ink": "#121622",
+    "--muted": "#525b70",
+    "--line": "#dfe2ea",
+    "--accent": "#e06d2c",
+    "--neg": "#1f7a8c",
+    "--neutral": "#d5d9e2",
+    "--nodata": "#ebe9e2",
+    "--night-bg": "#141b2d",
+    "--night-ink": "#f4f1ea",
+    "--night-accent": "#f4a259",
+    "--night-neg": "#66c2cf",
 }
 
 
@@ -36,24 +40,31 @@ def contrast(a: str, b: str) -> float:
 
 
 def main() -> int:
-    bg = TOKENS["--bg"]
     pairs = [
-        ("--ink on --bg", TOKENS["--ink"], bg),
-        ("--muted on --bg", TOKENS["--muted"], bg),
-        ("--accent on --bg", TOKENS["--accent"], bg),
-        ("--neg on --bg", TOKENS["--neg"], bg),
-        ("--ink on --bg2", TOKENS["--ink"], TOKENS["--bg2"]),
-        ("--muted on --bg2", TOKENS["--muted"], TOKENS["--bg2"]),
+        ("--ink on --bg", TOKENS["--ink"], TOKENS["--bg"], True),
+        ("--muted on --bg", TOKENS["--muted"], TOKENS["--bg"], True),
+        # Accent is a large-area chart fill (not body text); report but do not gate.
+        ("--accent on --bg", TOKENS["--accent"], TOKENS["--bg"], False),
+        ("--neg on --bg", TOKENS["--neg"], TOKENS["--bg"], True),
+        ("--ink on --bg2", TOKENS["--ink"], TOKENS["--bg2"], True),
+        ("--muted on --bg2", TOKENS["--muted"], TOKENS["--bg2"], True),
+        ("--night-ink on --night-bg", TOKENS["--night-ink"], TOKENS["--night-bg"], True),
+        (
+            "--night-accent on --night-bg",
+            TOKENS["--night-accent"],
+            TOKENS["--night-bg"],
+            True,
+        ),
+        ("--night-neg on --night-bg", TOKENS["--night-neg"], TOKENS["--night-bg"], True),
     ]
-    print(f"{'pair':28} {'ratio':>8} {'>=4.5':>6}")
+    print(f"{'pair':36} {'ratio':>8} {'>=4.5':>6}")
     ok = True
-    for name, fg, back in pairs:
+    for name, fg, back, required in pairs:
         r = contrast(fg, back)
-        need = name.startswith("--ink") or name.startswith("--muted")
         passed = r >= 4.5
-        if need and not passed:
+        if required and not passed:
             ok = False
-        print(f"{name:28} {r:8.2f} {'PASS' if passed else 'FAIL':>6}")
+        print(f"{name:36} {r:8.2f} {'PASS' if passed else 'FAIL':>6}")
     return 0 if ok else 1
 
 
