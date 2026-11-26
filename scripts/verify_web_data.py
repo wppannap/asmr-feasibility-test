@@ -382,6 +382,25 @@ def check_privacy(obj, name: str) -> list[str]:
     return errs
 
 
+def check_hero_audio_control() -> list[tuple[str, bool, str]]:
+    """The hero play control is allowed. Chart sections stay button-free."""
+    html = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
+    buttons = re.findall(r"<button\b", html, flags=re.I)
+    hero = 'id="asmr-play"' in html and 'id="asmr-audio"' in html and "audio/asmr_sleep.mp3" in html
+    chart_bits = []
+    for sid in ("scrolly-1", "scrolly-9", "scrolly-5", "scrolly-3"):
+        part = html.split(f'id="{sid}"', 1)
+        if len(part) < 2:
+            chart_bits.append(sid)
+            continue
+        chunk = part[1].split("</section>", 1)[0]
+        if re.search(r"<button\b", chunk, flags=re.I):
+            chart_bits.append(sid)
+    ok = len(buttons) == 1 and hero and not chart_bits
+    detail = f"buttons={len(buttons)}" + ("" if not chart_bits else f" chart_buttons={chart_bits}")
+    return [("hero audio control is the only button", ok, detail)]
+
+
 def check_no_noise_phrases_in_web() -> list[tuple[str, bool, str]]:
     """Fail if web/ contains ambient/white-noise phrases or removed metric names."""
     rows = []
@@ -593,6 +612,7 @@ def main() -> int:
 
     # Manual-check provenance: page-shown theme checks must not be UNSET
     results.extend(check_reviewed_by_unset())
+    results.extend(check_hero_audio_control())
     # human rows require ingest receipt; script outputs must be labelled script
     results.extend(check_review_log_human_ingest())
 
