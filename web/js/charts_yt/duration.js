@@ -1,7 +1,7 @@
 /* Vertical acoustic spindles — discrete rounded-cap soundwave bars. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126w";
-import { themeColors } from "../theme.js?v=20261126w";
-import { renderReviewBanner } from "./review.js?v=20261126w";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126x";
+import { themeColors } from "../theme.js?v=20261126x";
+import { reviewLabel } from "./review.js?v=20261126x";
 
 const WEIGHTS = [
   { id: "video", label: "video" },
@@ -36,14 +36,8 @@ export function render(container, data) {
   const caveatEl = data.caveatEl;
 
   const wrap = d3.select(container);
-  wrap.append("h3").attr("class", "chart-section-title").text("Duration · sleep_title vs not");
-  wrap
-    .append("p")
-    .attr("class", "chart-subtitle")
-    .text(meta.scope_line || "videos labelled as ASMR (excluding ambient-noise content)");
-  const ok = renderReviewBanner(wrap, meta);
-  setCaveat(caveatEl, meta.caveats || []);
-  if (!ok) return;
+  if (!reviewLabel(meta).ok) return;
+  void caveatEl;
 
   ctx = {
     rows,
@@ -58,11 +52,10 @@ export function render(container, data) {
     .append("div")
     .attr("class", "duration-callouts")
     .html(
-      `<span class="is-sleep">◀ Sleep-aid ASMR (sleep_title)</span>` +
-        `<span class="is-regular">Regular ASMR (non-sleep) ▶</span>`
+      `<span class="is-sleep">◀ Sleep-aid ASMR</span>` +
+        `<span class="is-regular">Regular ASMR ▶</span>`
     );
 
-  ctx.ratioEl = wrap.append("p").attr("class", "chart-note").node();
   const tableApi = attachTableToggle(wrap.node(), () => tableRows(), { buttons: false });
   ctx.mount = tableApi.visual;
   draw();
@@ -154,21 +147,10 @@ function draw() {
   clear(mount);
   const hists = filteredHists();
   const rows = filteredRows();
-  if (ctx.ratioEl) {
-    const bits = rows.map((r) => {
-      const ci = r.ratio_channel_boot_ci95;
-      const ratio = ratioOf(r);
-      return `${r.script_group}: ${ratio != null ? fmt(ratio, 2) : "—"}×${
-        Array.isArray(ci) ? ` [${fmt(ci[0], 2)}, ${fmt(ci[1], 2)}]` : ""
-      }`;
-    });
-    ctx.ratioEl.textContent = bits.join(" · ");
-  }
-
   const w = Math.max(300, mount.clientWidth || 560);
   const n = Math.max(1, hists.length);
   const margin = { top: 36, right: 14, bottom: 40, left: w < 520 ? 38 : 52 };
-  const ih = w < 520 ? 360 : 420;
+  const ih = w < 520 ? 440 : 560;
   const iw = w - margin.left - margin.right;
   const colW = iw / n;
   const c = themeColors();

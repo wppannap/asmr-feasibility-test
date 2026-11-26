@@ -1,181 +1,110 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <!-- cachebust:20261126w -->
+  <!-- cachebust:20261126x -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ASMR · sleep — late-night listening</title>
-  <link rel="stylesheet" href="css/theme.css?v=20261126w" />
-  <link rel="stylesheet" href="css/styles.css?v=20261126w" />
-  <!-- pages-redeploy g4 -->
+  <link rel="stylesheet" href="css/theme.css?v=20261126x" />
+  <link rel="stylesheet" href="css/styles.css?v=20261126x" />
 </head>
 <body>
   <a class="skip-link" href="#scrolly-1">Skip to content</a>
-
   <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
 
   <!-- 00 · 3 AM Insomnia -->
   <section class="intro-night" id="intro-night" aria-label="3 AM insomnia">
     <div class="intro-pin">
-      <svg class="intro-sleeper" viewBox="0 0 360 220" aria-hidden="true">
-        <ellipse cx="250" cy="36" rx="28" ry="28" fill="#d7e4ff" opacity="0.16" />
-        <circle cx="250" cy="36" r="10" fill="#e8eefc" opacity="0.55" />
-        <path d="M70 150 Q70 96 150 96 L300 108 Q320 112 318 132 L300 168 Q160 188 78 168 Z" fill="#121a2e" stroke="#3c4f78" stroke-width="1.2" />
-        <path d="M118 128 Q150 118 210 124 L286 136 Q250 168 150 170 Q110 168 100 148 Z" fill="#1a2744" />
-        <circle cx="132" cy="118" r="22" fill="#e7d3c4" />
-        <path d="M114 108 Q132 96 152 110 Q146 100 132 100 Q118 100 114 108" fill="#2a211c" />
-        <ellipse cx="124" cy="116" rx="3.2" ry="2.2" fill="#0b101d" />
-        <ellipse cx="140" cy="116" rx="3.2" ry="2.2" fill="#0b101d" />
-        <path d="M126 128 Q132 132 138 128" fill="none" stroke="#8a6a58" stroke-width="1.2" />
-        <rect x="168" y="108" width="36" height="58" rx="4" fill="#0e1526" stroke="#6ea8fe" stroke-width="1.2" opacity="0.9" />
-        <rect x="172" y="112" width="28" height="46" rx="2" fill="#6ea8fe" opacity="0.18" />
-      </svg>
+      <img class="intro-sleeper" src="img/insomnia_bed.png?v=20261126x" alt="" />
       <div class="intro-danmaku" id="intro-danmaku" aria-live="polite"></div>
       <p class="intro-cue" id="intro-cue">Scroll to enter the night ↓</p>
     </div>
   </section>
 
-  <!-- 00 Hero -->
   <header class="hero" id="top">
-    <p class="hero-brand">ASMR · sleep</p>
-    <p class="hero-kicker reveal" data-reveal>late-night frequency</p>
-    <h1 class="hero-title">TODO: my text</h1>
-    <p class="hero-dek">TODO: my text</p>
+    <p class="hero-brand" data-reveal>ASMR · sleep</p>
     <canvas id="hero-waveform" class="hero-waveform" width="960" height="160" aria-hidden="true"></canvas>
+    <p class="hero-title story-beat" data-reveal>TODO: my text</p>
+    <p class="hero-dek story-beat" data-reveal>TODO: my text</p>
   </header>
 
   <nav class="site-nav" id="site-nav" aria-label="Section navigation">
     <a href="#top">Top</a>
-    <a href="#scrolly-1">Search pulse</a>
-    <a href="#scrolly-9">Night shift</a>
-    <a href="#scrolly-5">Till dawn</a>
+    <a href="#scrolly-1">Search</a>
+    <a href="#scrolly-9">Night</a>
+    <a href="#scrolly-5">Duration</a>
     <a href="#scrolly-3">Creators</a>
   </nav>
 
-  <!-- 01 Global Pulse — Dorling Cartogram -->
-  <section class="scrolly editorial" id="scrolly-1" data-stage="1" data-rail="01">
-    <header class="section-head">
-      <p class="section-kicker">01 · Global pulse</p>
-      <h2 class="section-title">ASMR search growth</h2>
-      <div class="kpi-row" id="kpi-trends" aria-label="Key figures from Trends v3c">
-        <div class="kpi reveal" data-reveal>
-          <span class="kpi-value" id="kpi-measured">—</span>
-          <span class="kpi-label">measured</span>
-        </div>
-        <div class="kpi reveal" data-reveal>
-          <span class="kpi-value" id="kpi-rising">—</span>
-          <span class="kpi-label">rising</span>
-        </div>
-        <div class="kpi reveal" data-reveal>
-          <span class="kpi-value" id="kpi-median">—</span>
-          <span class="kpi-label">median growth</span>
-        </div>
-      </div>
-    </header>
-    <figure class="stage" id="stage-1">
+  <section class="story-scene scrolly" id="scrolly-1" data-stage="1">
+    <h2 class="story-title" data-reveal>ASMR Search Growth</h2>
+    <p class="story-kpis" data-reveal aria-label="Key figures from Trends">
+      <span class="kpi-value" id="kpi-measured">—</span><span class="kpi-label">measured</span>
+      <span class="story-dot" aria-hidden="true">·</span>
+      <span class="kpi-value" id="kpi-rising">—</span><span class="kpi-label">rising</span>
+      <span class="story-dot" aria-hidden="true">·</span>
+      <span class="kpi-value" id="kpi-median">—</span><span class="kpi-label">median</span>
+    </p>
+    <p class="story-key" data-reveal>Amber = rising · Teal = falling · Hover region to highlight</p>
+    <figure class="story-graphic stage" id="stage-1" data-reveal>
       <div class="map-region-pill" id="map-region-pill" hidden></div>
       <div class="map-panels" id="map-panels-1">
         <div class="map-panel" data-panel="trends">
-          <p class="map-panel-title" id="trends-panel-title">ASMR search growth (latest 12 months ÷ first 12 months − 1)</p>
-          <p class="map-panel-subtitle" id="trends-window-subtitle">Window: Nov 2021 to Oct 2026</p>
           <div class="map-svg-wrap" id="map-trends"></div>
-          <p class="fig-caption">Fig. 1 — World Acoustic Score</p>
-          <div class="map-below">
-            <div class="legend" id="legend-trends"></div>
-            <p class="map-caption" id="trends-map-caption" aria-live="polite"></p>
-            <details class="notes-details" id="notes-1" open>
-              <summary>Notes and limits</summary>
-              <p class="caveat" id="caveat-1">Loading…</p>
-            </details>
-            <div class="table-host" id="trends-table-host"></div>
-          </div>
         </div>
       </div>
       <div class="tooltip" id="tooltip" hidden></div>
     </figure>
-    <article class="steps">
-      <div class="step" data-step="1-1"><p>TODO: my text</p></div>
-      <div class="step" data-step="1-2"><p>TODO: my text</p></div>
-      <div class="step" data-step="1-3"><p>TODO: my text</p></div>
-      <div class="step" data-step="1-4"><p>TODO: my text</p></div>
-    </article>
+    <p class="story-beat" data-reveal>TODO: my text</p>
+    <p class="story-beat" data-reveal>TODO: my text</p>
+    <p class="story-beat" data-reveal>TODO: my text</p>
+    <p class="story-beat" data-reveal>TODO: my text</p>
   </section>
 
-  <!-- 02 The Night Shift -->
-  <section class="scrolly editorial" id="scrolly-9" data-chart="upload_clock" data-rail="02">
-    <header class="section-head">
-      <p class="section-kicker">02 · The night shift</p>
-      <h2 class="section-title">Upload clock</h2>
-    </header>
-    <figure class="stage stage-chart stage-tall">
-      <div class="chart-root chart-scroll" id="chart-upload-clock"></div>
-      <p class="fig-caption">Fig. 2 — Midnight-centered upload waves</p>
-      <details class="notes-details" id="notes-9" open>
-        <summary>Notes and limits</summary>
-        <p class="caveat" id="caveat-9">Loading…</p>
-      </details>
+  <section class="story-scene scrolly" id="scrolly-9" data-chart="upload_clock">
+    <h2 class="story-title" data-reveal>Midnight Upload Rhythm</h2>
+    <p class="story-key" data-reveal>Strict rule · Local publish hour · Amber = sleep-aid · Teal = other</p>
+    <figure class="story-graphic stage" data-reveal>
+      <div class="chart-root" id="chart-upload-clock"></div>
     </figure>
-    <article class="steps">
-      <div class="step" data-step="9-1"><p>TODO: my text</p></div>
-      <div class="step" data-step="9-2"><p>TODO: my text</p></div>
-    </article>
+    <p class="story-beat" data-reveal>TODO: my text</p>
+    <p class="story-beat" data-reveal>TODO: my text</p>
   </section>
 
-  <!-- 03 Staying Till Dawn -->
-  <section class="scrolly editorial" id="scrolly-5" data-chart="duration_yt" data-rail="03">
-    <header class="section-head">
-      <p class="section-kicker">03 · Staying till dawn</p>
-      <h2 class="section-title">Duration</h2>
-    </header>
-    <figure class="stage stage-chart stage-tall">
-      <div class="chart-root chart-scroll" id="chart-duration-yt"></div>
-      <p class="fig-caption">Fig. 3 — Vertical acoustic spindles</p>
-      <details class="notes-details" id="notes-5" open>
-        <summary>Notes and limits</summary>
-        <p class="caveat" id="caveat-5">Loading…</p>
-      </details>
+  <section class="story-scene scrolly" id="scrolly-5" data-chart="duration_yt">
+    <h2 class="story-title" data-reveal>How Long They Last</h2>
+    <figure class="story-graphic stage" data-reveal>
+      <div class="chart-root" id="chart-duration-yt"></div>
     </figure>
-    <article class="steps">
-      <div class="step" data-step="5-1"><p>TODO: my text</p></div>
-      <div class="step" data-step="5-2"><p>TODO: my text</p></div>
-      <div class="step" data-step="5-3"><p>TODO: my text</p></div>
-    </article>
+    <p class="story-beat" data-reveal>TODO: my text</p>
+    <p class="story-beat" data-reveal>TODO: my text</p>
+    <p class="story-beat" data-reveal>TODO: my text</p>
   </section>
 
-  <!-- 04 Who Makes It -->
-  <section class="scrolly editorial" id="scrolly-3" data-chart="creators_yt" data-rail="04">
-    <header class="section-head">
-      <p class="section-kicker">04 · Who makes it</p>
-      <h2 class="section-title">Creators</h2>
-    </header>
-    <figure class="stage stage-chart">
+  <section class="story-scene scrolly" id="scrolly-3" data-chart="creators_yt">
+    <h2 class="story-title" data-reveal>Who Makes It</h2>
+    <p class="story-key" data-reveal>Cluster area = top 5% creators' video share · Hover to inspect</p>
+    <figure class="story-graphic stage story-graphic-creators" data-reveal>
       <div class="chart-root" id="chart-creators-yt"></div>
-      <p class="fig-caption">Fig. 4 — Creators by declared country</p>
-      <details class="notes-details" id="notes-3" open>
-        <summary>Notes and limits</summary>
-        <p class="caveat" id="caveat-3">Loading…</p>
-      </details>
     </figure>
-    <article class="steps">
-      <div class="step" data-step="3-1"><p>TODO: my text</p></div>
-      <div class="step" data-step="3-2"><p>TODO: my text</p></div>
-    </article>
+    <p class="story-beat" data-reveal>TODO: my text</p>
+    <p class="story-beat" data-reveal>TODO: my text</p>
   </section>
 
   <footer class="site-footer">
     <p>TODO: my text</p>
   </footer>
 
-  <script src="js/vendor/d3.min.js?v=20261126w"></script>
-  <script src="js/vendor/topojson-client.min.js?v=20261126w"></script>
-  <script src="js/vendor/scrollama.js?v=20261126w"></script>
-  <script src="js/vendor/gsap.min.js?v=20261126w"></script>
-  <script src="js/vendor/ScrollTrigger.min.js?v=20261126w"></script>
-  <script src="js/iso.js?v=20261126w"></script>
-  <script src="js/waveform.js?v=20261126w"></script>
-  <script src="js/motion.js?v=20261126w"></script>
-  <script type="module" src="js/main.js?v=20261126w"></script>
-  <script src="js/intro_scene.js?v=20261126w"></script>
+  <script src="js/vendor/d3.min.js?v=20261126x"></script>
+  <script src="js/vendor/topojson-client.min.js?v=20261126x"></script>
+  <script src="js/vendor/scrollama.js?v=20261126x"></script>
+  <script src="js/vendor/gsap.min.js?v=20261126x"></script>
+  <script src="js/vendor/ScrollTrigger.min.js?v=20261126x"></script>
+  <script src="js/iso.js?v=20261126x"></script>
+  <script src="js/waveform.js?v=20261126x"></script>
+  <script src="js/motion.js?v=20261126x"></script>
+  <script type="module" src="js/main.js?v=20261126x"></script>
+  <script src="js/intro_scene.js?v=20261126x"></script>
   <script>
     (function () {
       const el = document.getElementById("scroll-progress");
@@ -189,17 +118,10 @@
         el.style.width = (100 * window.scrollY / maxScroll) + "%";
       }
       window.addEventListener("scroll", upd, { passive: true });
-      window.addEventListener(
-        "resize",
-        function () {
-          clearTimeout(resizeT);
-          resizeT = setTimeout(function () {
-            cacheMax();
-            upd();
-          }, 120);
-        },
-        { passive: true }
-      );
+      window.addEventListener("resize", function () {
+        clearTimeout(resizeT);
+        resizeT = setTimeout(function () { cacheMax(); upd(); }, 120);
+      }, { passive: true });
       cacheMax();
       upd();
     })();

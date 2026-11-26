@@ -1,7 +1,7 @@
 /* Midnight-centered 24h upload waves — soft pastel dusk-to-midnight sky. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126w";
-import { themeColors } from "../theme.js?v=20261126w";
-import { renderReviewBanner } from "./review.js?v=20261126w";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126x";
+import { themeColors } from "../theme.js?v=20261126x";
+import { reviewLabel } from "./review.js?v=20261126x";
 
 const RULES = [
   { id: "strict", label: "strict" },
@@ -30,38 +30,10 @@ export function render(container, data) {
   const caveatEl = data.caveatEl;
 
   const wrap = d3.select(container);
-  wrap.append("h3").attr("class", "chart-section-title").text("Upload clock · midnight-centered");
-  wrap
-    .append("p")
-    .attr("class", "chart-subtitle chart-subtitle-plain")
-    .text(
-      "When creators hit publish (local time) — East Asian uploads cluster between 20:00 and 02:00."
-    );
-  wrap
-    .append("p")
-    .attr("class", "chart-subtitle")
-    .text(meta.scope_line || "videos labelled as ASMR (excluding ambient-noise content)");
-  const ok = renderReviewBanner(wrap, meta);
-  setCaveat(caveatEl, meta.caveats || []);
-  if (!ok) return;
-
-  if (meta.jp_depends_on_rule) {
-    wrap
-      .append("p")
-      .attr("class", "chart-note chart-note-jp badge-jp")
-      .text("JP result depends on the classification rule");
-  }
+  if (!reviewLabel(meta).ok) return;
+  void caveatEl;
 
   ctx = { rows, profiles, rule: "strict", meta };
-
-  wrap
-    .append("p")
-    .attr("class", "chart-inline-legend")
-    .html(
-      `<span class="leg-swatch leg-sleep"></span> sleep_title` +
-        ` <span class="leg-swatch leg-not"></span> not (dashed)` +
-        ` <span class="leg-swatch leg-night"></span> 20:00–02:00`
-    );
 
   const tableApi = attachTableToggle(wrap.node(), () => tableRows(), { buttons: false });
   ctx.mount = tableApi.visual;
@@ -514,4 +486,4 @@ export function update() {
   if (ctx?.mount) draw();
 }
 
-/* pages-redeploy: 20261126w */
+/* pages-redeploy: 20261126x */

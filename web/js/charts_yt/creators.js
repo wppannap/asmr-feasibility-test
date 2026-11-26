@@ -3,9 +3,9 @@
  * Cluster AREA ∝ top-5% share; uniform core density, soft feathered edges.
  * Named countries only (title_only); no Rule toggle.
  */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126w";
-import { themeColors } from "../theme.js?v=20261126w";
-import { renderReviewBanner } from "./review.js?v=20261126w";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126x";
+import { themeColors } from "../theme.js?v=20261126x";
+import { reviewLabel } from "./review.js?v=20261126x";
 
 /** Harmonious starlight tints for named countries. */
 const PALETTE = [
@@ -21,9 +21,9 @@ const PALETTE = [
   "#a8c686",
 ];
 
-/** Share → cluster radius (area ∝ share). DE~23%≈34, TW~50%≈88. */
-const R_LO = 34;
-const R_HI = 88;
+/** Share → cluster radius. Same proportion as before, drawn larger on the full stage. */
+const R_LO = 48;
+const R_HI = 124;
 const SHARE_LO = 0.23;
 const SHARE_HI = 0.5;
 const STARS_PER_PX2 = 0.032;
@@ -42,26 +42,8 @@ export function render(container, data) {
   const caveatEl = data.caveatEl;
 
   const wrap = d3.select(container);
-  wrap.append("h3").attr("class", "chart-section-title").text("Creators · declared country");
-  wrap
-    .append("p")
-    .attr("class", "chart-subtitle chart-subtitle-plain")
-    .text(
-      "Each cluster’s area scales with the top-5% creators’ video share (uniform star density inside each cluster)."
-    );
-  wrap
-    .append("p")
-    .attr("class", "chart-subtitle")
-    .text(meta.scope_line || "videos labelled as ASMR (excluding ambient-noise content)");
-  const ok = renderReviewBanner(wrap, meta);
-  const caveats = [...(meta.caveats || [])];
-  if (!caveats.some((c) => /unknown/i.test(c))) {
-    caveats.push(
-      "Unknown countryCode channels are omitted from the starfield (shown in View as table); shares use the title_only ASMR rule — the ~3,057 tag-only videos barely change creator shares."
-    );
-  }
-  setCaveat(caveatEl, caveats);
-  if (!ok) return;
+  if (!reviewLabel(meta).ok) return;
+  void caveatEl;
 
   ctx = { rows, meta };
   // No Rule toggle — title_only is the fixed view for general readers.
@@ -188,9 +170,9 @@ function canvasFor(rows, mobile) {
   const needSide = Math.sqrt(area / 0.48);
   const layoutFrac = 0.56; // 22–78% band
   let side = Math.ceil(needSide / layoutFrac + 48);
-  side = Math.max(side, mobile ? 520 : 980);
-  const w = mobile ? Math.max(440, Math.round(side * 0.7)) : Math.max(960, side);
-  const h = mobile ? Math.max(640, Math.round(side * 0.92)) : Math.max(720, Math.round(side * 0.76));
+  side = Math.max(side, mobile ? 720 : 1280);
+  const w = mobile ? Math.max(640, Math.round(side * 0.78)) : Math.max(1080, side);
+  const h = mobile ? Math.max(860, Math.round(side * 1.05)) : Math.max(920, Math.round(side * 0.82));
   return { w, h };
 }
 
