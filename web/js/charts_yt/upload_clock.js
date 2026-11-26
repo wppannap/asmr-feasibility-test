@@ -1,7 +1,7 @@
 /* Midnight-centered 24h upload waves — soft pastel dusk-to-midnight sky. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126h";
-import { themeColors } from "../theme.js?v=20261126h";
-import { renderReviewBanner } from "./review.js?v=20261126h";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126w";
+import { themeColors } from "../theme.js?v=20261126w";
+import { renderReviewBanner } from "./review.js?v=20261126w";
 
 const RULES = [
   { id: "strict", label: "strict" },
@@ -53,22 +53,6 @@ export function render(container, data) {
   }
 
   ctx = { rows, profiles, rule: "strict", meta };
-  const controls = wrap.append("div").attr("class", "control-row chart-controls");
-  controls.append("span").attr("class", "control-label").text("Rule");
-  const seg = controls.append("div").attr("class", "seg");
-  RULES.forEach((o) => {
-    seg
-      .append("button")
-      .attr("type", "button")
-      .classed("is-active", o.id === ctx.rule)
-      .text(o.label)
-      .on("click", function () {
-        ctx.rule = o.id;
-        seg.selectAll("button").classed("is-active", false);
-        d3.select(this).classed("is-active", true);
-        draw();
-      });
-  });
 
   wrap
     .append("p")
@@ -79,7 +63,7 @@ export function render(container, data) {
         ` <span class="leg-swatch leg-night"></span> 20:00–02:00`
     );
 
-  const tableApi = attachTableToggle(wrap.node(), () => tableRows());
+  const tableApi = attachTableToggle(wrap.node(), () => tableRows(), { buttons: false });
   ctx.mount = tableApi.visual;
   draw();
   bindResize();
@@ -210,11 +194,11 @@ function draw() {
   const ih = n * stripH + (n - 1) * gap;
   const iw = w - margin.left - margin.right;
   const c = themeColors();
-  const paper = "#fdfcfa";
-  const ink = c.ink || "#121622";
-  const duskInk = "#262e40";
-  const nightAccent = c.nightAccent || "#f4a259";
-  const curveTeal = "#4db6c7";
+  const paper = "#0b101d";
+  const ink = c.ink || "#f0ece3";
+  const duskInk = "#f0ece3";
+  const nightAccent = "#f4a259";
+  const curveTeal = "#56c2d6";
 
   const svg = d3
     .select(mount)
@@ -237,13 +221,13 @@ function draw() {
     .attr("y1", 0)
     .attr("y2", 0);
   const stops = [
-    [0, "#fdfcfa"],
-    [0.16, "#f6f6f9"],
-    [0.3, "#dfe5f1"],
-    [0.5, "#b8c5de"],
-    [0.7, "#dfe5f1"],
-    [0.84, "#f6f6f9"],
-    [1, "#fdfcfa"],
+    [0, "#18233d"],
+    [0.22, "#12192c"],
+    [0.33, "#070b16"],
+    [0.5, "#070b16"],
+    [0.66, "#070b16"],
+    [0.8, "#12192c"],
+    [1, "#18233d"],
   ];
   stops.forEach(([t, color]) => {
     sky
@@ -287,8 +271,8 @@ function draw() {
   // Top time-ruler icons (~18px) — suns above noon edges; moon above midnight
   const iconY = -22;
   const iconR = 9;
-  const sunColor = "#e6a119";
-  const moonColor = "#4f78b8";
+  const sunColor = "#f0b429";
+  const moonColor = "#6ea8fe";
   drawSunIcon(g, x(0) + 2, iconY, iconR, sunColor);
   drawSunIcon(g, x(24) - 2, iconY, iconR, sunColor);
   drawMoonIcon(g, midX, iconY, iconR, moonColor);
@@ -424,8 +408,8 @@ function draw() {
         night != null ? `night ${fmt(night * 100, 0)}%` : `share ${fmt(peakVal, 3)}`;
       const peakInNight = inNightWindow(peakIdx);
       // Dark ink on soft twilight — never white-on-white
-      const labelFill = peakInNight ? duskInk : c.muted;
-      const leaderStroke = peakInNight ? "rgba(38,46,64,0.35)" : c.line;
+      const labelFill = "#f0ece3";
+      const leaderStroke = "rgba(240,236,227,0.35)";
 
       strip
         .append("circle")
@@ -478,10 +462,56 @@ function draw() {
       .attr("fill", c.ink)
       .text(region);
   });
+
+  const cursor = g
+    .append("line")
+    .attr("class", "time-cursor")
+    .attr("y1", -6)
+    .attr("y2", ih + 4)
+    .attr("stroke", "#f0ece3")
+    .attr("stroke-width", 1)
+    .attr("opacity", 0)
+    .attr("pointer-events", "none");
+  const readouts = REGIONS.map((_, i) =>
+    g
+      .append("text")
+      .attr("class", "time-readout")
+      .attr("y", i * (stripH + gap) + 16)
+      .attr("fill", "#f0ece3")
+      .attr("font-size", 11)
+      .attr("opacity", 0)
+      .attr("pointer-events", "none")
+  );
+  g.append("rect")
+    .attr("class", "time-hit")
+    .attr("x", 0)
+    .attr("y", -8)
+    .attr("width", iw)
+    .attr("height", ih + 12)
+    .attr("fill", "transparent")
+    .on("pointermove", (event) => {
+      const [mx] = d3.pointer(event, g.node());
+      const di = Math.max(0, Math.min(23.99, x.invert(mx)));
+      const h = hourAt(Math.round(di) % 24);
+      cursor.attr("x1", mx).attr("x2", mx).attr("opacity", 0.7);
+      REGIONS.forEach((region, i) => {
+        const s = profileMeans(region, "sleep");
+        const nrm = profileMeans(region, "not");
+        const sv = s[h] != null ? Math.round(s[h] * 100) : "—";
+        const nv = nrm[h] != null ? Math.round(nrm[h] * 100) : "—";
+        const label = `${String(h).padStart(2, "0")}:00  ${sv}% / ${nv}%`;
+        const lx = mx > iw * 0.62 ? Math.max(4, mx - 108) : Math.min(iw - 108, mx + 8);
+        readouts[i].attr("x", lx).attr("opacity", 1).text(label);
+      });
+    })
+    .on("pointerleave", () => {
+      cursor.attr("opacity", 0);
+      readouts.forEach((t) => t.attr("opacity", 0).text(""));
+    });
 }
 
 export function update() {
   if (ctx?.mount) draw();
 }
 
-/* pages-redeploy: 20261126h */
+/* pages-redeploy: 20261126w */

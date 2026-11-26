@@ -3,9 +3,9 @@
  * Cluster AREA ∝ top-5% share; uniform core density, soft feathered edges.
  * Named countries only (title_only); no Rule toggle.
  */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126v";
-import { themeColors } from "../theme.js?v=20261126v";
-import { renderReviewBanner } from "./review.js?v=20261126v";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126w";
+import { themeColors } from "../theme.js?v=20261126w";
+import { renderReviewBanner } from "./review.js?v=20261126w";
 
 /** Harmonious starlight tints for named countries. */
 const PALETTE = [
@@ -66,7 +66,7 @@ export function render(container, data) {
   ctx = { rows, meta };
   // No Rule toggle — title_only is the fixed view for general readers.
 
-  const tableApi = attachTableToggle(wrap.node(), () => tableRows());
+  const tableApi = attachTableToggle(wrap.node(), () => tableRows(), { buttons: false });
   ctx.mount = tableApi.visual;
   draw();
   if (!resizeBound) {
@@ -388,51 +388,6 @@ function draw() {
 
   const defs = svg.append("defs");
 
-  const skyGrad = defs
-    .append("radialGradient")
-    .attr("id", "creators-midnight-sky")
-    .attr("gradientUnits", "objectBoundingBox")
-    .attr("cx", "50%")
-    .attr("cy", "48%")
-    .attr("r", "50%");
-  skyGrad.append("stop").attr("offset", "0%").attr("stop-color", "#16203a");
-  skyGrad.append("stop").attr("offset", "55%").attr("stop-color", "#0e1424");
-  skyGrad.append("stop").attr("offset", "100%").attr("stop-color", "#0e1424");
-
-  const feather = defs
-    .append("radialGradient")
-    .attr("id", "creators-sky-feather-grad")
-    .attr("gradientUnits", "objectBoundingBox")
-    .attr("cx", "50%")
-    .attr("cy", "48%")
-    .attr("r", "50%");
-  feather.append("stop").attr("offset", "0%").attr("stop-color", "#fff").attr("stop-opacity", 1);
-  feather.append("stop").attr("offset", "66%").attr("stop-color", "#fff").attr("stop-opacity", 1);
-  [
-    [0.72, 0.88],
-    [0.78, 0.7],
-    [0.84, 0.48],
-    [0.9, 0.26],
-    [0.94, 0.1],
-    [0.97, 0],
-    [1, 0],
-  ].forEach(([off, op]) => {
-    feather
-      .append("stop")
-      .attr("offset", `${off * 100}%`)
-      .attr("stop-color", "#fff")
-      .attr("stop-opacity", op);
-  });
-
-  defs
-    .append("mask")
-    .attr("id", "creators-sky-feather")
-    .attr("maskUnits", "userSpaceOnUse")
-    .append("rect")
-    .attr("width", w)
-    .attr("height", h)
-    .attr("fill", "url(#creators-sky-feather-grad)");
-
   const glow = defs
     .append("filter")
     .attr("id", "star-glow")
@@ -445,10 +400,7 @@ function draw() {
   merge.append("feMergeNode").attr("in", "b");
   merge.append("feMergeNode").attr("in", "SourceGraphic");
 
-  const sky = svg
-    .append("g")
-    .attr("class", "starfield-sky")
-    .attr("mask", "url(#creators-sky-feather)");
+  const sky = svg.append("g").attr("class", "starfield-sky");
 
   sky
     .append("rect")
@@ -457,7 +409,7 @@ function draw() {
     .attr("y", 0)
     .attr("width", w)
     .attr("height", h)
-    .attr("fill", "url(#creators-midnight-sky)");
+    .attr("fill", "none");
 
   const g = sky.append("g").attr("transform", `translate(${pad},${pad})`);
   const iw = w - pad * 2;

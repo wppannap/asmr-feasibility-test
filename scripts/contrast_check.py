@@ -3,19 +3,19 @@
 from __future__ import annotations
 
 TOKENS = {
-    "--bg": "#fdfcfa",
-    "--bg2": "#f3f1ec",
-    "--ink": "#121622",
-    "--muted": "#525b70",
-    "--line": "#dfe2ea",
-    "--accent": "#e06d2c",
-    "--neg": "#1f7a8c",
-    "--neutral": "#d5d9e2",
-    "--nodata": "#ebe9e2",
-    "--night-bg": "#141b2d",
-    "--night-ink": "#f4f1ea",
+    "--bg": "#0b101d",
+    "--bg2": "#121a2e",
+    "--ink": "#f0ece3",
+    "--muted": "#98a4be",
+    "--line": "#232f4a",
+    "--accent": "#f4a259",
+    "--neg": "#56c2d6",
+    "--neutral": "#2d3a59",
+    "--nodata": "#141c30",
+    "--night-bg": "#0b101d",
+    "--night-ink": "#f0ece3",
     "--night-accent": "#f4a259",
-    "--night-neg": "#66c2cf",
+    "--night-neg": "#56c2d6",
 }
 
 

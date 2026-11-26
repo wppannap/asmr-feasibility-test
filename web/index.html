@@ -1,18 +1,39 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <!-- cachebust:20261126v -->
+  <!-- cachebust:20261126w -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ASMR · sleep — late-night listening</title>
-  <link rel="stylesheet" href="css/theme.css?v=20261126v" />
-  <link rel="stylesheet" href="css/styles.css?v=20261126v" />
+  <link rel="stylesheet" href="css/theme.css?v=20261126w" />
+  <link rel="stylesheet" href="css/styles.css?v=20261126w" />
   <!-- pages-redeploy g4 -->
 </head>
 <body>
   <a class="skip-link" href="#scrolly-1">Skip to content</a>
 
   <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
+
+  <!-- 00 · 3 AM Insomnia -->
+  <section class="intro-night" id="intro-night" aria-label="3 AM insomnia">
+    <div class="intro-pin">
+      <svg class="intro-sleeper" viewBox="0 0 360 220" aria-hidden="true">
+        <ellipse cx="250" cy="36" rx="28" ry="28" fill="#d7e4ff" opacity="0.16" />
+        <circle cx="250" cy="36" r="10" fill="#e8eefc" opacity="0.55" />
+        <path d="M70 150 Q70 96 150 96 L300 108 Q320 112 318 132 L300 168 Q160 188 78 168 Z" fill="#121a2e" stroke="#3c4f78" stroke-width="1.2" />
+        <path d="M118 128 Q150 118 210 124 L286 136 Q250 168 150 170 Q110 168 100 148 Z" fill="#1a2744" />
+        <circle cx="132" cy="118" r="22" fill="#e7d3c4" />
+        <path d="M114 108 Q132 96 152 110 Q146 100 132 100 Q118 100 114 108" fill="#2a211c" />
+        <ellipse cx="124" cy="116" rx="3.2" ry="2.2" fill="#0b101d" />
+        <ellipse cx="140" cy="116" rx="3.2" ry="2.2" fill="#0b101d" />
+        <path d="M126 128 Q132 132 138 128" fill="none" stroke="#8a6a58" stroke-width="1.2" />
+        <rect x="168" y="108" width="36" height="58" rx="4" fill="#0e1526" stroke="#6ea8fe" stroke-width="1.2" opacity="0.9" />
+        <rect x="172" y="112" width="28" height="46" rx="2" fill="#6ea8fe" opacity="0.18" />
+      </svg>
+      <div class="intro-danmaku" id="intro-danmaku" aria-live="polite"></div>
+      <p class="intro-cue" id="intro-cue">Scroll to enter the night ↓</p>
+    </div>
+  </section>
 
   <!-- 00 Hero -->
   <header class="hero" id="top">
@@ -52,34 +73,7 @@
       </div>
     </header>
     <figure class="stage" id="stage-1">
-      <div class="stage-chrome">
-        <div class="control-row map-mode-row">
-          <span class="control-label">Mode</span>
-          <div class="seg" id="map1-mode" role="group" aria-label="Map encoding">
-            <button type="button" class="is-active" data-mode="growth">Growth</button>
-            <button type="button" data-mode="peak">60-month peak</button>
-          </div>
-        </div>
-        <div class="control-row map-filter-row">
-          <span class="control-label">Spotlight</span>
-          <div class="seg" id="map1-filter" role="group" aria-label="Regional spotlight">
-            <button type="button" class="is-active" data-filter="all">All</button>
-            <button type="button" data-filter="east_asia">East Asia</button>
-            <button type="button" data-filter="europe">Europe</button>
-            <button type="button" data-filter="americas">Americas</button>
-            <button type="button" data-filter="rising">Rising only</button>
-          </div>
-        </div>
-        <div class="control-row timeline-row map1-peak-row" id="map1-peak-controls" hidden>
-          <button type="button" class="play-btn" id="map1-play-btn" aria-label="Play" aria-pressed="false">Play</button>
-          <div class="seg map1-speed-seg" id="map1-speed" role="group" aria-label="Playback speed">
-            <button type="button" class="is-active" data-speed="1" aria-pressed="true">1×</button>
-            <button type="button" data-speed="2" aria-pressed="false">2×</button>
-          </div>
-          <input type="range" id="map1-month-scrubber" min="0" max="1" value="0" step="1" aria-label="Month scrubber" />
-          <span class="month-label" id="map1-month-label" aria-live="polite">—</span>
-        </div>
-      </div>
+      <div class="map-region-pill" id="map-region-pill" hidden></div>
       <div class="map-panels" id="map-panels-1">
         <div class="map-panel" data-panel="trends">
           <p class="map-panel-title" id="trends-panel-title">ASMR search growth (latest 12 months ÷ first 12 months − 1)</p>
@@ -172,15 +166,16 @@
     <p>TODO: my text</p>
   </footer>
 
-  <script src="js/vendor/d3.min.js?v=20261126v"></script>
-  <script src="js/vendor/topojson-client.min.js?v=20261126v"></script>
-  <script src="js/vendor/scrollama.js?v=20261126v"></script>
-  <script src="js/vendor/gsap.min.js?v=20261126v"></script>
-  <script src="js/vendor/ScrollTrigger.min.js?v=20261126v"></script>
-  <script src="js/iso.js?v=20261126v"></script>
-  <script src="js/waveform.js?v=20261126v"></script>
-  <script src="js/motion.js?v=20261126v"></script>
-  <script type="module" src="js/main.js?v=20261126v"></script>
+  <script src="js/vendor/d3.min.js?v=20261126w"></script>
+  <script src="js/vendor/topojson-client.min.js?v=20261126w"></script>
+  <script src="js/vendor/scrollama.js?v=20261126w"></script>
+  <script src="js/vendor/gsap.min.js?v=20261126w"></script>
+  <script src="js/vendor/ScrollTrigger.min.js?v=20261126w"></script>
+  <script src="js/iso.js?v=20261126w"></script>
+  <script src="js/waveform.js?v=20261126w"></script>
+  <script src="js/motion.js?v=20261126w"></script>
+  <script type="module" src="js/main.js?v=20261126w"></script>
+  <script src="js/intro_scene.js?v=20261126w"></script>
   <script>
     (function () {
       const el = document.getElementById("scroll-progress");

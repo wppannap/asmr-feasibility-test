@@ -32,6 +32,91 @@ body::before {
   content: none;
 }
 
+/* —— Opening insomnia scene —— */
+.intro-night {
+  height: 380vh;
+  position: relative;
+}
+
+.intro-pin {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.intro-sleeper {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: min(78vw, 420px);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+}
+
+.intro-danmaku {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.thought {
+  position: absolute;
+  max-width: 16rem;
+  margin: 0;
+  padding: 0.35rem 0.7rem;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(0.82rem, 2.1vw, 1.05rem);
+  line-height: 1.35;
+  opacity: 0;
+  text-shadow: 0 0 18px rgba(11, 16, 29, 0.8);
+}
+
+.intro-cue {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 1.4rem;
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  font-size: 0.85rem;
+}
+
+.map-region-pill {
+  position: fixed;
+  z-index: 5;
+  pointer-events: none;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(18, 26, 46, 0.92);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.duration-callouts {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 0.4rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.duration-callouts .is-sleep { color: var(--accent); }
+.duration-callouts .is-regular { color: var(--neg); text-align: right; }
+
+.scrolly button,
+.chart-toolbar,
+.stage-chrome {
+  display: none !important;
+}
+
 /* —— Hero —— */
 .hero {
   min-height: 70vh;

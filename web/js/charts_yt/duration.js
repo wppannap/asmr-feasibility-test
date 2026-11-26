@@ -1,7 +1,7 @@
 /* Vertical acoustic spindles — discrete rounded-cap soundwave bars. */
-import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126k";
-import { themeColors } from "../theme.js?v=20261126k";
-import { renderReviewBanner } from "./review.js?v=20261126k";
+import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126w";
+import { themeColors } from "../theme.js?v=20261126w";
+import { renderReviewBanner } from "./review.js?v=20261126w";
 
 const WEIGHTS = [
   { id: "video", label: "video" },
@@ -54,21 +54,16 @@ export function render(container, data) {
     rule: "strict",
   };
 
-  const controls = wrap.append("div").attr("class", "control-row chart-controls");
-  addSeg(controls, "Rule", RULES, "rule");
-  addSeg(controls, "Tier", TIERS, "tier");
-  addSeg(controls, "Weight", WEIGHTS, "weight");
-
   wrap
-    .append("p")
-    .attr("class", "chart-inline-legend")
+    .append("div")
+    .attr("class", "duration-callouts")
     .html(
-      `<span class="leg-swatch leg-sleep"></span> sleep_title (left)` +
-        ` <span class="leg-swatch leg-not"></span> not (right)`
+      `<span class="is-sleep">◀ Sleep-aid ASMR (sleep_title)</span>` +
+        `<span class="is-regular">Regular ASMR (non-sleep) ▶</span>`
     );
 
   ctx.ratioEl = wrap.append("p").attr("class", "chart-note").node();
-  const tableApi = attachTableToggle(wrap.node(), () => tableRows());
+  const tableApi = attachTableToggle(wrap.node(), () => tableRows(), { buttons: false });
   ctx.mount = tableApi.visual;
   draw();
   bindResize();
@@ -192,7 +187,19 @@ function draw() {
     .attr("role", "img")
     .attr("aria-label", "Vertical soundwave bars of duration density");
 
+  const defs = svg.append("defs");
+  const depth = defs
+    .append("linearGradient")
+    .attr("id", "depth-of-sleep")
+    .attr("x1", "0")
+    .attr("y1", "0")
+    .attr("x2", "0")
+    .attr("y2", "1");
+  depth.append("stop").attr("offset", "0%").attr("stop-color", "#162038");
+  depth.append("stop").attr("offset", "100%").attr("stop-color", "#070b16");
+
   const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+  g.append("rect").attr("width", iw).attr("height", ih).attr("fill", "url(#depth-of-sleep)");
 
   // Y axis
   g.append("g")
@@ -277,8 +284,22 @@ function draw() {
       .attr("stroke", c.line)
       .attr("stroke-width", 1);
 
-    drawWaveBars(g, hist.sleep, y, cx, maxHalf, c.accent || "#e06d2c", -1, ih);
-    drawWaveBars(g, hist.not, y, cx, maxHalf, c.neg || "#1f7a8c", 1, ih);
+    drawWaveBars(g, hist.sleep, y, cx, maxHalf, "#f4a259", -1, ih);
+    drawWaveBars(g, hist.not, y, cx, maxHalf, "#56c2d6", 1, ih);
+    const row = rows.find((r) => (r.script_group || "") === hist.script_group);
+    const ratio = row ? ratioOf(row) : null;
+    g.append("rect")
+      .attr("x", cx - maxHalf)
+      .attr("y", 0)
+      .attr("width", maxHalf * 2)
+      .attr("height", ih)
+      .attr("fill", "transparent")
+      .append("title")
+      .text(
+        `${hist.short}: sleep median ${hist.sleep?.median != null ? fmt(hist.sleep.median, 0) : "—"}s` +
+          ` · regular median ${hist.not?.median != null ? fmt(hist.not.median, 0) : "—"}s` +
+          (ratio != null ? ` · ratio ${fmt(ratio, 2)}×` : "")
+      );
 
     if (hist.sleep?.median) {
       g.append("circle")

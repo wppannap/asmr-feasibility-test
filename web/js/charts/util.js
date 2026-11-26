@@ -50,8 +50,12 @@ export function prefersReducedMotion() {
  * Add a "View as table" toggle. `getRows` returns { columns: string[], rows: (string|number)[][] }.
  * Returns { visual, setData } where visual is the chart mount node.
  */
-export function attachTableToggle(container, getRows) {
+export function attachTableToggle(container, getRows, opts = {}) {
   const root = d3.select(container);
+  if (opts.buttons === false) {
+    const visual = root.append("div").attr("class", "chart-visual").node();
+    return { visual, refreshTable() {} };
+  }
   const toolbar = root.append("div").attr("class", "chart-toolbar");
   const btn = toolbar
     .append("button")

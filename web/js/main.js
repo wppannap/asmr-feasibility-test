@@ -1,13 +1,13 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126v";
-import { themeColors } from "./theme.js?v=20261126v";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126w";
+import { themeColors } from "./theme.js?v=20261126w";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261126v";
+} from "./sections.js?v=20261126w";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -102,6 +102,38 @@ function spotlightRegion(feature) {
   if (lon >= 95 && lat >= 10 && lat <= 55) return "east_asia";
   if (lon > -25 && lon < 45 && lat >= 34) return "europe";
   return "other";
+}
+
+const REGION_LABEL = {
+  east_asia: "East Asia",
+  europe: "Europe",
+  americas: "Americas",
+  other: "Other",
+};
+
+function applyRegionHover(region, event) {
+  state.map1HoverRegion = region || null;
+  const pill = document.getElementById("map-region-pill");
+  if (pill) {
+    if (!region) {
+      pill.hidden = true;
+    } else {
+      pill.hidden = false;
+      pill.textContent = REGION_LABEL[region] || region;
+      if (event) {
+        pill.style.left = event.clientX + 14 + "px";
+        pill.style.top = event.clientY + 14 + "px";
+      }
+    }
+  }
+  const g = state.maps.trends?.pulseG;
+  if (!g) return;
+  g.selectAll("g.dorling-node").each(function (d) {
+    const on = !region || d.region === region;
+    d3.select(this)
+      .attr("opacity", on ? 1 : 0.18)
+      .style("filter", region && on ? "drop-shadow(0 0 5px rgba(244,162,89,0.85))" : null);
+  });
 }
 
 function nodeMatchesFilter(node, filter) {
@@ -440,9 +472,9 @@ async function loadAll() {
           .attr("x2", width - 16)
           .attr("y1", y)
           .attr("y2", y)
-          .attr("stroke", muted)
+          .attr("stroke", themeColors().ink)
           .attr("stroke-width", 0.7)
-          .attr("opacity", 0.16);
+          .attr("opacity", 0.42);
       }
       // Compact airy G-clef (Apple Symbols U+1D11E) — smaller, raised to note belt
       // Native path ~30.35×80; spiral optical center ≈ y=48
@@ -464,10 +496,10 @@ async function loadAll() {
           "transform",
           `translate(${clefX},${clefY}) scale(${clefScale.toFixed(4)})`
         )
-        .attr("fill", muted)
+        .attr("fill", themeColors().ink)
         .attr("fill-rule", "nonzero")
         .attr("stroke", "none")
-        .attr("opacity", 0.15)
+        .attr("opacity", 0.55)
         .attr("pointer-events", "none");
       // Double-barline matched to expanded staff
       const barX = width - 28;
@@ -495,11 +527,18 @@ async function loadAll() {
         .attr("class", "country coast-only")
         .attr("d", path)
         .attr("aria-hidden", "true")
-        .attr("fill", themeColors().bg2)
-        .attr("stroke", themeColors().line)
-        .attr("stroke-width", 0.5)
-        .attr("opacity", 0.55)
-        .attr("pointer-events", "none");
+        .attr("fill", "#1a243d")
+        .attr("stroke", "#3c4f78")
+        .attr("stroke-width", 0.8)
+        .attr("opacity", 1)
+        .attr("pointer-events", "all")
+        .on("pointerenter", function (event, d) {
+          applyRegionHover(spotlightRegion(d), event, d);
+        })
+        .on("pointermove", function (event, d) {
+          applyRegionHover(spotlightRegion(d), event, d);
+        })
+        .on("pointerleave", () => applyRegionHover(null));
     } else {
       paths = g
         .selectAll("path.country")
@@ -1107,11 +1146,16 @@ async function loadAll() {
         .attr("cursor", "pointer")
         .on("pointerenter", (event) => {
           hoverRing.attr("opacity", 0.9).attr("r", d.r + 9);
+          applyRegionHover(d.region, event);
           showTip(event, d.feature, "trends");
         })
-        .on("pointermove", (event) => showTip(event, d.feature, "trends"))
+        .on("pointermove", (event) => {
+          applyRegionHover(d.region, event);
+          showTip(event, d.feature, "trends");
+        })
         .on("pointerleave", () => {
           hoverRing.attr("opacity", 0).attr("r", d.r + 7);
+          applyRegionHover(null);
           tooltip.attr("hidden", true);
         })
         .on("click", (event) => showTip(event, d.feature, "trends"));
@@ -1361,7 +1405,8 @@ async function loadAll() {
 
   function renderTrendsTable() {
     const host = document.getElementById("trends-table-host");
-    if (!host) return;
+    if (host) host.replaceChildren();
+    return;
     const rows = [];
     state.countryV2ByIso.forEach((row) => {
       rows.push([
@@ -1851,7 +1896,7 @@ function initExtraCharts() {
     parent.insertBefore(shell, host);
     // rebuild: attachTableToggle needs empty container
     parent.removeChild(host);
-    const api = attachTableToggle(shell, () => mapTableRows(key));
+    const api = attachTableToggle(shell, () => mapTableRows(key), { buttons: false });
     api.visual.id = host.id;
     api.visual.className = host.className;
     createMap(`#${host.id}`, key);
