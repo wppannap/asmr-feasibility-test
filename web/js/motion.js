@@ -6,7 +6,7 @@
 
   const nodes = () =>
     document.querySelectorAll(
-      ".story-scene > .story-title, .story-scene > .story-kpis, .story-scene > .story-key, .story-scene > .story-graphic, .story-scene > .story-beat, .hero > .hero-brand, .hero > .hero-line, .hero > .asmr-play, .hero > .asmr-audio-hint, .hero > .hero-waveform, .hero > .story-beat, .site-footer"
+      ".chart-frame, .hero > .hero-brand, .hero > .hero-line, .hero > .asmr-play, .hero > .asmr-audio-hint, .hero > .hero-waveform, .hero > .story-beat"
     );
 
   function showAll() {

@@ -7,7 +7,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='3' fill='%23f4a259'/%3E%3C/svg%3E" />
   <title>ASMR · sleep — late-night listening</title>
   <link rel="stylesheet" href="css/theme.css?v=20261127k" />
-  <link rel="stylesheet" href="css/styles.css?v=20261127y" />
+  <link rel="stylesheet" href="css/styles.css?v=20261127z" />
 </head>
 <body>
   <a class="skip-link" href="#scrolly-1">Skip to content</a>
@@ -51,7 +51,6 @@
 
   <article class="act" id="prologue">
     <header class="act-header story-prose">
-      <p class="act-eyebrow">Prologue</p>
       <h2 class="act-title">Prologue</h2>
     </header>
     <div class="story-prose">
@@ -76,16 +75,17 @@
   </article>
 
   <section class="story-scene scrolly showcase" id="scrolly-1" data-stage="1">
-    <h2 class="story-title" data-reveal>ASMR Search Growth</h2>
-    <p class="story-kpis" data-reveal aria-label="Key figures from Trends">
+    <div class="chart-frame">
+    <h2 class="story-title">ASMR Search Growth</h2>
+    <p class="story-kpis" aria-label="Key figures from Trends">
       <span class="kpi-value" id="kpi-measured">—</span><span class="kpi-label">measured</span>
       <span class="story-dot" aria-hidden="true">·</span>
       <span class="kpi-value" id="kpi-rising">—</span><span class="kpi-label">rising</span>
       <span class="story-dot" aria-hidden="true">·</span>
       <span class="kpi-value" id="kpi-median">—</span><span class="kpi-label">median</span>
     </p>
-    <p class="story-key" data-reveal>Amber = rising · Teal = falling · Hover region to highlight</p>
-    <figure class="story-graphic stage" id="stage-1" data-reveal>
+    <p class="story-key">Amber = rising · Teal = falling · Hover region to highlight</p>
+    <figure class="story-graphic stage" id="stage-1">
       <div class="map-region-pill" id="map-region-pill" hidden></div>
       <div class="map-panels" id="map-panels-1">
         <div class="map-panel" data-panel="trends">
@@ -94,6 +94,7 @@
       </div>
       <div class="tooltip" id="tooltip" hidden></div>
     </figure>
+    </div>
   </section>
 
   <div class="story-prose">
@@ -103,11 +104,13 @@
 
   <div class="editorial-split">
     <section class="story-scene scrolly" id="scrolly-9" data-chart="upload_clock">
-      <h2 class="story-title" data-reveal>Midnight Upload Rhythm</h2>
-      <p class="story-key" data-reveal>Strict rule · Local publish hour · Amber = sleep-aid · Teal = other</p>
-      <figure class="story-graphic stage" data-reveal>
+      <div class="chart-frame">
+      <h2 class="story-title">Midnight Upload Rhythm</h2>
+      <p class="story-key">Strict rule · Local publish hour · Amber = sleep-aid · Teal = other</p>
+      <figure class="story-graphic stage">
         <div class="chart-root" id="chart-upload-clock"></div>
       </figure>
+      </div>
     </section>
     <div class="story-prose">
       <p>Local publishing patterns across East Asia show a clear nocturnal rhythm. Sleep-aid ASMR uploads peak sharply between 9 p.m. and 10 p.m., reaching 56% of nighttime activity in Hong Kong, 62% in Taiwan, 79% in Japan and 81% in South Korea—consistently concentrating more heavily into the late evening than non-sleep ASMR videos.</p>
@@ -130,10 +133,12 @@
       <p>The two types of videos hold viewers’ attention in different ways. No Talking videos rely mainly on changing textures, the distance of the sound and the recording space. Videos with speech can use characters, conversation and pacing to create the feeling that someone is looking after the listener.</p>
     </div>
     <section class="story-scene scrolly" id="scrolly-5" data-chart="duration_yt">
-      <h2 class="story-title" data-reveal>How Long They Last</h2>
-      <figure class="story-graphic stage" data-reveal>
+      <div class="chart-frame">
+      <h2 class="story-title">How Long They Last</h2>
+      <figure class="story-graphic stage">
         <div class="chart-root" id="chart-duration-yt"></div>
       </figure>
+      </div>
     </section>
   </div>
 
@@ -142,9 +147,11 @@
   </div>
 
   <section class="story-scene scrolly showcase" id="scrolly-onset" data-chart="sleep_onset">
-    <h2 class="story-title" data-reveal>The Fade-Out</h2>
     <div class="onset-scroll" id="onset-scroll">
       <div class="onset-pin">
+        <header class="pin-head">
+          <h2 class="story-title">The Fade-Out</h2>
+        </header>
         <div id="onset-wave"></div>
       </div>
     </div>
@@ -160,11 +167,13 @@
   </div>
 
   <section class="story-scene scrolly" id="scrolly-phones" data-chart="sound_samples">
+    <div class="chart-frame">
     <p class="act-eyebrow">Audio clips · 5 seconds each</p>
-    <h2 class="story-title" data-reveal>Inside the Headphones</h2>
-    <figure class="story-graphic stage" data-reveal>
+    <h2 class="story-title">Inside the Headphones</h2>
+    <figure class="story-graphic stage">
       <div class="chart-root" id="chart-sound-samples"></div>
     </figure>
+    </div>
     <aside class="human-card">
       <p>Emily, a university student, has made listening to ASMR part of her bedtime routine. A few months ago, she came across an ASMR livestream while browsing before bed. After listening for a while, she found herself getting sleepier, and gradually formed the habit.</p>
       <blockquote class="pull-quote">
@@ -193,27 +202,29 @@
     </div>
   </article>
 
-  <div class="editorial-split editorial-split--tall">
-    <section class="story-scene scrolly" id="scrolly-bed" data-chart="bedroom_filter">
-      <h2 class="story-title" data-reveal>Night Windows</h2>
-      <p class="story-key" data-reveal>20 analysed ASMR videos (80 frames). Scroll to filter the bedroom formula.</p>
-      <div class="bed-scroll" id="bed-scroll">
-        <div class="bed-pin">
-          <div class="chart-root" id="chart-bedroom"></div>
-        </div>
+  <section class="story-scene scrolly showcase" id="scrolly-bed" data-chart="bedroom_filter">
+    <div class="bed-scroll" id="bed-scroll">
+      <div class="bed-pin">
+        <header class="pin-head">
+          <h2 class="story-title">Night Windows</h2>
+          <p class="story-key">20 analysed ASMR videos (80 frames). Scroll to filter the bedroom formula.</p>
+        </header>
+        <div class="chart-root" id="chart-bedroom"></div>
       </div>
-      <p class="src-cap">20 videos, 80 frames. Dim: luminance under 75. Locked: luminance span under 10. Coder: NOT FOUND.</p>
-    </section>
-    <div class="story-prose">
-      <p>Creators also favour warm, amber lighting over harsh, cool tones. In our sample, 85% of the videos used soft warm hues, while only 15% featured cool blue or neon lights. That bedside-lamp glow reduces screen glare, helping tired eyes settle before sleep.</p>
-      <p>Beyond lighting, creators may branch into distinct styles and scenes. Roughly two-thirds look directly into the lens for whispered talking or skincare roleplay, while 30% go faceless. Across both talking and no-talking formats, familiar props recur: makeup brushes, bamboo earpicks, silicone ears, sponges and long nails.</p>
     </div>
+    <p class="src-cap">20 videos, 80 frames. Dim: luminance under 75. Locked: luminance span under 10. Coder: NOT FOUND.</p>
+  </section>
+  <div class="story-prose">
+    <p>Creators also favour warm, amber lighting over harsh, cool tones. In our sample, 85% of the videos used soft warm hues, while only 15% featured cool blue or neon lights. That bedside-lamp glow reduces screen glare, helping tired eyes settle before sleep.</p>
+    <p>Beyond lighting, creators may branch into distinct styles and scenes. Roughly two-thirds look directly into the lens for whispered talking or skincare roleplay, while 30% go faceless. Across both talking and no-talking formats, familiar props recur: makeup brushes, bamboo earpicks, silicone ears, sponges and long nails.</p>
   </div>
 
   <section class="story-scene scrolly showcase" id="scrolly-kit" data-chart="asmr_toolkit">
-    <h2 class="story-title" data-reveal>Moon of Words</h2>
     <div class="kit-scroll" id="kit-scroll">
       <div class="kit-pin">
+        <header class="pin-head">
+          <h2 class="story-title">Moon of Words</h2>
+        </header>
         <div class="chart-root" id="chart-asmr-toolkit"></div>
       </div>
     </div>
@@ -240,11 +251,13 @@
   </article>
 
   <section class="story-scene scrolly showcase" id="scrolly-3" data-chart="creators_yt">
-    <h2 class="story-title" data-reveal>Who Makes It</h2>
-    <p class="story-key" data-reveal>Cluster area = top 5% creators' video share · Hover to inspect</p>
-    <figure class="story-graphic stage story-graphic-creators" data-reveal>
+    <div class="chart-frame">
+    <h2 class="story-title">Who Makes It</h2>
+    <p class="story-key">Cluster area = top 5% creators' video share · Hover to inspect</p>
+    <figure class="story-graphic stage story-graphic-creators">
       <div class="chart-root" id="chart-creators-yt"></div>
     </figure>
+    </div>
   </section>
 
   <div class="editorial-split editorial-split--reverse">
@@ -253,11 +266,13 @@
       <p>For Grimshaw-Aagaard, silence helps videos cross borders. “A non-talking ASMR video is more neutral,” he says. “It doesn’t carry the gender of the speaker, their speech inflections, their accents, or their culture.” Chen cautions, however, that Chinese platforms also host countless eye-contact roleplay creators shaped by local algorithms.</p>
     </div>
     <section class="story-scene scrolly" id="scrolly-west" data-chart="west_vs_east">
-      <h2 class="story-title" data-reveal>West vs. East Asia</h2>
-      <p class="story-key" data-reveal>N = 40 videos · Amber = Western (80% talking) · Teal = East Asian (70% no talking)</p>
-      <figure class="story-graphic stage" data-reveal>
+      <div class="chart-frame">
+      <h2 class="story-title">West vs. East Asia</h2>
+      <p class="story-key">N = 40 videos · Amber = Western (80% talking) · Teal = East Asian (70% no talking)</p>
+      <figure class="story-graphic stage">
         <div class="chart-root" id="chart-west-east"></div>
       </figure>
+      </div>
       <p class="src-cap">TODO: source</p>
     </section>
   </div>
@@ -268,11 +283,13 @@
   </div>
 
   <section class="story-scene scrolly showcase" id="scrolly-gender" data-chart="gender_audience">
-    <h2 class="story-title" data-reveal>Who Creates Calm, and Who Listens</h2>
-    <p class="story-key" data-reveal>Top Creators (N = 71, FeedSpot 2026) vs. Global Listeners (N = 12,136, Deezer)</p>
-    <figure class="story-graphic stage" data-reveal>
+    <div class="chart-frame">
+    <h2 class="story-title">Who Creates Calm, and Who Listens</h2>
+    <p class="story-key">Top Creators (N = 71, FeedSpot 2026) vs. Global Listeners (N = 12,136, Deezer)</p>
+    <figure class="story-graphic stage">
       <div class="chart-root" id="chart-gender"></div>
     </figure>
+    </div>
     <p class="src-cap">TODO: source</p>
   </section>
 
@@ -350,7 +367,7 @@
   <script src="js/vendor/ScrollTrigger.min.js?v=20261127k"></script>
   <script src="js/iso.js?v=20261127k"></script>
   <script src="js/waveform.js?v=20261127k"></script>
-  <script src="js/motion.js?v=20261127k"></script>
+  <script src="js/motion.js?v=20261127z"></script>
   <script src="js/audio_player.js?v=20261127k"></script>
   <script type="module" src="js/main.js?v=20261127w"></script>
   <script src="js/intro_scene.js?v=20261127k"></script>
