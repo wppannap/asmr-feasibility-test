@@ -1,14 +1,14 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261127e";
-import { onSceneEnter } from "./charts/entrance.js?v=20261127e";
-import { themeColors } from "./theme.js?v=20261127e";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261127f";
+import { onSceneEnter } from "./charts/entrance.js?v=20261127f";
+import { themeColors } from "./theme.js?v=20261127f";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261127e";
+} from "./sections.js?v=20261127f";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -1920,6 +1920,10 @@ function initExtraCharts() {
     Promise.resolve(mod.render(host)).catch((err) => {
       host.dataset.bedError = String((err && err.message) || err);
     });
+  });
+  safeRender("scrolly-kit", "asmr_toolkit", (mod) => {
+    const host = document.getElementById("chart-asmr-toolkit");
+    if (host) chartApi.asmrToolkit = mod.render(host);
   });
   safeRender("scrolly-9", "upload_clock", (mod) => {
     if (!ytUpload) return;

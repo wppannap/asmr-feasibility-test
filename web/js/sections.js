@@ -12,6 +12,7 @@ export const ENABLED_SECTIONS = [
   "scrolly-onset",
   "scrolly-phones",
   "scrolly-bed",
+  "scrolly-kit",
   "scrolly-3",
 ];
 
@@ -27,12 +28,13 @@ export const ENABLED_DATA = {
 
 /** Chart module paths loaded only when the matching section id is enabled. */
 export const SECTION_CHART_MODULES = {
-  "scrolly-3": "./charts_yt/creators.js?v=20261127e",
-  "scrolly-5": "./charts_yt/duration.js?v=20261127e",
-  "scrolly-9": "./charts_yt/upload_clock.js?v=20261127e",
-  "scrolly-onset": "./charts/sleep_onset_wave.js?v=20261127e",
-  "scrolly-phones": "./charts/sound_samples.js?v=20261127e",
-  "scrolly-bed": "./charts/bedroom_heatmap.js?v=20261127e",
+  "scrolly-3": "./charts_yt/creators.js?v=20261127f",
+  "scrolly-5": "./charts_yt/duration.js?v=20261127f",
+  "scrolly-9": "./charts_yt/upload_clock.js?v=20261127f",
+  "scrolly-onset": "./charts/sleep_onset_wave.js?v=20261127f",
+  "scrolly-phones": "./charts/sound_samples.js?v=20261127f",
+  "scrolly-bed": "./charts/bedroom_heatmap.js?v=20261127f",
+  "scrolly-kit": "./charts/asmr_toolkit_cloud.js?v=20261127f",
 };
 
 /** Map caption notes (not hardcoded in HTML). */
