@@ -2149,6 +2149,18 @@ input[type="range"] {
 }
 .story-prose p { margin: 0 0 1.2rem; }
 .story-prose em { font-style: italic; }
+.story-prose a {
+  color: #f0ece3;
+  text-decoration-line: underline;
+  text-decoration-color: #f4a259;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+.story-prose a:hover,
+.story-prose a:focus-visible {
+  color: #f4a259;
+  text-decoration-color: #f0ece3;
+}
 
 .act { width: min(1180px, 94vw); margin: 5.5rem auto 1.2rem; }
 .act-header {
@@ -2228,12 +2240,15 @@ input[type="range"] {
 }
 .editorial-split .story-prose { max-width: none; margin: 0; }
 .editorial-split > #scrolly-9,
-.editorial-split > #scrolly-5 {
+.editorial-split > #scrolly-5,
+.editorial-split > #scrolly-bed,
+.editorial-split > #scrolly-west {
   width: 100%;
   max-width: none;
   margin: 0;
   padding: 0.5rem 0;
 }
+.editorial-split--tall { align-items: start; }
 .editorial-split .story-graphic,
 .editorial-split .chart-root,
 .editorial-split svg {
@@ -2246,7 +2261,8 @@ input[type="range"] {
 #scrolly-1,
 #scrolly-onset,
 #scrolly-kit,
-#scrolly-3 {
+#scrolly-3,
+#scrolly-gender {
   width: min(1240px, 94vw);
   max-width: 1280px;
 }
