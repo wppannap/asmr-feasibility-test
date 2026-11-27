@@ -28,6 +28,15 @@ function easeInOutCubic(t) {
   return p < 0.5 ? 4 * p * p * p : 1 - ((-2 * p + 2) ** 3) / 2;
 }
 
+function playhead(code) {
+  let h = 2166136261;
+  for (let i = 0; i < code.length; i += 1) {
+    h ^= code.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return 0.16 + ((h >>> 0) % 1000) / 1000 * 0.68;
+}
+
 /* warmth > 0 is warm (17/20). dim is video_lum < 75 (10/20). */
 function decorate(rows) {
   return rows.map((row) => ({
@@ -77,9 +86,9 @@ export async function render(container) {
 
   const cols = 5;
   const paneW = 150;
-  const paneH = 112;
-  const gapX = 28;
-  const gapY = 26;
+  const paneH = 84;
+  const gapX = 36;
+  const gapY = 40;
   const gridW = cols * paneW + (cols - 1) * gapX;
   const gridH = 4 * paneH + 3 * gapY;
   const originX = (1100 - gridW) / 2;
@@ -123,26 +132,76 @@ export async function render(container) {
       class: "nw-glass",
       width: paneW,
       height: paneH,
-      rx: 16,
+      rx: 7,
       fill: "url(#nw-fill-" + row.code + ")",
       stroke: "#f0ece3",
-      "stroke-opacity": "0.14",
-      "stroke-width": "1",
+      "stroke-opacity": "0.22",
+      "stroke-width": "1.2",
       "vector-effect": "non-scaling-stroke",
+    });
+    const sheen = el("line", {
+      class: "nw-sheen",
+      x1: 14,
+      x2: paneW - 14,
+      y1: 2.6,
+      y2: 2.6,
+      stroke: "#ffffff",
+      "stroke-width": "1",
+      "stroke-linecap": "round",
+      "stroke-opacity": "0.34",
+      "pointer-events": "none",
+    });
+    const barY = paneH - 11;
+    const barW = paneW - 16;
+    const played = playhead(row.code);
+    const hud = el("g", { class: "nw-hud", "pointer-events": "none" });
+    hud.appendChild(el("rect", {
+      class: "nw-track",
+      x: 8,
+      y: barY,
+      width: barW,
+      height: 2,
+      rx: 1,
+      fill: "#ffffff",
+      "fill-opacity": "0.22",
+    }));
+    hud.appendChild(el("rect", {
+      class: "nw-played",
+      x: 8,
+      y: barY,
+      width: (barW * played).toFixed(2),
+      height: 2,
+      rx: 1,
+      fill: "#ffffff",
+      "fill-opacity": "0.58",
+    }));
+    hud.appendChild(el("circle", {
+      class: "nw-scrub",
+      cx: (8 + barW * played).toFixed(2),
+      cy: barY + 1,
+      r: 1.1,
+      fill: "#ffffff",
+      "fill-opacity": "0.8",
+    }));
+    const play = el("path", {
+      class: "nw-play",
+      d: "M8 " + (paneH - 28) + " L8 " + (paneH - 18) + " L16.5 " + (paneH - 23) + " Z",
+      fill: "#ffffff",
+      "fill-opacity": "0.26",
     });
     const code = el("text", {
       class: "nw-code",
-      x: paneW - 12,
-      y: paneH - 12,
-      "text-anchor": "end",
-      fill: "#f0ece3",
-      "font-size": "11",
-      "pointer-events": "none",
+      x: 8,
+      y: 13,
+      fill: "#ffffff",
+      "font-size": "9",
+      "fill-opacity": "0.45",
     });
     code.textContent = row.code;
-    g.append(halo, glass, code);
+    hud.append(sheen, play, code);
+    g.append(halo, glass, hud);
     svg.appendChild(g);
-    return { row, g, halo, glass, code, lumT, stopCore, stopMid, stopEdge };
+    return { row, g, halo, glass, hud, play, lumT, stopCore, stopMid, stopEdge };
   });
 
   const legend = el("text", {
@@ -236,7 +295,10 @@ export async function render(container) {
       win.stopMid.setAttribute("stop-opacity", midOp);
       win.stopEdge.setAttribute("stop-color", color);
       win.stopEdge.setAttribute("stop-opacity", edgeOp);
-      win.code.setAttribute("opacity", win === hot ? "0.86" : "0");
+      const hudOp = 0.45 + 0.55 * level;
+      win.hud.setAttribute("opacity", hudOp.toFixed(3));
+      win.play.setAttribute("fill-opacity", win === hot ? "0.9" : "0.26");
+      win.glass.setAttribute("stroke-opacity", ((win === hot ? 0.62 : 0.22) * (0.62 + 0.38 * level)).toFixed(3));
     });
   }
 
