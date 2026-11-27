@@ -1,52 +1,12 @@
-/* The ASMR Toolkit — packed editorial word cloud. No buttons, no visible percentages. */
-import { motionApi } from "./entrance.js?v=20261127k";
-
+/* Moon of Words. Layout is precomputed. Scroll and pointer only. No buttons. */
 const SVG_NS = "http://www.w3.org/2000/svg";
-const GROUPS = {
-  craft: { color: "#f4a259", label: "Visual craft" },
-  format: { color: "#f0ece3", label: "Formats" },
-  prop: { color: "#56c2d6", label: "Props & triggers" },
+const COLOR = {
+  "visual craft": "#f4a259",
+  formats: "#f0ece3",
+  "props and triggers": "#56c2d6",
+  other: "#c4bba8",
 };
-
-const TERMS = [
-  { name: "WHISPERING", size: 70, group: "format", note: "55% overall — 80% of Western sample vs. 30% East Asian" },
-  { name: "NO TALKING", size: 62, group: "format", note: "45% overall — 70% of East Asian sample vs. 20% Western" },
-  { name: "EAR CLEANING", size: 54, group: "format", note: "55% of East Asian sample vs. 5% Western" },
-  { name: "TAPPING", size: 42, group: "prop", vertical: true, note: "Rhythmic prop tapping — 25% East Asian, 20% Western" },
-  { name: "ROLEPLAY", size: 40, group: "format", note: "Idealised caregiving scenarios: clinic, salon, skincare" },
-  { name: "PERSONAL ATTENTION", size: 38, group: "format", note: "35% of Western sample vs. 10% East Asian" },
-  { name: "WARM LIGHTING", size: 36, group: "craft", note: "85% (17/20) use warm bedside colour temperature" },
-  { name: "MAKEUP BRUSHES", size: 34, group: "prop", vertical: true, note: "Soft facial & mic brushing for tactile immersion" },
-  { name: "3DIO MIC", size: 32, group: "prop", note: "Silicone binaural ear mic mimicking human skull acoustics" },
-  { name: "SCRATCHING", size: 30, group: "prop", vertical: true, note: "High-frequency texture trigger in early attention-anchor phase" },
-  { name: "EYE CONTACT", size: 28, group: "craft", vertical: true, note: "65% (13/20) frame full-face direct gaze for companionship" },
-  { name: "FAST & AGGRESSIVE", size: 24, group: "format", note: "25% of Western sample vs. 10% East Asian" },
-  { name: "LOCKED CAMERA", size: 23, group: "craft", note: "70% (14/20) lock camera & lighting steady throughout" },
-  { name: "BRIGHTER COVER", size: 22, group: "craft", note: "75% (15/20) use a brighter thumbnail than in-video frames" },
-  { name: "COVER TEXT HOOK", size: 21, group: "craft", note: "45% (9/20) use bold cover text to pull clicks, then clear screen" },
-  { name: "FACELESS MACRO", size: 20, group: "craft", note: "30% (6/20) show hands & props only, zero face" },
-  { name: "SILICONE EARS", size: 20, group: "prop", note: "Close-up ear-canal visual & spatial trigger" },
-  { name: "LAYERED SOUNDS", size: 19, group: "prop", note: "Hand movements layered with mouth sounds for peak retention" },
-  { name: "SNOW BAG", size: 18, group: "prop", note: "Soft continuous rustling favoured near sleep onset" },
-  { name: "SPONGES", size: 17, group: "prop", note: "Soft low-frequency tactile cushioning" },
-  { name: "BAMBOO EARPICK", size: 17, group: "prop", note: "Signature East Asian ear-care prop" },
-  { name: "LENS TOUCH", size: 16, group: "prop", vertical: true, note: "Direct POV hand-to-camera touch for personal attention" },
-  { name: "LONG NAILS", size: 16, group: "prop", vertical: true, note: "Crisp nail tapping & scratching on hard surfaces" },
-  { name: "HAIR BRUSHING", size: 15, group: "prop", note: "Soft facial & mic brushing for tactile immersion" },
-  { name: "MOUTH SOUNDS", size: 15, group: "format", note: "Hand movements layered with mouth sounds for peak retention" },
-  { name: "BEDROOM GLOW", size: 14, group: "craft", note: "85% (17/20) use warm bedside colour temperature" },
-  { name: "SOFT SPOKEN", size: 14, group: "format", note: "Quiet speech beside whispering — heavier in the Western sample" },
-  { name: "BRUSHING", size: 14, group: "prop", vertical: true, note: "Soft facial & mic brushing for tactile immersion" },
-  { name: "WHISPER GOODBYE", size: 13, group: "format", note: "Closing whisper after the main trigger run" },
-  { name: "PICKING PAD", size: 13, group: "prop", note: "Early ear-care prop in the attention-anchor phase" },
-  { name: "SKINCARE", size: 13, group: "format", vertical: true, note: "Idealised caregiving scenarios: clinic, salon, skincare" },
-  { name: "FLUFFY MIC", size: 13, group: "craft", vertical: true, note: "65% (13/20) place mics or ear models on-screen to visualize sound" },
-  { name: "FOAM", size: 12, group: "prop", vertical: true, note: "Soft low-frequency tactile cushioning" },
-  { name: "CRINKLE", size: 12, group: "prop", vertical: true, note: "Soft continuous rustling favoured near sleep onset" },
-  { name: "BINAURAL", size: 12, group: "prop", vertical: true, note: "Dummy-head mic placed for a close spatial ear cue" },
-  { name: "COUNTING", size: 12, group: "format", vertical: true, note: "Slow counted cues used as a sleep-onset closer" },
-  { name: "VERBAL WHITE NOISE", size: 12, group: "format", note: "Soft spoken texture favoured near sleep onset" },
-];
+const WAVES = ["formats", "props and triggers", "visual craft", "other"];
 
 function el(name, attrs) {
   const node = document.createElementNS(SVG_NS, name);
@@ -54,231 +14,199 @@ function el(name, attrs) {
   return node;
 }
 
-function depth(size) {
-  if (size >= 28) return 1;
-  if (size >= 18) return 0.92;
-  if (size >= 14) return 0.84;
-  return 0.72;
+function clamp(v) {
+  return v < 0 ? 0 : v > 1 ? 1 : v;
 }
 
-function hit(a, ax, ay, b, pad) {
-  return Math.abs(ax - b.x) < (a.bw + b.bw) / 2 + pad
-    && Math.abs(ay - b.y) < (a.bh + b.bh) / 2 + pad;
-}
-
-function pack(words) {
-  const placed = [];
-  words.forEach((word) => {
-    if (!placed.length) {
-      word.x = 0;
-      word.y = 0;
-      placed.push(word);
-      return;
-    }
-    let theta = 0;
-    let seated = false;
-    for (let i = 0; i < 9000; i += 1) {
-      theta += 0.16;
-      const radius = 0.42 * theta;
-      const x = Math.cos(theta) * radius;
-      const y = Math.sin(theta) * radius * 0.78;
-      if (placed.every((other) => !hit(word, x, y, other, 4))) {
-        word.x = x;
-        word.y = y;
-        seated = true;
-        break;
-      }
-    }
-    if (!seated) {
-      word.x = 0;
-      word.y = placed.length * (word.bh + 8);
-    }
-    placed.push(word);
-  });
-}
-
-export function render(container) {
+export async function render(container) {
   if (!container) return;
-  if (container._kitUnlisten) container._kitUnlisten();
+  if (container._moonStop) container._moonStop();
   container.replaceChildren();
-  container.classList.add("kit-root");
+  container.classList.add("moon-stage");
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const narrow = window.matchMedia("(max-width: 820px)").matches;
+  const [layout, termsDoc] = await Promise.all([
+    d3.json("data/toolkit_layout.json?v=20261127n"),
+    d3.json("data/toolkit_terms.json?v=20261127n"),
+  ]);
+  const counts = new Map(termsDoc.terms.map((row) => [row.term, row.n_videos]));
+  const words = layout.words.filter((word) => !narrow || word.size >= 9);
+  const W = layout.meta.width;
+  const H = layout.meta.height;
+
+  words.forEach((word) => {
+    const mates = words.filter((other) => other.group === word.group && !other.star);
+    const inner = Math.max(...mates.map((other) => other.x), word.x);
+    const outer = Math.min(...mates.map((other) => other.x), word.x);
+    word.rank = inner === outer ? 0 : (inner - word.x) / (inner - outer);
+  });
 
   const svg = el("svg", {
-    class: "kit-svg",
+    class: "moon-svg",
+    viewBox: "0 0 " + W + " " + H,
     role: "img",
-    "aria-label": "ASMR toolkit terms packed as a word cloud",
+    "aria-label": "A crescent of ASMR terms",
   });
-  container.appendChild(svg);
+  const outline = el("g", { class: "moon-outline", fill: "none", stroke: "#98a4be", "stroke-width": "1.25" });
+  outline.appendChild(el("circle", { cx: 980, cy: 700, r: 560 }));
+  outline.appendChild(el("circle", { cx: 1210, cy: 700, r: 590, "stroke-opacity": "0.45" }));
+  svg.appendChild(outline);
 
-  const words = TERMS.map((term) => {
+  const nodes = words.map((word, i) => {
     const text = el("text", {
-      class: "kit-label",
-      "text-anchor": "middle",
-      "dominant-baseline": "middle",
+      class: "moon-word",
+      x: word.x,
+      y: word.y,
+      fill: COLOR[word.group] || COLOR.other,
+      "font-size": word.size,
+      "font-family": "var(--font-ui), sans-serif",
+      "font-weight": word.size >= 28 ? "700" : "500",
     });
-    text.textContent = term.name;
-    text.style.fontSize = term.size + "px";
-    text.style.fontWeight = term.size >= 28 ? "700" : "500";
+    text.textContent = word.term;
+    if (word.rotation) text.setAttribute("transform", "rotate(-90 " + word.x + " " + word.y + ")");
+    text.style.opacity = "0";
     svg.appendChild(text);
-    const box = text.getBBox();
-    const bw = term.vertical ? box.height : box.width;
-    const bh = term.vertical ? box.width : box.height;
-    return Object.assign({}, term, { text, bw, bh, x: 0, y: 0 });
+    return { word, text, i };
   });
 
-  pack(words);
-
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  words.forEach((word) => {
-    minX = Math.min(minX, word.x - word.bw / 2);
-    minY = Math.min(minY, word.y - word.bh / 2);
-    maxX = Math.max(maxX, word.x + word.bw / 2);
-    maxY = Math.max(maxY, word.y + word.bh / 2);
+  const legend = el("g", { class: "moon-legend", transform: "translate(36 " + (H - 72) + ")" });
+  [["#f4a259", "Craft"], ["#f0ece3", "Formats"], ["#56c2d6", "Props"]].forEach((item, i) => {
+    legend.appendChild(el("circle", { cx: i * 118, cy: 0, r: 5, fill: item[0] }));
+    const label = el("text", {
+      x: i * 118 + 12, y: 4, fill: "#f0ece3", "font-size": 16, "font-family": "var(--font-ui), sans-serif",
+    });
+    label.textContent = item[1];
+    legend.appendChild(label);
   });
-  const margin = 10;
-  svg.setAttribute("viewBox", [
-    (minX - margin).toFixed(1),
-    (minY - margin).toFixed(1),
-    (maxX - minX + margin * 2).toFixed(1),
-    (maxY - minY + margin * 2).toFixed(1),
-  ].join(" "));
-
-  const pops = [];
-  words.forEach((word) => {
-    const color = GROUPS[word.group].color;
-    const wrap = el("g", { transform: "translate(" + word.x.toFixed(1) + " " + word.y.toFixed(1) + ")" });
-    const pop = el("g", { class: "kit-word" });
-    pop.style.setProperty("--o", String(depth(word.size)));
-    pop.dataset.note = word.note;
-    pop.dataset.name = word.name;
-    pop.dataset.group = GROUPS[word.group].label;
-    word.text.setAttribute("fill", color);
-    word.text.style.color = color;
-    if (word.vertical) word.text.setAttribute("transform", "rotate(-90)");
-    pop.appendChild(word.text);
-    wrap.appendChild(pop);
-    svg.appendChild(wrap);
-    word.pop = pop;
-    pops.push(pop);
-  });
+  svg.appendChild(legend);
 
   const tip = document.createElement("div");
-  tip.className = "kit-tip";
+  tip.className = "moon-tip";
   tip.hidden = true;
-  container.appendChild(tip);
 
-  function hideTip() {
-    tip.hidden = true;
-    svg.classList.remove("is-hot");
-    svg.querySelectorAll(".kit-word.is-on").forEach((node) => node.classList.remove("is-on"));
-  }
-
-  function spotlight(node, event) {
-    svg.classList.add("is-hot");
-    svg.querySelectorAll(".kit-word.is-on").forEach((el) => el.classList.remove("is-on"));
-    node.classList.add("is-on");
-    tip.replaceChildren();
-    [node.dataset.name, node.dataset.group, node.dataset.note].forEach((line, i) => {
-      const p = document.createElement("p");
-      p.textContent = line;
-      if (i === 0) p.className = "kit-tip-name";
-      tip.appendChild(p);
-    });
-    tip.hidden = false;
-    tip.style.left = "0px";
-    tip.style.top = "0px";
-    const rect = tip.getBoundingClientRect();
-    const ax = event && event.clientX ? event.clientX : node.getBoundingClientRect().left;
-    const ay = event && event.clientY ? event.clientY : node.getBoundingClientRect().bottom;
-    let left = ax + 14;
-    let top = ay + 16;
-    if (left + rect.width > window.innerWidth - 8) left = ax - rect.width - 14;
-    if (top + rect.height > window.innerHeight - 8) top = ay - rect.height - 12;
-    tip.style.left = Math.max(8, left) + "px";
-    tip.style.top = Math.max(8, top) + "px";
-  }
-
-  pops.forEach((node) => {
-    node.addEventListener("pointerenter", (event) => spotlight(node, event));
-    node.addEventListener("pointermove", (event) => spotlight(node, event));
-    node.addEventListener("pointerleave", hideTip);
+  const table = document.createElement("table");
+  table.className = "sr-only";
+  const cap = document.createElement("caption");
+  cap.textContent = "Top toolkit terms";
+  const head = document.createElement("thead");
+  const hr = document.createElement("tr");
+  ["Term", "Videos"].forEach((label) => {
+    const th = document.createElement("th");
+    th.textContent = label;
+    hr.appendChild(th);
   });
-
-  arm(container, svg, words, hideTip);
-  container._kitUnlisten = () => {
-    if (container._kitScroll) container._kitScroll();
-  };
-}
-
-function arm(container, svg, words, hideTip) {
-  const pops = words.map((word) => word.pop);
-  const api = motionApi();
-  if (!api) {
-    svg.style.opacity = "1";
-    pops.forEach((node) => {
-      node.style.opacity = "";
-      node.style.transform = "";
+  head.appendChild(hr);
+  const body = document.createElement("tbody");
+  termsDoc.terms.slice(0, 100).forEach((row) => {
+    const tr = document.createElement("tr");
+    [row.term, String(row.n_videos)].forEach((cell) => {
+      const td = document.createElement("td");
+      td.textContent = cell;
+      tr.appendChild(td);
     });
-    return;
+    body.appendChild(tr);
+  });
+  table.append(cap, head, body);
+  container.append(svg, tip, table);
+
+  let pointer = null;
+  function toSvg(event) {
+    const rect = svg.getBoundingClientRect();
+    if (!rect.width) return null;
+    return {
+      x: ((event.clientX - rect.left) / rect.width) * W,
+      y: ((event.clientY - rect.top) / rect.height) * H,
+      sx: event.clientX,
+      sy: event.clientY,
+    };
   }
-  const { gsap } = api;
-  const ordered = words.slice().sort((a, b) => (a.x * a.x + a.y * a.y) - (b.x * b.x + b.y * b.y));
-  const sequence = ordered.map((word) => word.pop);
-  gsap.set(svg, { opacity: 0 });
-  gsap.set(sequence, { opacity: 0, scale: 0.85, transformOrigin: "50% 50%" });
+  svg.addEventListener("pointermove", (event) => { pointer = toSvg(event); });
+  svg.addEventListener("pointerdown", (event) => { pointer = toSvg(event); });
+  svg.addEventListener("pointerleave", () => { pointer = null; tip.hidden = true; });
 
-  const trigger = container.closest(".story-scene") || container;
-  let shown = false;
-  let ticking = false;
+  const track = container.closest(".kit-scroll");
+  let running = true;
 
-  function inView() {
-    const r = trigger.getBoundingClientRect();
-    const vh = window.innerHeight || 1;
-    return r.top < vh * 0.86 && r.bottom > vh * 0.14;
+  function revealOf(word, p) {
+    const gi = Math.max(0, WAVES.indexOf(word.group));
+    const slot = 0.75 / WAVES.length;
+    const start = 0.05 + gi * slot;
+    const local = clamp((p - start) / (slot * 0.9));
+    return clamp((local - word.rank * 0.5) / 0.5);
   }
 
-  function playIn() {
-    if (shown) return;
-    shown = true;
-    gsap.to(svg, { opacity: 1, duration: 0.25, overwrite: "auto" });
-    gsap.fromTo(sequence, { opacity: 0, scale: 0.85 }, {
-      opacity: 1,
-      scale: 1,
-      duration: 0.32,
-      stagger: 0.014,
-      ease: "power2.out",
-      transformOrigin: "50% 50%",
-      overwrite: "auto",
-      clearProps: "opacity,scale,transform",
+  function apply(p, now) {
+    container.style.setProperty("--p", p.toFixed(4));
+    let nearest = null;
+    nodes.forEach((node) => {
+      const shown = reduced ? 1 : revealOf(node.word, p);
+      let opacity = shown;
+      let scale = 1;
+      if (pointer && shown > 0.35) {
+        const dx = pointer.x - node.word.x;
+        const dy = pointer.y - node.word.y;
+        const dist = Math.hypot(dx, dy) * (svg.getBoundingClientRect().width / W);
+        if (nearest == null || dist < nearest.dist) nearest = { dist, node, sx: pointer.sx, sy: pointer.sy };
+        if (dist < 90) {
+          opacity = 1;
+          scale = 1.2;
+        } else if (nearest && false) {
+          opacity = shown;
+        }
+      }
+      node.text.style.opacity = opacity.toFixed(3);
+      node._scale = scale;
+      node._shown = shown;
     });
+    if (pointer) {
+      nodes.forEach((node) => {
+        if (node._shown < 0.35) return;
+        const hit = nearest && nearest.dist < 90 && nearest.node.word.group === node.word.group;
+        const self = nearest && nearest.node === node && nearest.dist < 90;
+        if (self) node.text.style.opacity = "1";
+        else if (nearest && nearest.dist < 90) node.text.style.opacity = hit ? "0.8" : "0.35";
+      });
+    }
+    nodes.forEach((node) => {
+      let dx = 0;
+      let dy = 0;
+      if (!reduced && p > 0.85 && node._shown > 0.8) {
+        const period = 8000 + (node.i % 5) * 800;
+        dx = Math.sin((now / period) * Math.PI * 2) * 2;
+        dy = Math.cos((now / (period + 600)) * Math.PI * 2) * 2;
+      }
+      const sc = node._scale || 1;
+      const rot = node.word.rotation ? " rotate(-90)" : "";
+      node.text.setAttribute(
+        "transform",
+        "translate(" + dx.toFixed(2) + " " + dy.toFixed(2) + ") translate(" + node.word.x + " " + node.word.y + ") scale(" + sc.toFixed(3) + ")" + rot + " translate(" + (-node.word.x) + " " + (-node.word.y) + ")"
+      );
+    });
+    if (nearest && nearest.dist < 90) {
+      const n = counts.get(nearest.node.word.term) || 0;
+      tip.textContent = nearest.node.word.term + " - " + n + " videos";
+      tip.hidden = false;
+      tip.style.left = Math.min(window.innerWidth - 160, nearest.sx + 14) + "px";
+      tip.style.top = Math.max(8, nearest.sy - 28) + "px";
+    } else {
+      tip.hidden = true;
+    }
   }
 
-  function playOut() {
-    if (!shown) return;
-    shown = false;
-    hideTip();
-    gsap.killTweensOf(sequence);
-    gsap.to(svg, { opacity: 0, duration: 0.32, overwrite: "auto" });
+  function progress() {
+    if (!track) return reduced ? 1 : 0;
+    const rect = track.getBoundingClientRect();
+    const total = track.offsetHeight - window.innerHeight;
+    if (total <= 1) return 0;
+    return clamp(-rect.top / total);
   }
 
-  function tick() {
-    ticking = false;
-    if (inView()) playIn();
-    else playOut();
+  function frame(now) {
+    if (!running) return;
+    apply(reduced ? 1 : progress(), now);
+    if (!reduced) requestAnimationFrame(frame);
   }
-  function request() {
-    if (ticking) return;
-    ticking = true;
-    requestAnimationFrame(tick);
-  }
-  window.addEventListener("scroll", request, { passive: true });
-  window.addEventListener("resize", request, { passive: true });
-  container._kitScroll = () => {
-    window.removeEventListener("scroll", request);
-    window.removeEventListener("resize", request);
-  };
-  request();
+  if (reduced) apply(1, performance.now());
+  else requestAnimationFrame(frame);
+  container._moonStop = () => { running = false; };
 }

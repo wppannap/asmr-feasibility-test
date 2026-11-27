@@ -1,0 +1,1620 @@
+{
+ "meta": {
+  "source_files": [
+   "yt_master.csv",
+   "yt_classes_v32.csv"
+  ],
+  "generated_at": "2026-11-27T03:33:21Z",
+  "caveats": [
+   "Strict rule: class_strict asmr_labelled. Tags for every script; Latin titles add words and 2-grams. CJK uses tags only.",
+   "Kept terms have at least 150 videos and 20 channels. If more pass, the 320 with the most videos are kept. n_videos is rounded to 2 significant digits. No channel ids or names.",
+   "Aliases merged with config/trigger_canonical.yaml. Ambient-noise lexicon dropped."
+  ],
+  "rules": "strict",
+  "n_terms": 320,
+  "min_videos": 150,
+  "min_channels": 20
+ },
+ "terms": [
+  {
+   "term": "sleep",
+   "n_videos": 26000,
+   "group": "formats"
+  },
+  {
+   "term": "tingles",
+   "n_videos": 16000,
+   "group": "formats"
+  },
+  {
+   "term": "whisper",
+   "n_videos": 13000,
+   "group": "formats"
+  },
+  {
+   "term": "satisfying",
+   "n_videos": 12000,
+   "group": "formats"
+  },
+  {
+   "term": "triggers",
+   "n_videos": 12000,
+   "group": "formats"
+  },
+  {
+   "term": "relax",
+   "n_videos": 11000,
+   "group": "formats"
+  },
+  {
+   "term": "tapping",
+   "n_videos": 11000,
+   "group": "props and triggers"
+  },
+  {
+   "term": "roleplay",
+   "n_videos": 11000,
+   "group": "formats"
+  },
+  {
+   "term": "mukbang",
+   "n_videos": 11000,
+   "group": "props and triggers"
+  },
+  {
+   "term": "massage",
+   "n_videos": 8600,
+   "group": "props and triggers"
+  },
+  {
+   "term": "mouth",
+   "n_videos": 8400,
+   "group": "props and triggers"
+  },
+  {
+   "term": "mouth sounds",
+   "n_videos": 8100,
+   "group": "props and triggers"
+  },
+  {
+   "term": "relaxation",
+   "n_videos": 8000,
+   "group": "formats"
+  },
+  {
+   "term": "whispering",
+   "n_videos": 7800,
+   "group": "formats"
+  },
+  {
+   "term": "attention",
+   "n_videos": 7500,
+   "group": "formats"
+  },
+  {
+   "term": "ear",
+   "n_videos": 7200,
+   "group": "props and triggers"
+  },
+  {
+   "term": "scratching",
+   "n_videos": 7100,
+   "group": "props and triggers"
+  },
+  {
+   "term": "personal",
+   "n_videos": 7100,
+   "group": "formats"
+  },
+  {
+   "term": "spoken",
+   "n_videos": 6900,
+   "group": "formats"
+  },
+  {
+   "term": "soft spoken",
+   "n_videos": 6800,
+   "group": "formats"
+  },
+  {
+   "term": "personal attention",
+   "n_videos": 6600,
+   "group": "formats"
+  },
+  {
+   "term": "brushing",
+   "n_videos": 5400,
+   "group": "props and triggers"
+  },
+  {
+   "term": "slime",
+   "n_videos": 4100,
+   "group": "props and triggers"
+  },
+  {
+   "term": "hair",
+   "n_videos": 3800,
+   "group": "props and triggers"
+  },
+  {
+   "term": "mic",
+   "n_videos": 3700,
+   "group": "props and triggers"
+  },
+  {
+   "term": "eating sounds",
+   "n_videos": 3600,
+   "group": "other"
+  },
+  {
+   "term": "ear cleaning",
+   "n_videos": 3600,
+   "group": "props and triggers"
+  },
+  {
+   "term": "oddly satisfying",
+   "n_videos": 3200,
+   "group": "formats"
+  },
+  {
+   "term": "eating show",
+   "n_videos": 3200,
+   "group": "other"
+  },
+  {
+   "term": "trigger",
+   "n_videos": 3100,
+   "group": "formats"
+  },
+  {
+   "term": "stress relief",
+   "n_videos": 2900,
+   "group": "other"
+  },
+  {
+   "term": "mukbang eating",
+   "n_videos": 2800,
+   "group": "props and triggers"
+  },
+  {
+   "term": "sleep aid",
+   "n_videos": 2500,
+   "group": "formats"
+  },
+  {
+   "term": "unboxing",
+   "n_videos": 2500,
+   "group": "props and triggers"
+  },
+  {
+   "term": "deep sleep",
+   "n_videos": 2400,
+   "group": "formats"
+  },
+  {
+   "term": "sounds sleep",
+   "n_videos": 2400,
+   "group": "formats"
+  },
+  {
+   "term": "visual",
+   "n_videos": 2400,
+   "group": "visual craft"
+  },
+  {
+   "term": "hand movements",
+   "n_videos": 2300,
+   "group": "other"
+  },
+  {
+   "term": "sleep relaxation",
+   "n_videos": 2200,
+   "group": "formats"
+  },
+  {
+   "term": "relaxing sounds",
+   "n_videos": 2200,
+   "group": "other"
+  },
+  {
+   "term": "fast aggressive",
+   "n_videos": 2200,
+   "group": "other"
+  },
+  {
+   "term": "chewing",
+   "n_videos": 2100,
+   "group": "props and triggers"
+  },
+  {
+   "term": "nails",
+   "n_videos": 2100,
+   "group": "props and triggers"
+  },
+  {
+   "term": "tapping scratching",
+   "n_videos": 2100,
+   "group": "props and triggers"
+  },
+  {
+   "term": "satisfying slime",
+   "n_videos": 2000,
+   "group": "props and triggers"
+  },
+  {
+   "term": "food eating",
+   "n_videos": 1900,
+   "group": "other"
+  },
+  {
+   "term": "eating mukbang",
+   "n_videos": 1900,
+   "group": "props and triggers"
+  },
+  {
+   "term": "typing",
+   "n_videos": 1800,
+   "group": "props and triggers"
+  },
+  {
+   "term": "food mukbang",
+   "n_videos": 1800,
+   "group": "props and triggers"
+  },
+  {
+   "term": "tingles sleep",
+   "n_videos": 1800,
+   "group": "formats"
+  },
+  {
+   "term": "sleep relaxing",
+   "n_videos": 1700,
+   "group": "formats"
+  },
+  {
+   "term": "massage sleep",
+   "n_videos": 1700,
+   "group": "props and triggers"
+  },
+  {
+   "term": "meditation",
+   "n_videos": 1700,
+   "group": "formats"
+  },
+  {
+   "term": "sleep tingles",
+   "n_videos": 1600,
+   "group": "formats"
+  },
+  {
+   "term": "fall asleep",
+   "n_videos": 1600,
+   "group": "other"
+  },
+  {
+   "term": "sleep relax",
+   "n_videos": 1600,
+   "group": "formats"
+  },
+  {
+   "term": "head massage",
+   "n_videos": 1600,
+   "group": "props and triggers"
+  },
+  {
+   "term": "relax sleep",
+   "n_videos": 1600,
+   "group": "formats"
+  },
+  {
+   "term": "relaxing sleep",
+   "n_videos": 1500,
+   "group": "formats"
+  },
+  {
+   "term": "tingles triggers",
+   "n_videos": 1500,
+   "group": "formats"
+  },
+  {
+   "term": "light",
+   "n_videos": 1500,
+   "group": "visual craft"
+  },
+  {
+   "term": "face touching",
+   "n_videos": 1400,
+   "group": "other"
+  },
+  {
+   "term": "hand sounds",
+   "n_videos": 1400,
+   "group": "other"
+  },
+  {
+   "term": "mukbang food",
+   "n_videos": 1400,
+   "group": "props and triggers"
+  },
+  {
+   "term": "sensory meridian",
+   "n_videos": 1300,
+   "group": "other"
+  },
+  {
+   "term": "autonomous sensory",
+   "n_videos": 1300,
+   "group": "other"
+  },
+  {
+   "term": "fran ais",
+   "n_videos": 1300,
+   "group": "other"
+  },
+  {
+   "term": "meridian response",
+   "n_videos": 1300,
+   "group": "other"
+  },
+  {
+   "term": "real person",
+   "n_videos": 1300,
+   "group": "other"
+  },
+  {
+   "term": "sleep talking",
+   "n_videos": 1300,
+   "group": "formats"
+  },
+  {
+   "term": "satisfying sounds",
+   "n_videos": 1300,
+   "group": "formats"
+  },
+  {
+   "term": "soap",
+   "n_videos": 1300,
+   "group": "props and triggers"
+  },
+  {
+   "term": "sounds mukbang",
+   "n_videos": 1200,
+   "group": "props and triggers"
+  },
+  {
+   "term": "satisfying relaxing",
+   "n_videos": 1200,
+   "group": "formats"
+  },
+  {
+   "term": "mic scratching",
+   "n_videos": 1200,
+   "group": "props and triggers"
+  },
+  {
+   "term": "layered sounds",
+   "n_videos": 1200,
+   "group": "other"
+  },
+  {
+   "term": "mukbang korean",
+   "n_videos": 1200,
+   "group": "props and triggers"
+  },
+  {
+   "term": "fast tapping",
+   "n_videos": 1200,
+   "group": "props and triggers"
+  },
+  {
+   "term": "slime satisfying",
+   "n_videos": 1200,
+   "group": "props and triggers"
+  },
+  {
+   "term": "sleep sounds",
+   "n_videos": 1200,
+   "group": "formats"
+  },
+  {
+   "term": "most satisfying",
+   "n_videos": 1200,
+   "group": "formats"
+  },
+  {
+   "term": "long nails",
+   "n_videos": 1200,
+   "group": "props and triggers"
+  },
+  {
+   "term": "relaxation sleep",
+   "n_videos": 1200,
+   "group": "formats"
+  },
+  {
+   "term": "sounds talking",
+   "n_videos": 1100,
+   "group": "other"
+  },
+  {
+   "term": "triggers sleep",
+   "n_videos": 1100,
+   "group": "formats"
+  },
+  {
+   "term": "relax relaxing",
+   "n_videos": 1100,
+   "group": "formats"
+  },
+  {
+   "term": "food challenge",
+   "n_videos": 1100,
+   "group": "other"
+  },
+  {
+   "term": "talking sleep",
+   "n_videos": 1100,
+   "group": "formats"
+  },
+  {
+   "term": "foam",
+   "n_videos": 1100,
+   "group": "props and triggers"
+  },
+  {
+   "term": "ear massage",
+   "n_videos": 1100,
+   "group": "props and triggers"
+  },
+  {
+   "term": "visual triggers",
+   "n_videos": 1100,
+   "group": "visual craft"
+  },
+  {
+   "term": "sleep triggers",
+   "n_videos": 1100,
+   "group": "formats"
+  },
+  {
+   "term": "anxiety relief",
+   "n_videos": 1100,
+   "group": "other"
+  },
+  {
+   "term": "sounds tapping",
+   "n_videos": 1100,
+   "group": "props and triggers"
+  },
+  {
+   "term": "making slime",
+   "n_videos": 1100,
+   "group": "props and triggers"
+  },
+  {
+   "term": "scalp massage",
+   "n_videos": 1100,
+   "group": "props and triggers"
+  },
+  {
+   "term": "sounds mouth",
+   "n_videos": 1100,
+   "group": "props and triggers"
+  },
+  {
+   "term": "tik tok",
+   "n_videos": 1000,
+   "group": "other"
+  },
+  {
+   "term": "eating food",
+   "n_videos": 990,
+   "group": "other"
+  },
+  {
+   "term": "bubble gum",
+   "n_videos": 970,
+   "group": "other"
+  },
+  {
+   "term": "blue yeti",
+   "n_videos": 960,
+   "group": "other"
+  },
+  {
+   "term": "hair play",
+   "n_videos": 950,
+   "group": "props and triggers"
+  },
+  {
+   "term": "cranial nerve",
+   "n_videos": 950,
+   "group": "other"
+  },
+  {
+   "term": "sounds eating",
+   "n_videos": 950,
+   "group": "other"
+  },
+  {
+   "term": "help sleep",
+   "n_videos": 940,
+   "group": "formats"
+  },
+  {
+   "term": "triggers tingles",
+   "n_videos": 930,
+   "group": "formats"
+  },
+  {
+   "term": "sounds relaxing",
+   "n_videos": 930,
+   "group": "other"
+  },
+  {
+   "term": "camera",
+   "n_videos": 900,
+   "group": "visual craft"
+  },
+  {
+   "term": "gum chewing",
+   "n_videos": 900,
+   "group": "props and triggers"
+  },
+  {
+   "term": "nerve exam",
+   "n_videos": 890,
+   "group": "other"
+  },
+  {
+   "term": "face brushing",
+   "n_videos": 890,
+   "group": "props and triggers"
+  },
+  {
+   "term": "satisfying oddly",
+   "n_videos": 860,
+   "group": "formats"
+  },
+  {
+   "term": "trigger words",
+   "n_videos": 850,
+   "group": "formats"
+  },
+  {
+   "term": "sounds satisfying",
+   "n_videos": 850,
+   "group": "formats"
+  },
+  {
+   "term": "massage head",
+   "n_videos": 840,
+   "group": "props and triggers"
+  },
+  {
+   "term": "whisper whispering",
+   "n_videos": 830,
+   "group": "formats"
+  },
+  {
+   "term": "eating satisfying",
+   "n_videos": 820,
+   "group": "formats"
+  },
+  {
+   "term": "close mouth",
+   "n_videos": 810,
+   "group": "props and triggers"
+  },
+  {
+   "term": "aggressive fast",
+   "n_videos": 810,
+   "group": "other"
+  },
+  {
+   "term": "mic brushing",
+   "n_videos": 790,
+   "group": "props and triggers"
+  },
+  {
+   "term": "massage deep",
+   "n_videos": 780,
+   "group": "props and triggers"
+  },
+  {
+   "term": "soap cutting",
+   "n_videos": 780,
+   "group": "props and triggers"
+  },
+  {
+   "term": "korean food",
+   "n_videos": 770,
+   "group": "other"
+  },
+  {
+   "term": "sounds fast",
+   "n_videos": 770,
+   "group": "other"
+  },
+  {
+   "term": "relief anxiety",
+   "n_videos": 760,
+   "group": "other"
+  },
+  {
+   "term": "back massage",
+   "n_videos": 760,
+   "group": "props and triggers"
+  },
+  {
+   "term": "brain melting",
+   "n_videos": 750,
+   "group": "other"
+  },
+  {
+   "term": "tapping talking",
+   "n_videos": 740,
+   "group": "props and triggers"
+  },
+  {
+   "term": "deep relaxation",
+   "n_videos": 740,
+   "group": "formats"
+  },
+  {
+   "term": "sleep mouth",
+   "n_videos": 730,
+   "group": "props and triggers"
+  },
+  {
+   "term": "skin",
+   "n_videos": 730,
+   "group": "props and triggers"
+  },
+  {
+   "term": "seafood mukbang",
+   "n_videos": 730,
+   "group": "props and triggers"
+  },
+  {
+   "term": "relaxing relaxation",
+   "n_videos": 720,
+   "group": "formats"
+  },
+  {
+   "term": "sleep inducing",
+   "n_videos": 720,
+   "group": "formats"
+  },
+  {
+   "term": "seafood boil",
+   "n_videos": 720,
+   "group": "other"
+  },
+  {
+   "term": "water",
+   "n_videos": 700,
+   "group": "props and triggers"
+  },
+  {
+   "term": "relax tingles",
+   "n_videos": 700,
+   "group": "formats"
+  },
+  {
+   "term": "eating spicy",
+   "n_videos": 700,
+   "group": "other"
+  },
+  {
+   "term": "mukbang seafood",
+   "n_videos": 700,
+   "group": "props and triggers"
+  },
+  {
+   "term": "relaxing tingles",
+   "n_videos": 690,
+   "group": "formats"
+  },
+  {
+   "term": "gloves",
+   "n_videos": 690,
+   "group": "props and triggers"
+  },
+  {
+   "term": "triggers fast",
+   "n_videos": 680,
+   "group": "formats"
+  },
+  {
+   "term": "tapping fast",
+   "n_videos": 670,
+   "group": "props and triggers"
+  },
+  {
+   "term": "roleplay sleep",
+   "n_videos": 670,
+   "group": "formats"
+  },
+  {
+   "term": "crinkle",
+   "n_videos": 660,
+   "group": "props and triggers"
+  },
+  {
+   "term": "sleep massage",
+   "n_videos": 660,
+   "group": "props and triggers"
+  },
+  {
+   "term": "how make",
+   "n_videos": 660,
+   "group": "other"
+  },
+  {
+   "term": "soft speaking",
+   "n_videos": 650,
+   "group": "other"
+  },
+  {
+   "term": "spoken soft",
+   "n_videos": 650,
+   "group": "formats"
+  },
+  {
+   "term": "cleaning ear",
+   "n_videos": 650,
+   "group": "props and triggers"
+  },
+  {
+   "term": "eye exam",
+   "n_videos": 650,
+   "group": "other"
+  },
+  {
+   "term": "food cooking",
+   "n_videos": 650,
+   "group": "other"
+  },
+  {
+   "term": "sleep tapping",
+   "n_videos": 640,
+   "group": "props and triggers"
+  },
+  {
+   "term": "doing makeup",
+   "n_videos": 640,
+   "group": "other"
+  },
+  {
+   "term": "rain",
+   "n_videos": 640,
+   "group": "props and triggers"
+  },
+  {
+   "term": "tapping sleep",
+   "n_videos": 640,
+   "group": "props and triggers"
+  },
+  {
+   "term": "sleep deep",
+   "n_videos": 630,
+   "group": "formats"
+  },
+  {
+   "term": "face massage",
+   "n_videos": 620,
+   "group": "props and triggers"
+  },
+  {
+   "term": "brushing face",
+   "n_videos": 610,
+   "group": "props and triggers"
+  },
+  {
+   "term": "glow",
+   "n_videos": 610,
+   "group": "visual craft"
+  },
+  {
+   "term": "close whispers",
+   "n_videos": 600,
+   "group": "other"
+  },
+  {
+   "term": "sounds food",
+   "n_videos": 600,
+   "group": "other"
+  },
+  {
+   "term": "meditation sleep",
+   "n_videos": 600,
+   "group": "formats"
+  },
+  {
+   "term": "sleep hypnosis",
+   "n_videos": 590,
+   "group": "formats"
+  },
+  {
+   "term": "fast triggers",
+   "n_videos": 590,
+   "group": "formats"
+  },
+  {
+   "term": "crunchy slime",
+   "n_videos": 580,
+   "group": "props and triggers"
+  },
+  {
+   "term": "massage talking",
+   "n_videos": 580,
+   "group": "props and triggers"
+  },
+  {
+   "term": "spicy food",
+   "n_videos": 580,
+   "group": "other"
+  },
+  {
+   "term": "tingle immunity",
+   "n_videos": 580,
+   "group": "other"
+  },
+  {
+   "term": "sounds triggers",
+   "n_videos": 570,
+   "group": "formats"
+  },
+  {
+   "term": "chewing gum",
+   "n_videos": 570,
+   "group": "props and triggers"
+  },
+  {
+   "term": "touching face",
+   "n_videos": 570,
+   "group": "other"
+  },
+  {
+   "term": "body massage",
+   "n_videos": 560,
+   "group": "props and triggers"
+  },
+  {
+   "term": "chinese food",
+   "n_videos": 560,
+   "group": "other"
+  },
+  {
+   "term": "wood",
+   "n_videos": 560,
+   "group": "props and triggers"
+  },
+  {
+   "term": "sounds tingles",
+   "n_videos": 560,
+   "group": "formats"
+  },
+  {
+   "term": "whispering soft",
+   "n_videos": 550,
+   "group": "formats"
+  },
+  {
+   "term": "scratching talking",
+   "n_videos": 550,
+   "group": "props and triggers"
+  },
+  {
+   "term": "massage back",
+   "n_videos": 540,
+   "group": "props and triggers"
+  },
+  {
+   "term": "microphone",
+   "n_videos": 540,
+   "group": "props and triggers"
+  },
+  {
+   "term": "deep tissue",
+   "n_videos": 540,
+   "group": "other"
+  },
+  {
+   "term": "mukbang spicy",
+   "n_videos": 530,
+   "group": "props and triggers"
+  },
+  {
+   "term": "aggressive mouth",
+   "n_videos": 530,
+   "group": "props and triggers"
+  },
+  {
+   "term": "light triggers",
+   "n_videos": 520,
+   "group": "visual craft"
+  },
+  {
+   "term": "massage ear",
+   "n_videos": 520,
+   "group": "props and triggers"
+  },
+  {
+   "term": "sleep meditation",
+   "n_videos": 520,
+   "group": "formats"
+  },
+  {
+   "term": "aggressive tapping",
+   "n_videos": 520,
+   "group": "props and triggers"
+  },
+  {
+   "term": "medical roleplay",
+   "n_videos": 520,
+   "group": "formats"
+  },
+  {
+   "term": "scratching mic",
+   "n_videos": 520,
+   "group": "props and triggers"
+  },
+  {
+   "term": "nail tapping",
+   "n_videos": 520,
+   "group": "props and triggers"
+  },
+  {
+   "term": "deep voice",
+   "n_videos": 510,
+   "group": "other"
+  },
+  {
+   "term": "positive affirmations",
+   "n_videos": 510,
+   "group": "other"
+  },
+  {
+   "term": "tapping tingles",
+   "n_videos": 510,
+   "group": "props and triggers"
+  },
+  {
+   "term": "deep ear",
+   "n_videos": 500,
+   "group": "props and triggers"
+  },
+  {
+   "term": "eating talking",
+   "n_videos": 500,
+   "group": "other"
+  },
+  {
+   "term": "scratching tapping",
+   "n_videos": 500,
+   "group": "props and triggers"
+  },
+  {
+   "term": "barber massage",
+   "n_videos": 500,
+   "group": "props and triggers"
+  },
+  {
+   "term": "roleplay personal",
+   "n_videos": 500,
+   "group": "formats"
+  },
+  {
+   "term": "sounds hand",
+   "n_videos": 500,
+   "group": "other"
+  },
+  {
+   "term": "relaxing slime",
+   "n_videos": 500,
+   "group": "props and triggers"
+  },
+  {
+   "term": "satisfying sleep",
+   "n_videos": 490,
+   "group": "formats"
+  },
+  {
+   "term": "whisper sleep",
+   "n_videos": 490,
+   "group": "formats"
+  },
+  {
+   "term": "wet mouth",
+   "n_videos": 480,
+   "group": "props and triggers"
+  },
+  {
+   "term": "mukbang talking",
+   "n_videos": 480,
+   "group": "props and triggers"
+  },
+  {
+   "term": "medical exam",
+   "n_videos": 480,
+   "group": "other"
+  },
+  {
+   "term": "tingles talking",
+   "n_videos": 480,
+   "group": "formats"
+  },
+  {
+   "term": "whispering tingles",
+   "n_videos": 480,
+   "group": "formats"
+  },
+  {
+   "term": "most relaxing",
+   "n_videos": 480,
+   "group": "other"
+  },
+  {
+   "term": "tingles relaxing",
+   "n_videos": 480,
+   "group": "formats"
+  },
+  {
+   "term": "close whispering",
+   "n_videos": 470,
+   "group": "formats"
+  },
+  {
+   "term": "intense tingles",
+   "n_videos": 470,
+   "group": "formats"
+  },
+  {
+   "term": "triggers visual",
+   "n_videos": 470,
+   "group": "visual craft"
+  },
+  {
+   "term": "shoulder massage",
+   "n_videos": 470,
+   "group": "props and triggers"
+  },
+  {
+   "term": "tingles mouth",
+   "n_videos": 460,
+   "group": "props and triggers"
+  },
+  {
+   "term": "triggers tapping",
+   "n_videos": 460,
+   "group": "props and triggers"
+  },
+  {
+   "term": "sleep soft",
+   "n_videos": 460,
+   "group": "formats"
+  },
+  {
+   "term": "whisper ramble",
+   "n_videos": 460,
+   "group": "formats"
+  },
+  {
+   "term": "crinkle sounds",
+   "n_videos": 460,
+   "group": "props and triggers"
+  },
+  {
+   "term": "sleep personal",
+   "n_videos": 450,
+   "group": "formats"
+  },
+  {
+   "term": "ear blowing",
+   "n_videos": 450,
+   "group": "props and triggers"
+  },
+  {
+   "term": "attention roleplay",
+   "n_videos": 440,
+   "group": "formats"
+  },
+  {
+   "term": "tingles relax",
+   "n_videos": 440,
+   "group": "formats"
+  },
+  {
+   "term": "inaudible whispering",
+   "n_videos": 440,
+   "group": "formats"
+  },
+  {
+   "term": "attention sleep",
+   "n_videos": 440,
+   "group": "formats"
+  },
+  {
+   "term": "mouth sound",
+   "n_videos": 440,
+   "group": "props and triggers"
+  },
+  {
+   "term": "people who",
+   "n_videos": 440,
+   "group": "other"
+  },
+  {
+   "term": "sounds soft",
+   "n_videos": 440,
+   "group": "other"
+  },
+  {
+   "term": "whispers soft",
+   "n_videos": 440,
+   "group": "other"
+  },
+  {
+   "term": "spoken sleep",
+   "n_videos": 430,
+   "group": "formats"
+  },
+  {
+   "term": "relaxing satisfying",
+   "n_videos": 430,
+   "group": "formats"
+  },
+  {
+   "term": "satisfying food",
+   "n_videos": 430,
+   "group": "formats"
+  },
+  {
+   "term": "barber shop",
+   "n_videos": 430,
+   "group": "other"
+  },
+  {
+   "term": "hypnosis sleep",
+   "n_videos": 430,
+   "group": "formats"
+  },
+  {
+   "term": "tapping mouth",
+   "n_videos": 430,
+   "group": "props and triggers"
+  },
+  {
+   "term": "triggers trigger",
+   "n_videos": 430,
+   "group": "formats"
+  },
+  {
+   "term": "glass",
+   "n_videos": 420,
+   "group": "props and triggers"
+  },
+  {
+   "term": "scalp check",
+   "n_videos": 420,
+   "group": "other"
+  },
+  {
+   "term": "emoji challenge",
+   "n_videos": 420,
+   "group": "other"
+  },
+  {
+   "term": "neck massage",
+   "n_videos": 420,
+   "group": "props and triggers"
+  },
+  {
+   "term": "massage neck",
+   "n_videos": 420,
+   "group": "props and triggers"
+  },
+  {
+   "term": "soft sounds",
+   "n_videos": 420,
+   "group": "other"
+  },
+  {
+   "term": "brushing hair",
+   "n_videos": 410,
+   "group": "props and triggers"
+  },
+  {
+   "term": "guided meditation",
+   "n_videos": 410,
+   "group": "formats"
+  },
+  {
+   "term": "talking relaxing",
+   "n_videos": 410,
+   "group": "other"
+  },
+  {
+   "term": "food satisfying",
+   "n_videos": 410,
+   "group": "formats"
+  },
+  {
+   "term": "tingles relaxation",
+   "n_videos": 410,
+   "group": "formats"
+  },
+  {
+   "term": "doctor roleplay",
+   "n_videos": 400,
+   "group": "formats"
+  },
+  {
+   "term": "camera tapping",
+   "n_videos": 400,
+   "group": "props and triggers"
+  },
+  {
+   "term": "fast hand",
+   "n_videos": 400,
+   "group": "other"
+  },
+  {
+   "term": "aggressive triggers",
+   "n_videos": 400,
+   "group": "formats"
+  },
+  {
+   "term": "asleep fast",
+   "n_videos": 400,
+   "group": "other"
+  },
+  {
+   "term": "ear exam",
+   "n_videos": 400,
+   "group": "props and triggers"
+  },
+  {
+   "term": "sleep ear",
+   "n_videos": 400,
+   "group": "props and triggers"
+  },
+  {
+   "term": "attention face",
+   "n_videos": 390,
+   "group": "formats"
+  },
+  {
+   "term": "sleep roleplay",
+   "n_videos": 390,
+   "group": "formats"
+  },
+  {
+   "term": "ear attention",
+   "n_videos": 390,
+   "group": "props and triggers"
+  },
+  {
+   "term": "spicy noodles",
+   "n_videos": 390,
+   "group": "other"
+  },
+  {
+   "term": "satisfying mukbang",
+   "n_videos": 390,
+   "group": "props and triggers"
+  },
+  {
+   "term": "sleep satisfying",
+   "n_videos": 380,
+   "group": "formats"
+  },
+  {
+   "term": "street food",
+   "n_videos": 380,
+   "group": "other"
+  },
+  {
+   "term": "fast scratching",
+   "n_videos": 380,
+   "group": "props and triggers"
+  },
+  {
+   "term": "fluffy mic",
+   "n_videos": 380,
+   "group": "props and triggers"
+  },
+  {
+   "term": "foot massage",
+   "n_videos": 380,
+   "group": "props and triggers"
+  },
+  {
+   "term": "sounds personal",
+   "n_videos": 380,
+   "group": "formats"
+  },
+  {
+   "term": "tingles tingly",
+   "n_videos": 380,
+   "group": "formats"
+  },
+  {
+   "term": "roleplay role",
+   "n_videos": 370,
+   "group": "formats"
+  },
+  {
+   "term": "sleep music",
+   "n_videos": 370,
+   "group": "formats"
+  },
+  {
+   "term": "brain massage",
+   "n_videos": 370,
+   "group": "props and triggers"
+  },
+  {
+   "term": "tapping sounds",
+   "n_videos": 370,
+   "group": "props and triggers"
+  },
+  {
+   "term": "tingles fast",
+   "n_videos": 370,
+   "group": "formats"
+  },
+  {
+   "term": "tissue massage",
+   "n_videos": 370,
+   "group": "props and triggers"
+  },
+  {
+   "term": "relaxing massage",
+   "n_videos": 370,
+   "group": "props and triggers"
+  },
+  {
+   "term": "inaudible whisper",
+   "n_videos": 360,
+   "group": "formats"
+  },
+  {
+   "term": "sounds whisper",
+   "n_videos": 360,
+   "group": "formats"
+  },
+  {
+   "term": "sounds close",
+   "n_videos": 360,
+   "group": "other"
+  },
+  {
+   "term": "gentle whispering",
+   "n_videos": 360,
+   "group": "formats"
+  },
+  {
+   "term": "sleep whispering",
+   "n_videos": 360,
+   "group": "formats"
+  },
+  {
+   "term": "sounds sleeping",
+   "n_videos": 360,
+   "group": "other"
+  },
+  {
+   "term": "attention personal",
+   "n_videos": 360,
+   "group": "formats"
+  },
+  {
+   "term": "scalp scratching",
+   "n_videos": 350,
+   "group": "props and triggers"
+  },
+  {
+   "term": "tapping triggers",
+   "n_videos": 350,
+   "group": "props and triggers"
+  },
+  {
+   "term": "relaxing soothing",
+   "n_videos": 350,
+   "group": "other"
+  },
+  {
+   "term": "sounds roleplay",
+   "n_videos": 350,
+   "group": "formats"
+  },
+  {
+   "term": "plastic",
+   "n_videos": 350,
+   "group": "props and triggers"
+  },
+  {
+   "term": "roleplay soft",
+   "n_videos": 350,
+   "group": "formats"
+  },
+  {
+   "term": "follow instructions",
+   "n_videos": 350,
+   "group": "other"
+  },
+  {
+   "term": "sounds stress",
+   "n_videos": 350,
+   "group": "other"
+  },
+  {
+   "term": "massage relaxing",
+   "n_videos": 340,
+   "group": "props and triggers"
+  },
+  {
+   "term": "show tell",
+   "n_videos": 340,
+   "group": "other"
+  },
+  {
+   "term": "massage therapy",
+   "n_videos": 340,
+   "group": "props and triggers"
+  },
+  {
+   "term": "relax massage",
+   "n_videos": 340,
+   "group": "props and triggers"
+  },
+  {
+   "term": "massage relax",
+   "n_videos": 340,
+   "group": "props and triggers"
+  },
+  {
+   "term": "relief sleep",
+   "n_videos": 340,
+   "group": "formats"
+  },
+  {
+   "term": "spoken roleplay",
+   "n_videos": 340,
+   "group": "formats"
+  },
+  {
+   "term": "roleplay whisper",
+   "n_videos": 340,
+   "group": "formats"
+  },
+  {
+   "term": "attention soft",
+   "n_videos": 340,
+   "group": "formats"
+  },
+  {
+   "term": "crunchy food",
+   "n_videos": 340,
+   "group": "other"
+  },
+  {
+   "term": "asmrsounds asmrvideo",
+   "n_videos": 340,
+   "group": "other"
+  },
+  {
+   "term": "aggressive hand",
+   "n_videos": 330,
+   "group": "other"
+  },
+  {
+   "term": "show mukbang",
+   "n_videos": 330,
+   "group": "props and triggers"
+  },
+  {
+   "term": "trigger assortment",
+   "n_videos": 330,
+   "group": "formats"
+  },
+  {
+   "term": "ear sleep",
+   "n_videos": 330,
+   "group": "props and triggers"
+  },
+  {
+   "term": "inaudible whispers",
+   "n_videos": 330,
+   "group": "other"
+  },
+  {
+   "term": "tapping whispers",
+   "n_videos": 330,
+   "group": "props and triggers"
+  },
+  {
+   "term": "sleep fast",
+   "n_videos": 330,
+   "group": "formats"
+  },
+  {
+   "term": "eating crunchy",
+   "n_videos": 330,
+   "group": "other"
+  },
+  {
+   "term": "tingles roleplay",
+   "n_videos": 330,
+   "group": "formats"
+  },
+  {
+   "term": "whispering sleep",
+   "n_videos": 320,
+   "group": "formats"
+  },
+  {
+   "term": "relaxing stress",
+   "n_videos": 320,
+   "group": "other"
+  },
+  {
+   "term": "roleplay medical",
+   "n_videos": 320,
+   "group": "formats"
+  },
+  {
+   "term": "fire",
+   "n_videos": 320,
+   "group": "props and triggers"
+  },
+  {
+   "term": "korean mukbang",
+   "n_videos": 320,
+   "group": "props and triggers"
+  },
+  {
+   "term": "talking tapping",
+   "n_videos": 320,
+   "group": "props and triggers"
+  },
+  {
+   "term": "calming relaxing",
+   "n_videos": 320,
+   "group": "other"
+  },
+  {
+   "term": "ear eating",
+   "n_videos": 320,
+   "group": "props and triggers"
+  },
+  {
+   "term": "tapping whispering",
+   "n_videos": 320,
+   "group": "props and triggers"
+  },
+  {
+   "term": "spoken personal",
+   "n_videos": 320,
+   "group": "formats"
+  },
+  {
+   "term": "ear picking",
+   "n_videos": 320,
+   "group": "props and triggers"
+  },
+  {
+   "term": "talking mic",
+   "n_videos": 320,
+   "group": "props and triggers"
+  },
+  {
+   "term": "massage scalp",
+   "n_videos": 320,
+   "group": "props and triggers"
+  }
+ ]
+}

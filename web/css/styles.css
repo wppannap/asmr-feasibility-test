@@ -2210,6 +2210,24 @@ input[type="range"] {
 .bed-tip-code { color: var(--accent); font-weight: 650; }
 .bed-tip[hidden] { display: none !important; }
 
+.kit-scroll { position: relative; height: 300vh; width: 100%; }
+.kit-pin { position: sticky; top: 0; height: 100vh; overflow: hidden; background: #0b101d; }
+.moon-stage { position: absolute; inset: 0; }
+.moon-svg { display: block; width: 100%; height: 100%; }
+.moon-word { font-family: var(--font-ui); letter-spacing: -0.03em; }
+.moon-tip {
+  position: fixed;
+  z-index: 30;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(11, 16, 29, 0.92);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+.moon-tip[hidden] { display: none !important; }
 .kit-root { width: 100%; min-width: 0; }
 .kit-svg { display: block; width: 100%; height: auto; overflow: visible; }
 .kit-label {
