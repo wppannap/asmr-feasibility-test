@@ -1,34 +1,13 @@
-/* West vs East Asia — radar plus area-scaled orbs. No buttons. */
-import { motionApi } from "./entrance.js?v=20261127g";
+/* West vs East Asia — mirror equalizer plus area-scaled orbs. No buttons. */
+import { motionApi } from "./entrance.js?v=20261127h";
 
-const SVG_NS = "http://www.w3.org/2000/svg";
-const AXES = ["Talking", "Care", "Fast", "Tapping", "Ear"];
-const WEST = [80, 35, 25, 20, 5];
-const EAST = [30, 10, 10, 25, 55];
-const CX = 220;
-const CY = 198;
-const R = 112;
-
-function el(name, attrs) {
-  const node = document.createElementNS(SVG_NS, name);
-  Object.entries(attrs || {}).forEach(([k, v]) => node.setAttribute(k, String(v)));
-  return node;
-}
-
-function polar(i, pct) {
-  const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
-  const reach = R * (pct / 100);
-  return { x: CX + Math.cos(a) * reach, y: CY + Math.sin(a) * reach, a };
-}
-
-function points(values, t) {
-  return values
-    .map((v, i) => {
-      const p = polar(i, v * t);
-      return p.x.toFixed(1) + "," + p.y.toFixed(1);
-    })
-    .join(" ");
-}
+const ROWS = [
+  { name: "Talking", west: 80, east: 30 },
+  { name: "Ear Care", west: 5, east: 55 },
+  { name: "Personal Care", west: 35, east: 10 },
+  { name: "Fast & Aggressive", west: 25, east: 10 },
+  { name: "Prop Tapping", west: 20, east: 25 },
+];
 
 export function render(container) {
   if (!container) return;
@@ -39,66 +18,62 @@ export function render(container) {
   const grid = document.createElement("div");
   grid.className = "we-grid";
 
-  const radarCol = document.createElement("div");
-  radarCol.className = "we-col";
-  const svg = el("svg", {
-    class: "we-svg",
-    viewBox: "0 0 440 400",
-    role: "img",
-    "aria-label": "Western and East Asian shares for talking, care, fast, tapping, and ear",
+  const eqCol = document.createElement("div");
+  eqCol.className = "we-col";
+  const eq = document.createElement("div");
+  eq.className = "we-eq";
+  const spine = document.createElement("div");
+  spine.className = "we-spine";
+  spine.setAttribute("aria-hidden", "true");
+  const head = document.createElement("div");
+  head.className = "we-eq-head";
+  ["Western", "", "East Asian"].forEach((label, i) => {
+    const span = document.createElement("span");
+    span.textContent = label;
+    if (i === 0) span.className = "is-west";
+    if (i === 2) span.className = "is-east";
+    head.appendChild(span);
   });
-  const web = el("g", { class: "we-web" });
-  [0.25, 0.5, 0.75, 1].forEach((step) => {
-    web.appendChild(el("polygon", {
-      class: "we-ring",
-      points: points(AXES.map(() => step * 100), 1),
-    }));
-  });
-  AXES.forEach((_, i) => {
-    const outer = polar(i, 100);
-    web.appendChild(el("line", {
-      class: "we-axis",
-      x1: CX, y1: CY,
-      x2: outer.x.toFixed(1),
-      y2: outer.y.toFixed(1),
-    }));
-    const lab = polar(i, 122);
-    const cos = Math.cos(lab.a);
-    const anchor = cos > 0.35 ? "start" : cos < -0.35 ? "end" : "middle";
-    const text = el("text", {
-      class: "we-axis-label",
-      x: lab.x.toFixed(1),
-      y: (lab.y + 4).toFixed(1),
-      "text-anchor": anchor,
-    });
-    text.textContent = AXES[i];
-    web.appendChild(text);
-  });
+  eq.append(spine, head);
 
-  const west = el("polygon", { class: "we-poly we-west", points: points(WEST, 0) });
-  const east = el("polygon", { class: "we-poly we-east", points: points(EAST, 0) });
-  const dots = el("g", { class: "we-dots" });
-  const dotNodes = [];
-  AXES.forEach((_, i) => {
-    ["west", "east"].forEach((side) => {
-      const dot = el("circle", {
-        class: "we-dot we-dot-" + side,
-        r: 5.5,
-        cx: CX,
-        cy: CY,
-      });
-      dot.dataset.i = String(i);
-      dot.dataset.side = side;
-      dots.appendChild(dot);
-      dotNodes.push(dot);
-    });
+  const bars = [];
+  ROWS.forEach((row) => {
+    const line = document.createElement("div");
+    line.className = "we-eq-row";
+    const westPct = document.createElement("span");
+    westPct.className = "we-pct is-west";
+    westPct.textContent = row.west + "%";
+    const westTrack = document.createElement("span");
+    westTrack.className = "we-track is-west";
+    const westBar = document.createElement("span");
+    westBar.className = "we-bar";
+    westBar.style.width = row.west + "%";
+    westTrack.appendChild(westBar);
+    const name = document.createElement("span");
+    name.className = "we-metric";
+    name.textContent = row.name;
+    const eastTrack = document.createElement("span");
+    eastTrack.className = "we-track is-east";
+    const eastBar = document.createElement("span");
+    eastBar.className = "we-bar";
+    eastBar.style.width = row.east + "%";
+    eastTrack.appendChild(eastBar);
+    const eastPct = document.createElement("span");
+    eastPct.className = "we-pct is-east";
+    eastPct.textContent = row.east + "%";
+    line.append(westPct, westTrack, name, eastTrack, eastPct);
+    eq.appendChild(line);
+    bars.push(westBar, eastBar);
+
+    line.addEventListener("pointerenter", (event) => spotlight(line, row, event));
+    line.addEventListener("pointermove", (event) => spotlight(line, row, event));
+    line.addEventListener("pointerleave", hideTip);
   });
-  svg.append(web, west, east, dots);
-  radarCol.appendChild(svg);
+  eqCol.appendChild(eq);
 
   const orbCol = document.createElement("div");
   orbCol.className = "we-col we-orbs";
-  const rows = [
+  const orbRows = [
     {
       title: "Median Length",
       max: 51.9,
@@ -119,7 +94,7 @@ export function render(container) {
     },
   ];
   const orbs = [];
-  rows.forEach((row) => {
+  orbRows.forEach((row) => {
     const block = document.createElement("div");
     block.className = "we-block";
     const title = document.createElement("p");
@@ -155,91 +130,41 @@ export function render(container) {
 
   function hideTip() {
     tip.hidden = true;
-    west.classList.remove("is-on");
-    east.classList.remove("is-on");
-    svg.classList.remove("is-hot", "is-poly");
+    eq.classList.remove("is-hot");
+    eq.querySelectorAll(".we-eq-row.is-on").forEach((el) => el.classList.remove("is-on"));
   }
 
-  function showTip(event, lines) {
+  function spotlight(line, row, event) {
+    eq.classList.add("is-hot");
+    eq.querySelectorAll(".we-eq-row").forEach((el) => el.classList.toggle("is-on", el === line));
     tip.replaceChildren();
-    lines.forEach((line, i) => {
+    [row.name, "Western " + row.west + "%", "East Asian " + row.east + "%"].forEach((text, i) => {
       const p = document.createElement("p");
-      p.textContent = line;
+      p.textContent = text;
       if (i === 0) p.className = "we-tip-name";
       tip.appendChild(p);
     });
     tip.hidden = false;
-    const ax = event.clientX;
-    const ay = event.clientY;
     tip.style.left = "0px";
     tip.style.top = "0px";
     const rect = tip.getBoundingClientRect();
-    let left = ax + 14;
-    let top = ay + 14;
-    if (left + rect.width > window.innerWidth - 8) left = ax - rect.width - 14;
-    if (top + rect.height > window.innerHeight - 8) top = ay - rect.height - 12;
+    let left = event.clientX + 14;
+    let top = event.clientY + 14;
+    if (left + rect.width > window.innerWidth - 8) left = event.clientX - rect.width - 14;
+    if (top + rect.height > window.innerHeight - 8) top = event.clientY - rect.height - 12;
     tip.style.left = Math.max(8, left) + "px";
     tip.style.top = Math.max(8, top) + "px";
   }
 
-  function axisLines(i) {
-    return [
-      AXES[i],
-      "Western " + WEST[i] + "%",
-      "East Asian " + EAST[i] + "%",
-    ];
-  }
-
-  function bindPoly(node, side) {
-    const values = side === "west" ? WEST : EAST;
-    const name = side === "west" ? "Western" : "East Asian";
-    node.addEventListener("pointerenter", (event) => {
-      svg.classList.add("is-hot", "is-poly");
-      west.classList.toggle("is-on", side === "west");
-      east.classList.toggle("is-on", side === "east");
-      showTip(event, [name].concat(AXES.map((axis, i) => axis + " " + values[i] + "%")));
-    });
-    node.addEventListener("pointermove", (event) => {
-      if (!tip.hidden) showTip(event, [name].concat(AXES.map((axis, i) => axis + " " + values[i] + "%")));
-    });
-    node.addEventListener("pointerleave", hideTip);
-  }
-  bindPoly(west, "west");
-  bindPoly(east, "east");
-  dotNodes.forEach((dot) => {
-    dot.addEventListener("pointerenter", (event) => {
-      const i = +dot.dataset.i;
-      svg.classList.add("is-hot");
-      showTip(event, axisLines(i));
-    });
-    dot.addEventListener("pointermove", (event) => showTip(event, axisLines(+dot.dataset.i)));
-    dot.addEventListener("pointerleave", hideTip);
-  });
-
-  grid.append(radarCol, orbCol);
+  grid.append(eqCol, orbCol);
   container.append(grid, tip);
-
-  const state = { t: 0 };
-  function paint(t) {
-    west.setAttribute("points", points(WEST, t));
-    east.setAttribute("points", points(EAST, t));
-    dotNodes.forEach((dot) => {
-      const i = +dot.dataset.i;
-      const values = dot.dataset.side === "west" ? WEST : EAST;
-      const p = polar(i, values[i] * t);
-      dot.setAttribute("cx", p.x.toFixed(1));
-      dot.setAttribute("cy", p.y.toFixed(1));
-    });
-  }
-  paint(0);
-  arm(container, { web, orbs, state, paint, hideTip });
+  arm(container, { bars, orbs, hideTip });
 }
 
 function arm(container, parts) {
   const api = motionApi();
   if (!api) {
-    parts.paint(1);
-    parts.web.style.opacity = "1";
+    parts.bars.forEach((bar) => { bar.style.transform = "none"; });
     parts.orbs.forEach((orb) => {
       orb.style.opacity = "1";
       orb.style.transform = "none";
@@ -247,7 +172,10 @@ function arm(container, parts) {
     return;
   }
   const { gsap } = api;
-  gsap.set(parts.web, { opacity: 0 });
+  parts.bars.forEach((bar) => {
+    const origin = bar.parentElement.classList.contains("is-west") ? "right center" : "left center";
+    gsap.set(bar, { scaleX: 0, transformOrigin: origin });
+  });
   gsap.set(parts.orbs, { scale: 0, transformOrigin: "50% 50%" });
   const trigger = container.closest(".story-scene") || container;
   let shown = false;
@@ -262,23 +190,23 @@ function arm(container, parts) {
   function playIn() {
     if (shown) return;
     shown = true;
-    parts.state.t = 0;
-    parts.paint(0);
-    gsap.to(parts.web, { opacity: 1, duration: 0.4, ease: "power1.out", overwrite: "auto" });
-    gsap.to(parts.state, {
-      t: 1,
-      duration: 0.7,
-      delay: 0.18,
-      ease: "power2.out",
-      overwrite: "auto",
-      onUpdate() { parts.paint(parts.state.t); },
+    parts.bars.forEach((bar, i) => {
+      const origin = bar.parentElement.classList.contains("is-west") ? "right center" : "left center";
+      gsap.fromTo(bar, { scaleX: 0 }, {
+        scaleX: 1,
+        duration: 0.55,
+        delay: 0.08 + Math.floor(i / 2) * 0.08,
+        ease: "power2.out",
+        transformOrigin: origin,
+        overwrite: "auto",
+      });
     });
     gsap.fromTo(parts.orbs, { scale: 0, opacity: 0.4 }, {
       scale: 1,
       opacity: 1,
       duration: 0.55,
       stagger: 0.08,
-      delay: 0.42,
+      delay: 0.5,
       ease: "power2.out",
       transformOrigin: "50% 50%",
       overwrite: "auto",
@@ -290,7 +218,7 @@ function arm(container, parts) {
     if (!shown) return;
     shown = false;
     parts.hideTip();
-    gsap.killTweensOf(parts.state);
+    gsap.killTweensOf(parts.bars);
     gsap.to(container, { opacity: 0, duration: 0.32, overwrite: "auto" });
   }
 

@@ -1,5 +1,5 @@
 /* The ASMR Toolkit — acoustic-wave word cloud. No buttons. */
-import { motionApi } from "./entrance.js?v=20261127f";
+import { motionApi } from "./entrance.js?v=20261127h";
 
 const GROUPS = {
   craft: { color: "#f4a259", label: "Visual craft", face: "serif" },
@@ -35,6 +35,33 @@ const TERMS = [
   { name: "Snow Bag / Crinkle", weight: 50, group: "prop", d: [50, 95], m: [72, 36], note: "Soft continuous rustling favoured near sleep onset" },
 ];
 
+const TOOLS = {
+  "Makeup Brushes": { tone: "#f4a259", draw: "brush" },
+  "Bamboo Earpicks": { tone: "#56c2d6", draw: "pick" },
+  "3Dio / Dummy Head": { tone: "#56c2d6", draw: "ears" },
+  "Sponges & Foam": { tone: "#f4a259", draw: "sponge" },
+  "Snow Bag / Crinkle": { tone: "#56c2d6", draw: "pouch" },
+};
+
+function toolIcon(kind, tone) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "kit-tool");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  svg.style.color = tone;
+  const paths = {
+    brush: "M5 19c2.2-1 3.4-2.6 4.2-4.6L16.8 4.2a1.6 1.6 0 0 1 2.4 2.1L11.6 16.2C9.8 18.4 7.6 19.4 5 19zM15.2 6.2l2.6 2.6",
+    pick: "M8 20c2.4-3.2 3.2-6.4 3.2-9.2C11.2 7 13 4.6 16.2 3.2M16.2 3.2c.8 1.2.4 2.4-.6 3",
+    ears: "M5.5 13.5c0-4 2.4-7 5-7 1.8 0 2.8 1.4 2.8 3.4 0 2.6-1.6 3.8-1.6 6.4M6 14.2c.3 2.6 1.6 4.2 3.2 4.2M13.2 13.5c0-4 2.4-7 5-7 1.8 0 2.8 1.4 2.8 3.4 0 2.6-1.6 3.8-1.6 6.4M13.7 14.2c.3 2.6 1.6 4.2 3.2 4.2",
+    sponge: "M6.2 8.5h11.6a3.2 3.2 0 0 1 3.2 3.2v2.6a3.2 3.2 0 0 1-3.2 3.2H6.2A3.2 3.2 0 0 1 3 14.3v-2.6a3.2 3.2 0 0 1 3.2-3.2zM8.2 12.2h.01M12 14.4h.01M15.6 11.6h.01",
+    pouch: "M8 9.5h8l-1.2 10.2a2 2 0 0 1-2 1.8h-1.6a2 2 0 0 1-2-1.8L8 9.5zM8.4 9.5C8.6 6.8 10 5 12 5s3.4 1.8 3.6 4.5M10.2 9.2c.4-1.2 1.2-1.8 1.8-1.8s1.4.6 1.8 1.8",
+  };
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", paths[kind]);
+  svg.appendChild(path);
+  return svg;
+}
+
 function dist(term, wide) {
   const [x, y] = wide ? term.d : term.m;
   const dx = x - 50;
@@ -64,6 +91,8 @@ export function render(container) {
     node.setAttribute("aria-label", term.name + ". " + group.label + ". " + term.note);
     const inner = document.createElement("span");
     inner.className = "kit-term-inner";
+    const tool = TOOLS[term.name];
+    if (tool) inner.appendChild(toolIcon(tool.draw, tool.tone));
     inner.appendChild(document.createTextNode(term.name));
     if (term.pct) {
       const sup = document.createElement("sup");

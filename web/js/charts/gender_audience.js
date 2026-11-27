@@ -1,5 +1,5 @@
 /* Who creates calm, and who listens. Silhouettes and a voice arch. No buttons. */
-import { motionApi } from "./entrance.js?v=20261127g";
+import { motionApi } from "./entrance.js?v=20261127h";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const SUBS = "Male top median subs: 708K vs Female 652K";
@@ -21,26 +21,39 @@ function el(name, attrs) {
   return node;
 }
 
-function figure(svg, ox) {
+function femaleBody(svg, ox) {
   const g = el("g", { transform: "translate(" + ox + " 0)" });
   g.append(
-    el("circle", { cx: "16", cy: "7.5", r: "5.2" }),
-    el("path", { d: "M7 46V23.2C7 17.2 10.6 14.2 16 14.2S25 17.2 25 23.2V46h-5.6V31h-6.8v15H7z" })
+    el("circle", { cx: "16", cy: "8", r: "5.1" }),
+    el("path", { d: "M16 15.4 L6.4 46 h19.2 Z" })
   );
   svg.appendChild(g);
 }
 
-function person(duo) {
+function maleBody(svg, ox) {
+  const g = el("g", { transform: "translate(" + ox + " 0)" });
+  g.append(
+    el("circle", { cx: "16", cy: "8", r: "5.1" }),
+    el("path", { d: "M7.2 21.2 L16 15.2 L24.8 21.2 L22.4 32.2 H18.4 V46 H13.6 V32.2 H9.6 Z" })
+  );
+  svg.appendChild(g);
+}
+
+function person(kind) {
   const svg = el("svg", {
     class: "ge-fig",
-    viewBox: duo ? "0 0 46 48" : "0 0 32 48",
+    viewBox: kind === "o" ? "0 0 54 48" : "0 0 32 48",
     "aria-hidden": "true",
   });
-  if (!duo) figure(svg, 0);
+  if (kind === "f") femaleBody(svg, 0);
+  else if (kind === "m") maleBody(svg, 0);
   else {
-    figure(svg, 0);
-    const second = svg.lastChild;
-    second.setAttribute("transform", "translate(16 1) scale(0.9)");
+    femaleBody(svg, 0);
+    maleBody(svg, 22);
+    svg.querySelectorAll("g").forEach((g) => {
+      const base = g.getAttribute("transform");
+      g.setAttribute("transform", base + " scale(0.72)");
+    });
   }
   return svg;
 }
@@ -72,7 +85,7 @@ export function render(container) {
       const cell = document.createElement("div");
       cell.className = "ge-cell ge-" + group.id;
       cell.dataset.g = group.id;
-      cell.appendChild(person(group.id === "o"));
+      cell.appendChild(person(group.id));
       matrix.appendChild(cell);
       cells.push(cell);
     }

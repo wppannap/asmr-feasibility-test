@@ -33,9 +33,16 @@ function mix(a, b, t) {
 }
 
 function dotColor(warmth) {
-  const t = Math.max(-1, Math.min(1, warmth / 68));
-  if (t >= 0) return mix("#f4a259", "#d95f24", t);
-  return mix("#b7eef5", "#56c2d6", -t);
+  if (warmth >= 0) {
+    if (warmth <= 10) return mix("#fbe6c2", "#f7d098", warmth / 10);
+    if (warmth <= 35) return mix("#f7d098", "#f4a259", (warmth - 10) / 25);
+    if (warmth <= 65) return mix("#f4a259", "#e04f1d", (warmth - 35) / 30);
+    return "#e04f1d";
+  }
+  const cool = -warmth;
+  if (cool <= 29) return mix("#d8f7fb", "#7bdff2", cool / 29);
+  if (cool <= 68) return mix("#7bdff2", "#1d8db8", (cool - 29) / 39);
+  return "#1d8db8";
 }
 
 function fmt(n) {
@@ -101,8 +108,8 @@ function draw(container, rows) {
       cx: xOf(row.video_lum).toFixed(1),
       cy: yOf(row.warmth).toFixed(1),
       r: (bw * (0.62 + 0.5 * mag)).toFixed(1),
-      fill: row.warmth >= 0 ? "url(#bed-warm)" : "url(#bed-cool)",
-      opacity: (0.55 + 0.4 * mag).toFixed(2),
+      fill: dotColor(row.warmth),
+      opacity: (0.2 + 0.38 * mag).toFixed(2),
     });
     field.appendChild(glow);
   });
