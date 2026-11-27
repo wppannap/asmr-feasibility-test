@@ -35,6 +35,7 @@
     const rects = [];
     list.forEach((el) => rects.push(el.getBoundingClientRect()));
     list.forEach((el, i) => {
+      if (el.dataset.scoreHold === "1") return;
       const r = rects[i];
       const fadeIn = clamp((vh - r.top) / (vh * 0.22));
       const fadeOut = clamp(r.bottom / (vh * 0.16));

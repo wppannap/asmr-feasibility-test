@@ -1,14 +1,14 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261127h";
-import { onSceneEnter } from "./charts/entrance.js?v=20261127h";
-import { themeColors } from "./theme.js?v=20261127h";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261127i";
+import { onSceneEnter } from "./charts/entrance.js?v=20261127i";
+import { themeColors } from "./theme.js?v=20261127i";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261127h";
+} from "./sections.js?v=20261127i";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -1279,8 +1279,11 @@ async function loadAll() {
     const svg = map.svg.node();
     const mount = svg.closest(".story-scene") || svg.parentElement;
     const staff = [...svg.querySelectorAll(".score-staff-line")];
-    const ink = [...svg.querySelectorAll(".score-clef-watermark, .score-barline")];
+    const clef = svg.querySelector(".score-clef-watermark");
+    const barlines = [...svg.querySelectorAll(".score-barline")];
     const coasts = [...svg.querySelectorAll("path.country")];
+    const anno = svg.querySelector(".map-anno");
+    const kpis = document.querySelector("#scrolly-1 > .story-kpis");
     const gsap = window.gsap;
     if (gsap) {
       staff.forEach((line) => {
@@ -1288,15 +1291,18 @@ async function loadAll() {
         line.setAttribute("stroke-dasharray", String(len));
         line.setAttribute("stroke-dashoffset", String(len));
       });
-      ink.forEach((el) => {
-        el.dataset.op = el.getAttribute("opacity") || "0.55";
+      if (clef) clef.dataset.op = clef.getAttribute("opacity") || "0.55";
+      barlines.forEach((el) => {
+        el.dataset.op = el.getAttribute("opacity") || "0.2";
       });
-      gsap.set(ink, { opacity: 0 });
+      if (clef) gsap.set(clef, { opacity: 0 });
+      gsap.set(barlines, { opacity: 0 });
       gsap.set(coasts, { opacity: 0 });
+      if (anno) gsap.set(anno, { opacity: 0 });
       svg.querySelectorAll("g.dorling-node").forEach((node) => {
         const glyph = node.querySelector(".note-glyph");
         const label = node.querySelector(".dorling-label");
-        if (glyph) gsap.set(glyph, { opacity: 0, y: -8, scale: 0.9 });
+        if (glyph) gsap.set(glyph, { opacity: 0, y: 8, scale: 0.45, transformOrigin: "50% 50%" });
         if (label) gsap.set(label, { opacity: 0 });
       });
     }
@@ -1304,87 +1310,171 @@ async function loadAll() {
     map.scoreEntrance = "armed";
     const played = onSceneEnter(mount, (tween) => {
       map.scoreEntrance = "playing";
-      const live = [...svg.querySelectorAll("g.dorling-node")];
-      const xs = live.map((node) => (node.__data__ ? node.__data__.x : 0));
-      const minX = Math.min(...xs, 0);
-      const span = Math.max(1, Math.max(...xs, 0) - minX);
-      tween.to(staff, { attr: { "stroke-dashoffset": 0 }, duration: 0.65, ease: "power1.out" });
-      tween.to(ink, { opacity: (i, el) => +el.dataset.op || 0.55, duration: 0.6, delay: 0.08, clearProps: "opacity" });
-      tween.to(coasts, { opacity: 1, duration: 0.65, delay: 0.05, ease: "power1.out", clearProps: "opacity" });
-      live.forEach((node) => {
-        const d = node.__data__;
-        const delay = d ? ((d.x - minX) / span) * 0.9 : 0;
-        const glyph = node.querySelector(".note-glyph");
-        const label = node.querySelector(".dorling-label");
-        if (glyph) {
-          tween.to(glyph, {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: 0.45,
-            delay,
-            ease: "power2.out",
-            clearProps: "transform,scale,y",
-            onComplete() {
-              glyph.setAttribute("opacity", "1");
-              glyph.style.opacity = "";
-            },
-          });
-        }
-        if (label) {
-          tween.to(label, {
-            opacity: 1,
-            duration: 0.35,
-            delay: delay + 0.06,
-            clearProps: "opacity",
-          });
-        }
-      });
-      const rising = live
-        .map((node) => node.__data__)
-        .filter((d) => d && d.kind === "rising")
-        .sort((a, b) => b.r - a.r)
-        .slice(0, 5);
-      rising.forEach((d) => {
-        const node = live.find((n) => n.__data__ === d);
-        if (!node) return;
-        const ripple = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      const NS = "http://www.w3.org/2000/svg";
+      const notes = [...svg.querySelectorAll("g.dorling-node")]
+        .map((node) => ({
+          node,
+          d: node.__data__,
+          x: node.__data__ ? node.__data__.x : 0,
+          glyph: node.querySelector(".note-glyph"),
+          shown: false,
+        }))
+        .sort((a, b) => a.x - b.x);
+      const labels = [...svg.querySelectorAll(".dorling-label")];
+      const left = Math.max(16, (notes.length ? notes[0].x : 24) - 18);
+      const bar = barlines[0];
+      const right = bar ? +bar.getAttribute("x1") : (map.width || 800) - 28;
+      const staffYs = staff.map((line) => +line.getAttribute("y1")).filter((y) => Number.isFinite(y));
+      const beamTop = staffYs.length ? Math.min(...staffYs) : 24;
+      const beamBot = staffYs.length ? Math.max(...staffYs) : (map.height || 400) - 24;
+
+      let defs = svg.querySelector("defs");
+      if (!defs) {
+        defs = document.createElementNS(NS, "defs");
+        svg.insertBefore(defs, svg.firstChild);
+      }
+      if (!svg.querySelector("#score-playhead-glow")) {
+        const filter = document.createElementNS(NS, "filter");
+        filter.setAttribute("id", "score-playhead-glow");
+        filter.setAttribute("x", "-40%");
+        filter.setAttribute("y", "-8%");
+        filter.setAttribute("width", "180%");
+        filter.setAttribute("height", "116%");
+        const blur = document.createElementNS(NS, "feGaussianBlur");
+        blur.setAttribute("stdDeviation", "2.2");
+        blur.setAttribute("result", "b");
+        const merge = document.createElementNS(NS, "feMerge");
+        merge.innerHTML = '<feMergeNode in="b"/><feMergeNode in="SourceGraphic"/>';
+        filter.append(blur, merge);
+        defs.appendChild(filter);
+      }
+      const beam = document.createElementNS(NS, "line");
+      beam.setAttribute("class", "score-playhead");
+      beam.setAttribute("x1", String(left));
+      beam.setAttribute("x2", String(left));
+      beam.setAttribute("y1", String(beamTop));
+      beam.setAttribute("y2", String(beamBot));
+      beam.setAttribute("stroke", "#f4a259");
+      beam.setAttribute("stroke-width", "1.2");
+      beam.setAttribute("stroke-linecap", "round");
+      beam.setAttribute("filter", "url(#score-playhead-glow)");
+      beam.setAttribute("pointer-events", "none");
+      svg.appendChild(beam);
+
+      function spring(note) {
+        if (!note.glyph || note.shown) return;
+        note.shown = true;
+        tween.fromTo(note.glyph, { opacity: 0, scale: 0.45, y: 8 }, {
+          keyframes: [
+            { opacity: 1, scale: 1.14, y: -3, duration: 0.28, ease: "power2.out" },
+            { scale: 1, y: 0, duration: 0.16, ease: "power1.out" },
+          ],
+          transformOrigin: "50% 50%",
+          overwrite: "auto",
+          onComplete() {
+            note.glyph.setAttribute("opacity", "1");
+            note.glyph.style.opacity = "";
+            note.glyph.style.transform = "";
+          },
+        });
+        const row = note.d && note.d.row;
+        if (!row || row.mk_class !== "rising") return;
+        const startR = Math.max(4, note.d.r || 4);
+        const ripple = document.createElementNS(NS, "circle");
         ripple.setAttribute("class", "note-ripple");
+        ripple.setAttribute("cx", "0");
+        ripple.setAttribute("cy", "0");
+        ripple.setAttribute("r", String(startR));
         ripple.setAttribute("fill", "none");
         ripple.setAttribute("stroke", "#f4a259");
         ripple.setAttribute("stroke-width", "0.8");
+        ripple.setAttribute("stroke-opacity", "0.45");
         ripple.setAttribute("pointer-events", "none");
-        ripple.setAttribute("r", String(Math.max(4, d.r || 4)));
-        ripple.setAttribute("opacity", "0.28");
-        node.insertBefore(ripple, node.firstChild);
-        const delay = ((d.x - minX) / span) * 0.9 + 0.28;
-        tween.fromTo(
-          ripple,
-          { attr: { r: Math.max(4, d.r) }, opacity: 0.28 },
-          {
-            attr: { r: d.r + 16 },
-            opacity: 0,
-            duration: 1.15,
-            delay,
-            repeat: 1,
-            ease: "power1.out",
-            onComplete() {
-              ripple.remove();
-            },
-          }
-        );
+        note.node.insertBefore(ripple, note.node.firstChild);
+        tween.to(ripple, {
+          attr: { r: startR + 14 },
+          strokeOpacity: 0,
+          duration: 0.55,
+          ease: "power1.out",
+          overwrite: "auto",
+          onComplete() { ripple.remove(); },
+        });
+      }
+
+      let cursor = 0;
+      function release(beamX) {
+        while (cursor < notes.length && notes[cursor].x <= beamX + 0.5) {
+          spring(notes[cursor]);
+          cursor += 1;
+        }
+      }
+
+      if (kpis) {
+        kpis.dataset.scoreHold = "1";
+        tween.set(kpis, { opacity: 0 });
+      }
+      const tl = tween.timeline({
+        onComplete() { map.scoreEntrance = "done"; },
       });
-      map.scoreEntrance = "done";
+      if (clef) tl.to(clef, { opacity: 0.15, duration: 0.4, ease: "power1.out" }, 0);
+      tl.to(staff, {
+        attr: { "stroke-dashoffset": 0 },
+        duration: 0.38,
+        stagger: 0.055,
+        ease: "power1.out",
+      }, 0);
+      tl.to(barlines, {
+        opacity: (i, el) => +el.dataset.op || 0.2,
+        duration: 0.45,
+        ease: "power1.out",
+        clearProps: "opacity",
+      }, 0.08);
+      tl.to(coasts, { opacity: 1, duration: 0.5, ease: "power1.out", clearProps: "opacity" }, 0.05);
+      const head = { x: left };
+      tl.to(head, {
+        x: right,
+        duration: 1.1,
+        ease: "none",
+        onUpdate() {
+          const x = head.x.toFixed(1);
+          beam.setAttribute("x1", x);
+          beam.setAttribute("x2", x);
+          release(head.x);
+        },
+        onComplete() { release(1e9); },
+      }, 0.42);
+      tl.to(beam, {
+        opacity: 0,
+        duration: 0.28,
+        onComplete() { beam.remove(); },
+      }, 1.55);
+      tl.to(labels, { opacity: 1, duration: 0.4, clearProps: "opacity" }, 1.55);
+      if (anno) tl.to(anno, { opacity: 1, duration: 0.4, clearProps: "opacity" }, 1.55);
+      if (kpis) {
+        tl.to(kpis, {
+          opacity: 1,
+          duration: 0.4,
+          onComplete() { delete kpis.dataset.scoreHold; },
+        }, 1.55);
+      }
+      if (clef) {
+        tl.to(clef, {
+          opacity: +clef.dataset.op || 0.55,
+          duration: 0.35,
+          clearProps: "opacity",
+        }, 1.55);
+      }
     });
     if (!played) {
       if (gsap) {
-        staff.forEach((line) => {
-          line.setAttribute("stroke-dashoffset", "0");
-        });
-        gsap.set([...ink, ...coasts, ...svg.querySelectorAll(".note-glyph, .dorling-label")], {
-          clearProps: "opacity,transform,scale,y",
-        });
+        staff.forEach((line) => line.setAttribute("stroke-dashoffset", "0"));
+        const reset = [...barlines, ...coasts, ...svg.querySelectorAll(".note-glyph, .dorling-label")];
+        if (clef) reset.push(clef);
+        if (anno) reset.push(anno);
+        gsap.set(reset, { clearProps: "opacity,transform,scale,y" });
       }
+      if (kpis) delete kpis.dataset.scoreHold;
+      svg.querySelectorAll(".score-playhead, .note-ripple").forEach((el) => el.remove());
       map.scoreEntrance = "done";
     }
   }
