@@ -2527,7 +2527,7 @@ input[type="range"] {
   .intro-sleeper { width: 200px; max-width: 200px; }
 }
 
-.bed-scroll { position: relative; height: 300vh; width: 100%; }
+.bed-scroll { position: relative; height: 170vh; width: 100%; }
 .bed-pin {
   position: sticky;
   top: 0;
@@ -2543,7 +2543,7 @@ input[type="range"] {
 }
 .nw-stage { position: absolute; inset: 0; }
 .nw-svg { display: block; width: 100%; height: 100%; }
-.nw-copy text { font-family: var(--font-ui); }
+.nw-svg text { font-family: var(--font-ui); }
 .nw-tip {
   position: fixed;
   z-index: 30;
@@ -2560,17 +2560,6 @@ input[type="range"] {
   line-height: 1.35;
 }
 .nw-tip[hidden] { display: none !important; }
-@keyframes nw-jitter {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  25% { transform: translate(1.5px, -0.6px) rotate(1.5deg); }
-  50% { transform: translate(-1.5px, 0.8px) rotate(-1.5deg); }
-  75% { transform: translate(0.6px, 1.5px) rotate(1.5deg); }
-  100% { transform: translate(0, 0) rotate(0deg); }
-}
-.nw-frame.is-hand { animation: nw-jitter 0.167s linear infinite; transform-box: fill-box; transform-origin: center; }
-@media (prefers-reduced-motion: reduce) {
-  .nw-frame.is-hand { animation: none !important; }
-}
 .bed-root { width: 100%; min-width: 0; }
 .bed-svg { display: block; width: 100%; height: auto; overflow: hidden; }
 .bed-axes, .bed-labels, .bed-halo, .bed-cone, .bed-source { pointer-events: none; }

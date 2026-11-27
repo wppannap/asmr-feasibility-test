@@ -1,5 +1,9 @@
-/* Night Windows. Flags derived from bedroom_filter_20.json. No buttons. */
+/* Light panes for the 20 sampled videos. Values come from bedroom_filter_20.json. */
 const SVG_NS = "http://www.w3.org/2000/svg";
+const COOL = "#6ec6f5";
+const AMBER = "#f4a259";
+const DEEP = "#e8823a";
+const EMBER = "#c4622e";
 
 function el(name, attrs) {
   const node = document.createElementNS(SVG_NS, name);
@@ -19,30 +23,28 @@ function mix(a, b, t) {
   return "#" + pa.map((v, i) => Math.round(v + (pb[i] - v) * k).toString(16).padStart(2, "0")).join("");
 }
 
-function hash(i) {
-  let x = Math.imul(i ^ 0x9e3779b9, 0x85ebca6b);
-  x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35);
-  return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
+function easeInOutCubic(t) {
+  const p = clamp(t);
+  return p < 0.5 ? 4 * p * p * p : 1 - ((-2 * p + 2) ** 3) / 2;
 }
 
-/* warmth > 0 matches the spectrum chart, which paints warmth < 0 as cool (17/20).
-   dim is video_lum < 75. */
+/* warmth > 0 is warm (17/20). dim is video_lum < 75 (10/20). */
 function decorate(rows) {
-  const warmMin = Math.min(...rows.map((r) => r.warmth));
-  const warmMax = Math.max(...rows.map((r) => r.warmth));
-  const lumMin = Math.min(...rows.map((r) => r.video_lum));
-  const lumMax = Math.max(...rows.map((r) => r.video_lum));
-  const span = warmMax - warmMin || 1;
-  const lumSpan = lumMax - lumMin || 1;
   return rows.map((row) => ({
     code: row.code,
     warmth: row.warmth,
     video_lum: row.video_lum,
     warm: row.warmth > 0,
     dim: row.video_lum < 75,
-    tone: (row.warmth - warmMin) / span,
-    bright: (row.video_lum - lumMin) / lumSpan,
   }));
+}
+
+function tipLine(row) {
+  const warmth = Math.round(row.warmth);
+  const lum = Math.round(row.video_lum);
+  const warmBit = row.warm ? "Warm (+" + warmth + ")" : "Cool (" + warmth + ")";
+  const dimBit = row.dim ? "Dim (" + lum + "/255)" : "Bright (" + lum + "/255)";
+  return "Video " + row.code + " · " + warmBit + " · " + dimBit;
 }
 
 export async function render(container) {
@@ -54,114 +56,106 @@ export async function render(container) {
   const data = await d3.json("data/bedroom_filter_20.json?v=20261127m");
   const rows = decorate(data.rows);
   const n = rows.length;
-  const nWarm = rows.filter((r) => r.warm).length;
-  const nDim = rows.filter((r) => r.dim).length;
+  const nWarm = rows.filter((row) => row.warm).length;
+  const nDim = rows.filter((row) => row.dim).length;
+  const warmMin = Math.min(...rows.map((row) => row.warmth));
+  const warmMax = Math.max(...rows.map((row) => row.warmth));
+  const lumMax = Math.max(...rows.map((row) => row.video_lum)) || 1;
+  const ordered = rows.slice().sort((a, b) => (b.warmth - a.warmth) || (b.video_lum - a.video_lum));
 
   const svg = el("svg", {
     class: "nw-svg",
-    viewBox: "0 0 1100 700",
+    viewBox: "0 0 1100 760",
     preserveAspectRatio: "xMidYMid meet",
     role: "img",
-    "aria-label": "Night windows filtered by warmth and dimness",
+    "aria-label": "Twenty ASMR videos as light panes. Amber is warm, cyan is cool, and the glow follows brightness.",
   });
-  const sky = el("g", { class: "nw-sky" });
-  for (let i = 0; i < 16; i += 1) {
-    sky.appendChild(el("circle", {
-      cx: (760 + hash(i) * 280).toFixed(1),
-      cy: (16 + hash(i + 40) * 46).toFixed(1),
-      r: (0.6 + hash(i + 7) * 1.1).toFixed(2),
-      fill: "#f0ece3",
-      "fill-opacity": "0.45",
-    }));
+  const defs = el("defs");
+  const blur = el("filter", { id: "nw-glow", x: "-80%", y: "-80%", width: "260%", height: "260%" });
+  blur.appendChild(el("feGaussianBlur", { stdDeviation: "10" }));
+  defs.appendChild(blur);
+  svg.appendChild(defs);
+
+  const cols = 5;
+  const paneW = 150;
+  const paneH = 112;
+  const gapX = 28;
+  const gapY = 26;
+  const gridW = cols * paneW + (cols - 1) * gapX;
+  const gridH = 4 * paneH + 3 * gapY;
+  const originX = (1100 - gridW) / 2;
+  const originY = 54;
+
+  function tone(warmth, night) {
+    let base;
+    if (warmth <= 0) {
+      const t = warmMin < 0 ? clamp(warmth / warmMin) : 1;
+      base = mix("#c5e6fb", COOL, 0.35 + 0.65 * t);
+    } else {
+      const t = warmMax > 0 ? clamp(warmth / warmMax) : 1;
+      base = mix(AMBER, DEEP, t);
+    }
+    if (warmth > 0) base = mix(base, EMBER, night * 0.42);
+    return base;
   }
-  const moon = el("g", { transform: "translate(620 -48)" });
-  moon.appendChild(el("path", {
-    d: "M210 64 A34 34 0 1 0 210 132 A22 22 0 1 1 210 64",
-    fill: "#f0ece3",
-    "fill-opacity": "0.55",
-  }));
-  sky.appendChild(moon);
-  svg.appendChild(sky);
 
-  const bldg = el("g", { class: "nw-bldg" });
-  bldg.appendChild(el("path", {
-    d: "M470 168 L540 78 L1020 96 L1070 168 L1070 640 L470 640 Z",
-    fill: "#12182a",
-    stroke: "#232f4a",
-    "stroke-width": "1.2",
-  }));
-
-  const wins = rows.map((row, i) => {
-    const col = i % 4;
-    const line = Math.floor(i / 4);
-    const x = 548 + col * 112;
-    const y = 200 + line * 84;
-    const g = el("g", { class: "nw-win", transform: "translate(" + x + " " + y + ")" });
-    g.dataset.code = row.code;
-    const frame = el("g", { class: "nw-frame" });
-    const glow = el("ellipse", {
-      cx: 28, cy: 22, rx: (10 + 18 * row.bright).toFixed(1), ry: (8 + 12 * row.bright).toFixed(1),
-      fill: mix("#9ecbff", "#f0a24a", row.tone),
-      "fill-opacity": "0.35",
-      filter: "url(#nw-blur)",
+  const wins = ordered.map((row, i) => {
+    const col = i % cols;
+    const line = Math.floor(i / cols);
+    const x = originX + col * (paneW + gapX);
+    const y = originY + line * (paneH + gapY);
+    const lumT = clamp(row.video_lum / lumMax);
+    const grad = el("radialGradient", { id: "nw-fill-" + row.code, cx: "50%", cy: "46%", r: "75%" });
+    const stopCore = el("stop", { offset: "0%" });
+    const stopMid = el("stop", { offset: "58%" });
+    const stopEdge = el("stop", { offset: "100%" });
+    grad.append(stopCore, stopMid, stopEdge);
+    defs.appendChild(grad);
+    const g = el("g", { class: "nw-pane", transform: "translate(" + x + " " + y + ")" });
+    const halo = el("ellipse", {
+      class: "nw-halo",
+      cx: paneW / 2,
+      cy: paneH / 2,
+      fill: AMBER,
+      filter: "url(#nw-glow)",
+      "pointer-events": "none",
     });
     const glass = el("rect", {
-      x: 8, y: 6, width: 40, height: 32, rx: 2,
-      fill: mix("#9ecbff", "#f0a24a", row.tone),
+      class: "nw-glass",
+      width: paneW,
+      height: paneH,
+      rx: 16,
+      fill: "url(#nw-fill-" + row.code + ")",
+      stroke: "#f0ece3",
+      "stroke-opacity": "0.14",
+      "stroke-width": "1",
+      "vector-effect": "non-scaling-stroke",
     });
-    const outer = el("rect", {
-      x: 4, y: 2, width: 48, height: 40, rx: 2,
-      fill: "none", stroke: "#f0ece3", "stroke-width": "1",
+    const code = el("text", {
+      class: "nw-code",
+      x: paneW - 12,
+      y: paneH - 12,
+      "text-anchor": "end",
+      fill: "#f0ece3",
+      "font-size": "11",
+      "pointer-events": "none",
     });
-    frame.append(glow, glass, outer);
-    const ring = el("rect", {
-      class: "nw-ring",
-      x: -2, y: -4, width: 60, height: 52, rx: 3,
-      fill: "none", stroke: "#f0ece3", "stroke-width": "1.2", opacity: "0",
-    });
-    g.append(frame, ring);
-    bldg.appendChild(g);
-    return { row, g, frame, glow, glass, outer, ring };
+    code.textContent = row.code;
+    g.append(halo, glass, code);
+    svg.appendChild(g);
+    return { row, g, halo, glass, code, lumT, stopCore, stopMid, stopEdge };
   });
-  svg.appendChild(bldg);
 
-  const defs = el("defs");
-  const blur = el("filter", { id: "nw-blur", x: "-50%", y: "-50%", width: "200%", height: "200%" });
-  blur.appendChild(el("feGaussianBlur", { stdDeviation: "3.2" }));
-  defs.appendChild(blur);
-  svg.insertBefore(defs, svg.firstChild);
-
-  const copy = el("g", { class: "nw-copy" });
-  const filters = [
-    { label: "Warm lighting", count: nWarm, from: 0.2, y: 188 },
-    { label: "Dim light <75", count: nDim, from: 0.45, y: 248 },
-  ].map((item) => {
-    const pct = Math.round((item.count / n) * 100);
-    const row = el("text", { x: 48, y: item.y, fill: "#98a4be", "font-size": "16" });
-    row.textContent = item.label + " · " + item.count + " / " + n + " · " + pct + "%";
-    const mark = el("rect", {
-      x: 28, y: item.y - 12, width: 8, height: 8, rx: 1, fill: "#f4a259", opacity: "0.25",
-    });
-    copy.append(mark, row);
-    return { ...item, row, mark };
+  const legend = el("text", {
+    class: "nw-legend",
+    x: 550,
+    y: originY + gridH + 58,
+    "text-anchor": "middle",
+    fill: "#f0ece3",
+    "font-size": "15",
   });
-  const counter = el("text", { x: 48, y: 378, fill: "#f0ece3", "font-size": "14" });
-  copy.appendChild(counter);
-  const key = el("g", { transform: "translate(48 520)" });
-  [
-    ["#f4a259", "Amber = Warm", 0],
-    ["#56c2d6", "Cyan = Cool", 26],
-  ].forEach((item) => {
-    key.appendChild(el("rect", { x: 0, y: item[2], width: 12, height: 12, rx: 2, fill: item[0] }));
-    const label = el("text", { x: 20, y: item[2] + 11, fill: "#f0ece3", "font-size": "13" });
-    label.textContent = item[1];
-    key.appendChild(label);
-  });
-  const brightKey = el("text", { x: 0, y: 58, fill: "#f0ece3", "font-size": "13" });
-  brightKey.textContent = "Brighter = Higher luminance";
-  key.appendChild(brightKey);
-  copy.appendChild(key);
-  svg.appendChild(copy);
+  legend.textContent = "Amber = Warm · Cyan = Cool · Glow = Brightness";
+  svg.appendChild(legend);
 
   const tip = document.createElement("div");
   tip.className = "nw-tip";
@@ -170,19 +164,19 @@ export async function render(container) {
   const table = document.createElement("table");
   table.className = "sr-only";
   const cap = document.createElement("caption");
-  cap.textContent = "Night windows, twenty videos";
+  cap.textContent = "Brightness and color temperature for twenty ASMR videos";
   const head = document.createElement("thead");
   const hr = document.createElement("tr");
-  ["Video", "Warm", "Dim"].forEach((label) => {
+  ["Video", "Warm", "Dim", "Luminance"].forEach((label) => {
     const th = document.createElement("th");
     th.textContent = label;
     hr.appendChild(th);
   });
   head.appendChild(hr);
   const body = document.createElement("tbody");
-  rows.forEach((row) => {
+  ordered.forEach((row) => {
     const tr = document.createElement("tr");
-    [row.code, row.warm ? "yes" : "no", row.dim ? "yes" : "no"].forEach((cell) => {
+    [row.code, row.warm ? "yes" : "no", row.dim ? "yes" : "no", String(Math.round(row.video_lum))].forEach((cell) => {
       const td = document.createElement("td");
       td.textContent = cell;
       tr.appendChild(td);
@@ -192,16 +186,10 @@ export async function render(container) {
   table.append(cap, head, body);
   container.append(svg, tip, table);
 
-  function tipLine(row) {
-    const warmth = Math.round(row.warmth);
-    const lum = Math.round(row.video_lum);
-    const warmBit = row.warm ? "Warm (+" + warmth + ")" : "Cool (" + warmth + ")";
-    const dimBit = row.dim ? "Dim (" + lum + "/255)" : "Bright (" + lum + "/255)";
-    return "Video " + row.code + " · " + warmBit + " · " + dimBit;
-  }
+  let hot = null;
   function showTip(win, event) {
-    const row = win.row;
-    tip.textContent = tipLine(row);
+    hot = win;
+    tip.textContent = tipLine(win.row);
     tip.hidden = false;
     const ax = event && event.clientX ? event.clientX : win.g.getBoundingClientRect().right;
     const ay = event && event.clientY ? event.clientY : win.g.getBoundingClientRect().top;
@@ -210,11 +198,12 @@ export async function render(container) {
     if (left + tipW > window.innerWidth - 8) left = Math.max(8, ax - tipW - 8);
     tip.style.left = left + "px";
     tip.style.top = Math.max(8, ay - 28) + "px";
-    wins.forEach((other) => other.ring.setAttribute("opacity", other === win ? "1" : "0"));
+    if (reduced) apply(0.5);
   }
   function hideTip() {
+    hot = null;
     tip.hidden = true;
-    wins.forEach((other) => other.ring.setAttribute("opacity", "0"));
+    if (reduced) apply(0.5);
   }
   wins.forEach((win) => {
     win.g.addEventListener("pointerenter", (event) => showTip(win, event));
@@ -224,82 +213,61 @@ export async function render(container) {
 
   const track = container.closest(".bed-scroll");
   let running = true;
-  let lastP = -1;
+  let raf = 0;
 
-  const SLATE = "#1a2236";
-
-  function passAmount(row, p) {
-    let cut = 1;
-    if (p >= 0.2 && !row.warm) cut = Math.min(cut, 1 - clamp((p - 0.2) / 0.16));
-    if (p >= 0.45 && !row.dim) cut = Math.min(cut, 1 - clamp((p - 0.45) / 0.16));
-    return cut;
-  }
-
-  function matching(p) {
-    return rows.filter((row) => {
-      if (p >= 0.2 && !row.warm) return false;
-      if (p >= 0.45 && !row.dim) return false;
-      return true;
-    }).length;
-  }
-
-  function apply(p, now) {
-    const pull = p < 0.9 ? 1 : 1 - 0.1 * clamp((p - 0.9) / 0.1);
-    bldg.setAttribute("transform", "translate(770 400) scale(" + pull.toFixed(3) + ") translate(-770 -400)");
+  function apply(p) {
+    const night = easeInOutCubic(reduced ? 0.5 : p);
+    const level = 1 - 0.64 * night;
     wins.forEach((win) => {
       const row = win.row;
-      const pass = passAmount(row, p);
-      const breathe = pass > 0.98 && p >= 0.9 && row.warm && row.dim && !reduced
-        ? 0.84 + 0.16 * Math.sin((now / 5000) * Math.PI * 2)
-        : 1;
-      const lit = mix("#9ecbff", "#f0a24a", row.tone);
-      win.glass.setAttribute("fill", mix(SLATE, lit, pass));
-      win.glass.setAttribute("fill-opacity", (0.78 + 0.22 * pass).toFixed(3));
-      win.glow.setAttribute("fill", lit);
-      win.glow.setAttribute("fill-opacity", ((0.08 + 0.5 * row.bright) * pass * breathe).toFixed(3));
-      win.outer.setAttribute("stroke", pass > 0.45 ? "#f0ece3" : "#98a4be");
-      win.outer.setAttribute("stroke-opacity", (0.34 + 0.56 * pass).toFixed(3));
-      win.frame.style.opacity = "1";
+      const color = tone(row.warmth, row.warm ? night : night * 0.2);
+      const reach = 0.78 + 0.22 * level;
+      const rx = (46 + 78 * win.lumT) * reach;
+      const ry = (30 + 46 * win.lumT) * reach;
+      win.halo.setAttribute("rx", rx.toFixed(1));
+      win.halo.setAttribute("ry", ry.toFixed(1));
+      win.halo.setAttribute("fill", color);
+      win.halo.setAttribute("fill-opacity", ((0.12 + 0.4 * win.lumT) * level).toFixed(3));
+      const coreOp = ((0.5 + 0.5 * win.lumT) * level).toFixed(3);
+      const midOp = ((0.38 + 0.48 * win.lumT) * level).toFixed(3);
+      const edgeOp = ((0.22 + 0.4 * win.lumT) * level).toFixed(3);
+      win.stopCore.setAttribute("stop-color", mix(color, row.warm ? "#fff1df" : "#f4fbff", 0.7));
+      win.stopCore.setAttribute("stop-opacity", coreOp);
+      win.stopMid.setAttribute("stop-color", color);
+      win.stopMid.setAttribute("stop-opacity", midOp);
+      win.stopEdge.setAttribute("stop-color", color);
+      win.stopEdge.setAttribute("stop-opacity", edgeOp);
+      win.code.setAttribute("opacity", win === hot ? "0.86" : "0");
     });
-    filters.forEach((item) => {
-      const on = p >= item.from;
-      item.row.setAttribute("fill", on ? "#f0ece3" : "#98a4be");
-      item.mark.setAttribute("opacity", on ? "1" : "0.25");
-    });
-    counter.textContent = "Matching all active filters: " + matching(p) + " / " + n + " windows lit";
-    container.style.setProperty("--p", p.toFixed(4));
   }
 
   function progress() {
-    if (!track) return reduced ? 1 : 0;
+    if (!track) return 0;
     const rect = track.getBoundingClientRect();
     const total = track.offsetHeight - window.innerHeight;
     if (total <= 1) return 0;
     return clamp(-rect.top / total);
   }
 
-  function frame(now) {
+  function frame() {
     if (!running) return;
     if (track) {
       const rect = track.getBoundingClientRect();
       const vh = window.innerHeight || 1;
       if (rect.bottom < -40 || rect.top > vh + 40) {
-        requestAnimationFrame(frame);
+        raf = requestAnimationFrame(frame);
         return;
       }
     }
-    const p = reduced ? 1 : progress();
-    if (reduced) {
-      apply(1, now);
-      return;
-    }
-    apply(p, now);
-    lastP = p;
-    requestAnimationFrame(frame);
+    apply(progress());
+    raf = requestAnimationFrame(frame);
   }
 
-  if (reduced) apply(1, performance.now());
-  else requestAnimationFrame(frame);
-  container._nwStop = () => { running = false; };
+  if (reduced) apply(0.5);
+  else raf = requestAnimationFrame(frame);
+  container._nwStop = () => {
+    running = false;
+    cancelAnimationFrame(raf);
+  };
   return { n, nWarm, nDim };
 }
