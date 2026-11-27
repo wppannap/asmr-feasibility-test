@@ -1974,6 +1974,10 @@ input[type="range"] {
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
+.src-cap { margin: 0.4rem 0 0; color: var(--muted); font-size: 0.72rem; max-width: 40rem; }
+.src-block { width: min(1120px, 94vw); margin: 2rem auto 1rem; color: var(--muted); font-size: 0.78rem; }
+.src-block h2 { margin: 0 0 0.4rem; color: var(--ink); font-size: 1rem; font-weight: 600; }
+.src-block ul { margin: 0; padding-left: 1.1rem; }
 .sr-only {
   position: absolute;
   width: 1px;

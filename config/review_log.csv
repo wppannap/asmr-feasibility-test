@@ -34,3 +34,7 @@ script_check.csv,150,≈142/150 script_group matches title script,AI-assisted,KR
 yt_sleep_tag_check.csv,30,≈18/30 sleep-keyword match is sleep-aid relevant,AI-assisted,"FPs: 雑談 tags, football/relax, product 療癒, slime/bloopers/soap/CD-unboxing, bare live/shorts"
 trends_repeat_check.csv,12,12/12 geos status=ok; |delta_change|≤0.01,script,8 quality_v3=ok + 4 low_volume; monthly own_peak pearson≈1 — repeat reproduces v3
 human_review_pack.csv,40,ambient_v32 10/10; not_asmr_but_human_trigger 4/5; sleep_title 10/10; tierA 10/10; tierB 5/5,human,own review
+bedroom_filter_20.json,20,20 videos x 4 frames; dim and locked cuts are in the file caveats; coder NOT FOUND,UNSET,team pixel sample as named in the json meta
+west_vs_east.js,40,percentages are literals in the chart; source sample NOT FOUND,UNSET,no coding sheet in the repo
+gender_audience.js,71,FeedSpot and Deezer figures are literals; source files NOT FOUND,UNSET,no coding sheet in the repo
+sound_samples.js,3,capsule copy is literals; audio files not in the repo,UNSET,no coding sheet in the repo
