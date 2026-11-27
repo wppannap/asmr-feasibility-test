@@ -1,8 +1,8 @@
 /* The Fade-Out — mirrored editor waveform. Scroll and pointer only. No buttons. */
 const PROPS = [
-  { name: "Earpick", at: 0.16, img: "img/props/stage1_props.jpg?v=20261127c", alt: "Bamboo earpick beside a glowing picking pad", x: "7%", y: "10%" },
-  { name: "Brush", at: 0.5, img: "img/props/stage2_props.jpg?v=20261127c", alt: "Fluffy makeup brush beside a soft foam sponge", x: "38%", y: "68%" },
-  { name: "Whisper", at: 0.82, img: "img/props/stage3_props.jpg?v=20261127c", alt: "A bag of snow beads beside a microphone with a fluffy windscreen", x: "72%", y: "16%" },
+  { name: "Earpick", caption: "Bamboo earpick", at: 0.16, img: "img/props/stage1_props.jpg?v=20261127c", alt: "Bamboo earpick beside a glowing picking pad", x: "7%", y: "10%" },
+  { name: "Brush", caption: "Brush and sponge", at: 0.5, img: "img/props/stage2_props.jpg?v=20261127c", alt: "Fluffy makeup brush beside a soft foam sponge", x: "38%", y: "68%" },
+  { name: "Whisper", caption: "Snow mic whisper", at: 0.82, img: "img/props/stage3_props.jpg?v=20261127c", alt: "A bag of snow beads beside a microphone with a fluffy windscreen", x: "72%", y: "16%" },
 ];
 
 const SEGMENTS = [
@@ -44,12 +44,6 @@ function tone(x) {
   return mixHex("#e87a64", "#56c2d6", (x - 0.45) / 0.55);
 }
 
-function mixRgb(a, b, t) {
-  const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16));
-  const pb = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16));
-  return "rgb(" + pa.map((v, i) => Math.round(v + (pb[i] - v) * t)).join(",") + ")";
-}
-
 function buildBars(n) {
   const bars = [];
   for (let i = 0; i < n; i += 1) {
@@ -88,7 +82,6 @@ export function render(container) {
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const narrow = window.matchMedia("(max-width: 820px)").matches;
   const bars = buildBars(narrow ? 120 : 220);
-  const pin = container.closest(".onset-pin");
   const track = container.closest(".onset-scroll");
 
   const vignette = document.createElement("div");
@@ -183,9 +176,9 @@ export function render(container) {
     img.src = prop.img;
     img.alt = prop.alt;
     const cap = document.createElement("figcaption");
-    cap.textContent = prop.name;
+    cap.textContent = prop.caption;
     el.append(img, cap);
-    return { ...prop, el };
+    return { ...prop, el, img };
   });
 
   const table = document.createElement("table");
@@ -305,7 +298,7 @@ export function render(container) {
       prop.el.style.opacity = local.toFixed(3);
       prop.el.style.transform = "translateY(" + ((1 - local) * 14).toFixed(1) + "px)";
       const eHere = energyAt(Math.min(p, 0.999));
-      prop.el.style.filter = "saturate(" + (0.15 + 0.85 * eHere).toFixed(3) + ")";
+      prop.img.style.filter = "saturate(" + (0.15 + 0.85 * eHere).toFixed(3) + ")";
       if (local <= 0.02) return;
       const pr = prop.el.getBoundingClientRect();
       const x1 = wave.left - box.left + (wave.width * (LEFT + prop.at * (RIGHT - LEFT))) / VB_W;
@@ -380,7 +373,6 @@ export function render(container) {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     container.style.setProperty("--p", p.toFixed(4));
-    if (pin) pin.style.background = mixRgb("#0b101d", "#05060a", p);
     const head = LEFT + p * (RIGHT - LEFT);
     playhead.setAttribute("x1", head.toFixed(1));
     playhead.setAttribute("x2", head.toFixed(1));

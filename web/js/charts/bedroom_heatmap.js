@@ -16,7 +16,7 @@ function mix(a, b, t) {
   const parse = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
   const pa = parse(a);
   const pb = parse(b);
-  return "rgb(" + pa.map((v, i) => Math.round(v + (pb[i] - v) * k)).join(",") + ")";
+  return "#" + pa.map((v, i) => Math.round(v + (pb[i] - v) * k).toString(16).padStart(2, "0")).join("");
 }
 
 function hash(i) {
@@ -45,20 +45,6 @@ function decorate(rows) {
     tone: (row.warmth - warmMin) / span,
     bright: (row.video_lum - lumMin) / lumSpan,
   }));
-}
-
-function bulb() {
-  const g = el("g", { class: "nw-glyph" });
-  g.appendChild(el("circle", { cx: 0, cy: -4, r: 7, fill: "none", stroke: "#f0a24a", "stroke-width": "1.4" }));
-  g.appendChild(el("rect", { x: -3, y: 4, width: 6, height: 4, rx: 1, fill: "#f0a24a" }));
-  return g;
-}
-
-function dimmer() {
-  const g = el("g", { class: "nw-glyph" });
-  g.appendChild(el("circle", { cx: 0, cy: 0, r: 7, fill: "none", stroke: "#9ecbff", "stroke-width": "1.4" }));
-  g.appendChild(el("path", { d: "M0 -6.2 A6.2 6.2 0 0 0 0 6.2 Z", fill: "#9ecbff" }));
-  return g;
 }
 
 function tripod() {
@@ -97,23 +83,25 @@ export async function render(container) {
   const sky = el("g", { class: "nw-sky" });
   for (let i = 0; i < 16; i += 1) {
     sky.appendChild(el("circle", {
-      cx: (40 + hash(i) * 360).toFixed(1),
-      cy: (30 + hash(i + 40) * 180).toFixed(1),
+      cx: (760 + hash(i) * 280).toFixed(1),
+      cy: (16 + hash(i + 40) * 46).toFixed(1),
       r: (0.6 + hash(i + 7) * 1.1).toFixed(2),
       fill: "#f0ece3",
       "fill-opacity": "0.45",
     }));
   }
-  sky.appendChild(el("path", {
+  const moon = el("g", { transform: "translate(620 -48)" });
+  moon.appendChild(el("path", {
     d: "M210 64 A34 34 0 1 0 210 132 A22 22 0 1 1 210 64",
     fill: "#f0ece3",
     "fill-opacity": "0.55",
   }));
+  sky.appendChild(moon);
   svg.appendChild(sky);
 
   const bldg = el("g", { class: "nw-bldg" });
   bldg.appendChild(el("path", {
-    d: "M430 168 L500 78 L980 96 L1040 168 L1040 640 L430 640 Z",
+    d: "M470 168 L540 78 L1020 96 L1070 168 L1070 640 L470 640 Z",
     fill: "#12182a",
     stroke: "#232f4a",
     "stroke-width": "1.2",
@@ -122,7 +110,7 @@ export async function render(container) {
   const wins = rows.map((row, i) => {
     const col = i % 4;
     const line = Math.floor(i / 4);
-    const x = 500 + col * 125;
+    const x = 548 + col * 112;
     const y = 200 + line * 84;
     const g = el("g", { class: "nw-win", transform: "translate(" + x + " " + y + ")" });
     g.dataset.code = row.code;
@@ -158,7 +146,7 @@ export async function render(container) {
     });
     g.append(frame, ring);
     bldg.appendChild(g);
-    return { row, g, frame, glow, glass, ring };
+    return { row, g, frame, glow, glass, outer, ring };
   });
   svg.appendChild(bldg);
 
@@ -168,29 +156,38 @@ export async function render(container) {
   defs.appendChild(blur);
   svg.insertBefore(defs, svg.firstChild);
 
-  const readouts = [
-    { node: el("g", { transform: "translate(78 250)" }), glyph: bulb(), count: nWarm, from: 0.2 },
-    { node: el("g", { transform: "translate(78 340)" }), glyph: dimmer(), count: nDim, from: 0.45 },
-    { node: el("g", { transform: "translate(78 430)" }), glyph: tripod(), count: nLocked, from: 0.7 },
-  ];
-  readouts.forEach((item) => {
-    item.glyph.setAttribute("transform", "translate(0 0)");
-    const num = el("text", {
-      x: 22, y: 5, fill: "#f0ece3", "font-size": "22", "font-family": "var(--font-ui)",
+  const copy = el("g", { class: "nw-copy" });
+  const filters = [
+    { label: "Warm lighting", count: nWarm, from: 0.2, y: 188 },
+    { label: "Dim light (<75)", count: nDim, from: 0.45, y: 248 },
+    { label: "Locked camera", count: nLocked, from: 0.7, y: 308 },
+  ].map((item) => {
+    const pct = Math.round((item.count / n) * 100);
+    const row = el("text", { x: 48, y: item.y, fill: "#98a4be", "font-size": "16" });
+    row.textContent = item.label + " — " + item.count + " / " + n + " (" + pct + "%)";
+    const mark = el("rect", {
+      x: 28, y: item.y - 12, width: 8, height: 8, rx: 1, fill: "#f4a259", opacity: "0.25",
     });
-    num.textContent = String(item.count);
-    item.node.append(item.glyph, num);
-    item.node.style.opacity = "0";
-    item.num = num;
-    svg.appendChild(item.node);
+    copy.append(mark, row);
+    return { ...item, row, mark };
   });
-
-  const finalNum = el("text", {
-    x: 78, y: 560, fill: "#f0ece3", "font-size": "28", "font-family": "var(--font-ui)",
+  const counter = el("text", { x: 48, y: 378, fill: "#f0ece3", "font-size": "14" });
+  copy.appendChild(counter);
+  const key = el("g", { transform: "translate(48 520)" });
+  [
+    ["#f4a259", "Amber = Warm", 0],
+    ["#56c2d6", "Cyan = Cool", 26],
+  ].forEach((item) => {
+    key.appendChild(el("rect", { x: 0, y: item[2], width: 12, height: 12, rx: 2, fill: item[0] }));
+    const label = el("text", { x: 20, y: item[2] + 11, fill: "#f0ece3", "font-size": "13" });
+    label.textContent = item[1];
+    key.appendChild(label);
   });
-  finalNum.textContent = nKeep + " / " + n;
-  finalNum.style.opacity = "0";
-  svg.appendChild(finalNum);
+  const brightKey = el("text", { x: 0, y: 58, fill: "#f0ece3", "font-size": "13" });
+  brightKey.textContent = "Brighter = Higher luminance";
+  key.appendChild(brightKey);
+  copy.appendChild(key);
+  svg.appendChild(copy);
 
   const tip = document.createElement("div");
   tip.className = "nw-tip";
@@ -221,20 +218,24 @@ export async function render(container) {
   table.append(cap, head, body);
   container.append(svg, tip, table);
 
+  function tipLine(row) {
+    const warmth = Math.round(row.warmth);
+    const lum = Math.round(row.video_lum);
+    const warmBit = row.warm ? "Warm (+" + warmth + ")" : "Cool (" + warmth + ")";
+    const dimBit = row.dim ? "Dim (" + lum + "/255)" : "Bright (" + lum + "/255)";
+    const lockBit = row.locked ? "Locked camera" : "Handheld";
+    return "Video " + row.code + " · " + warmBit + " · " + dimBit + " · " + lockBit;
+  }
   function showTip(win, event) {
     const row = win.row;
-    tip.replaceChildren();
-    const name = document.createElement("p");
-    name.className = "nw-tip-id";
-    name.textContent = row.code;
-    const flags = document.createElement("p");
-    flags.className = "nw-tip-flags";
-    flags.textContent = (row.warm ? "●" : "○") + "  " + (row.dim ? "◐" : "○") + "  " + (row.locked ? "⊥" : "○");
-    tip.append(name, flags);
+    tip.textContent = tipLine(row);
     tip.hidden = false;
     const ax = event && event.clientX ? event.clientX : win.g.getBoundingClientRect().right;
     const ay = event && event.clientY ? event.clientY : win.g.getBoundingClientRect().top;
-    tip.style.left = Math.min(window.innerWidth - 72, ax + 12) + "px";
+    const tipW = Math.min(320, window.innerWidth - 16);
+    let left = ax + 14;
+    if (left + tipW > window.innerWidth - 8) left = Math.max(8, ax - tipW - 8);
+    tip.style.left = left + "px";
     tip.style.top = Math.max(8, ay - 28) + "px";
     wins.forEach((other) => other.ring.setAttribute("opacity", other === win ? "1" : "0"));
   }
@@ -252,37 +253,51 @@ export async function render(container) {
   let running = true;
   let lastP = -1;
 
-  function opacityFor(row, p, now) {
-    const base = 0.28 + 0.72 * row.bright;
-    if (p < 0.2) return base;
-    if (!row.warm) {
-      const t = clamp((p - 0.2) / 0.25);
-      if (p >= 0.45 || reduced) return 0;
-      return base * Math.abs(Math.sin(t * Math.PI * 3));
-    }
-    if (p < 0.45) return base;
-    if (!row.dim) return base * (1 - clamp((p - 0.45) / 0.25));
-    if (p < 0.7) return base;
-    if (!row.locked) return base * (1 - clamp((p - 0.78) / 0.12));
-    if (p < 0.9 || reduced) return base;
-    return base * (0.78 + 0.22 * Math.sin((now / 5000) * Math.PI * 2));
+  const SLATE = "#1a2236";
+
+  function passAmount(row, p) {
+    let cut = 1;
+    if (p >= 0.2 && !row.warm) cut = Math.min(cut, 1 - clamp((p - 0.2) / 0.16));
+    if (p >= 0.45 && !row.dim) cut = Math.min(cut, 1 - clamp((p - 0.45) / 0.16));
+    if (p >= 0.7 && !row.locked) cut = Math.min(cut, 1 - clamp((p - 0.7) / 0.16));
+    return cut;
+  }
+
+  function matching(p) {
+    return rows.filter((row) => {
+      if (p >= 0.2 && !row.warm) return false;
+      if (p >= 0.45 && !row.dim) return false;
+      if (p >= 0.7 && !row.locked) return false;
+      return true;
+    }).length;
   }
 
   function apply(p, now) {
     const pull = p < 0.9 ? 1 : 1 - 0.1 * clamp((p - 0.9) / 0.1);
-    bldg.setAttribute("transform", "translate(720 390) scale(" + pull.toFixed(3) + ") translate(-720 -390)");
+    bldg.setAttribute("transform", "translate(770 400) scale(" + pull.toFixed(3) + ") translate(-770 -400)");
     wins.forEach((win) => {
-      const op = opacityFor(win.row, p, now);
-      win.frame.style.opacity = op.toFixed(3);
-      const hand = !win.row.locked && p >= 0.7 && p < 0.9 && op > 0.05 && !reduced;
+      const row = win.row;
+      const pass = passAmount(row, p);
+      const breathe = pass > 0.98 && p >= 0.9 && row.warm && row.dim && row.locked && !reduced
+        ? 0.84 + 0.16 * Math.sin((now / 5000) * Math.PI * 2)
+        : 1;
+      const lit = mix("#9ecbff", "#f0a24a", row.tone);
+      win.glass.setAttribute("fill", mix(SLATE, lit, pass));
+      win.glass.setAttribute("fill-opacity", (0.78 + 0.22 * pass).toFixed(3));
+      win.glow.setAttribute("fill", lit);
+      win.glow.setAttribute("fill-opacity", ((0.08 + 0.5 * row.bright) * pass * breathe).toFixed(3));
+      win.outer.setAttribute("stroke", pass > 0.45 ? "#f0ece3" : "#98a4be");
+      win.outer.setAttribute("stroke-opacity", (0.34 + 0.56 * pass).toFixed(3));
+      win.frame.style.opacity = "1";
+      const hand = !row.locked && p >= 0.7 && p < 0.9 && pass > 0.35 && !reduced;
       win.frame.classList.toggle("is-hand", hand);
     });
-    readouts.forEach((item) => {
-      const t = clamp((p - item.from) / 0.12);
-      item.node.style.opacity = t.toFixed(3);
-      item.node.setAttribute("transform", "translate(78 " + (item.from === 0.2 ? 250 : item.from === 0.45 ? 340 : 430) + ") translate(0 " + ((1 - t) * 16).toFixed(1) + ")");
+    filters.forEach((item) => {
+      const on = p >= item.from;
+      item.row.setAttribute("fill", on ? "#f0ece3" : "#98a4be");
+      item.mark.setAttribute("opacity", on ? "1" : "0.25");
     });
-    finalNum.style.opacity = p < 0.9 ? "0" : clamp((p - 0.9) / 0.08).toFixed(3);
+    counter.textContent = "Matching all active filters: " + matching(p) + " / " + n + " windows lit";
     container.style.setProperty("--p", p.toFixed(4));
   }
 

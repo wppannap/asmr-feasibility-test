@@ -33,10 +33,10 @@ export const SECTION_CHART_MODULES = {
   "scrolly-3": "./charts_yt/creators.js?v=20261127k",
   "scrolly-5": "./charts_yt/duration.js?v=20261127k",
   "scrolly-9": "./charts_yt/upload_clock.js?v=20261127k",
-  "scrolly-onset": "./charts/sleep_onset_wave.js?v=20261127p",
+  "scrolly-onset": "./charts/sleep_onset_wave.js?v=20261127q",
   "scrolly-phones": "./charts/sound_samples.js?v=20261127k",
-  "scrolly-bed": "./charts/bedroom_heatmap.js?v=20261127p",
-  "scrolly-kit": "./charts/asmr_toolkit_cloud.js?v=20261127p",
+  "scrolly-bed": "./charts/bedroom_heatmap.js?v=20261127q",
+  "scrolly-kit": "./charts/asmr_toolkit_cloud.js?v=20261127t",
   "scrolly-west": "./charts/west_vs_east.js?v=20261127k",
   "scrolly-gender": "./charts/gender_audience.js?v=20261127k",
 };
