@@ -1,13 +1,14 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261127a";
-import { themeColors } from "./theme.js?v=20261127a";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261127b";
+import { onSceneEnter } from "./charts/entrance.js?v=20261127b";
+import { themeColors } from "./theme.js?v=20261127b";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261127a";
+} from "./sections.js?v=20261127b";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -468,6 +469,7 @@ async function loadAll() {
         const y = staffTop + (staffSpan * i) / 4;
         staffG
           .append("line")
+          .attr("class", "score-staff-line")
           .attr("x1", 16)
           .attr("x2", width - 16)
           .attr("y1", y)
@@ -506,6 +508,7 @@ async function loadAll() {
       [0, 3].forEach((dx) => {
         staffG
           .append("line")
+          .attr("class", "score-barline")
           .attr("x1", barX + dx)
           .attr("x2", barX + dx)
           .attr("y1", staffTop)
@@ -1267,6 +1270,121 @@ async function loadAll() {
         d3.select(this).select(".dorling-label").text("");
       }
     });
+
+    if (mode !== "peak") armScoreEntrance(map);
+  }
+
+  function armScoreEntrance(map) {
+    if (map.scoreEntrance === "done" || map.scoreEntrance === "playing") return;
+    const svg = map.svg.node();
+    const mount = svg.closest(".story-scene") || svg.parentElement;
+    const staff = [...svg.querySelectorAll(".score-staff-line")];
+    const ink = [...svg.querySelectorAll(".score-clef-watermark, .score-barline")];
+    const coasts = [...svg.querySelectorAll("path.country")];
+    const gsap = window.gsap;
+    if (gsap) {
+      staff.forEach((line) => {
+        const len = Math.abs(+line.getAttribute("x2") - +line.getAttribute("x1")) || 1;
+        line.setAttribute("stroke-dasharray", String(len));
+        line.setAttribute("stroke-dashoffset", String(len));
+      });
+      ink.forEach((el) => {
+        el.dataset.op = el.getAttribute("opacity") || "0.55";
+      });
+      gsap.set(ink, { opacity: 0 });
+      gsap.set(coasts, { opacity: 0 });
+      svg.querySelectorAll("g.dorling-node").forEach((node) => {
+        const glyph = node.querySelector(".note-glyph");
+        const label = node.querySelector(".dorling-label");
+        if (glyph) gsap.set(glyph, { opacity: 0, y: -8, scale: 0.9 });
+        if (label) gsap.set(label, { opacity: 0 });
+      });
+    }
+    if (map.scoreEntrance === "armed") return;
+    map.scoreEntrance = "armed";
+    const played = onSceneEnter(mount, (tween) => {
+      map.scoreEntrance = "playing";
+      const live = [...svg.querySelectorAll("g.dorling-node")];
+      const xs = live.map((node) => (node.__data__ ? node.__data__.x : 0));
+      const minX = Math.min(...xs, 0);
+      const span = Math.max(1, Math.max(...xs, 0) - minX);
+      tween.to(staff, { attr: { "stroke-dashoffset": 0 }, duration: 0.65, ease: "power1.out" });
+      tween.to(ink, { opacity: (i, el) => +el.dataset.op || 0.55, duration: 0.6, delay: 0.08, clearProps: "opacity" });
+      tween.to(coasts, { opacity: 1, duration: 0.65, delay: 0.05, ease: "power1.out", clearProps: "opacity" });
+      live.forEach((node) => {
+        const d = node.__data__;
+        const delay = d ? ((d.x - minX) / span) * 0.9 : 0;
+        const glyph = node.querySelector(".note-glyph");
+        const label = node.querySelector(".dorling-label");
+        if (glyph) {
+          tween.to(glyph, {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.45,
+            delay,
+            ease: "power2.out",
+            clearProps: "transform,scale,y",
+            onComplete() {
+              glyph.setAttribute("opacity", "1");
+              glyph.style.opacity = "";
+            },
+          });
+        }
+        if (label) {
+          tween.to(label, {
+            opacity: 1,
+            duration: 0.35,
+            delay: delay + 0.06,
+            clearProps: "opacity",
+          });
+        }
+      });
+      const rising = live
+        .map((node) => node.__data__)
+        .filter((d) => d && d.kind === "rising")
+        .sort((a, b) => b.r - a.r)
+        .slice(0, 5);
+      rising.forEach((d) => {
+        const node = live.find((n) => n.__data__ === d);
+        if (!node) return;
+        const ripple = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        ripple.setAttribute("class", "note-ripple");
+        ripple.setAttribute("fill", "none");
+        ripple.setAttribute("stroke", "#f4a259");
+        ripple.setAttribute("stroke-width", "0.8");
+        ripple.setAttribute("pointer-events", "none");
+        node.insertBefore(ripple, node.firstChild);
+        const delay = ((d.x - minX) / span) * 0.9 + 0.28;
+        tween.fromTo(
+          ripple,
+          { attr: { r: Math.max(4, d.r) }, opacity: 0.28 },
+          {
+            attr: { r: d.r + 16 },
+            opacity: 0,
+            duration: 1.15,
+            delay,
+            repeat: 1,
+            ease: "power1.out",
+            onComplete() {
+              ripple.remove();
+            },
+          }
+        );
+      });
+      map.scoreEntrance = "done";
+    });
+    if (!played) {
+      if (gsap) {
+        staff.forEach((line) => {
+          line.setAttribute("stroke-dashoffset", "0");
+        });
+        gsap.set([...ink, ...coasts, ...svg.querySelectorAll(".note-glyph, .dorling-label")], {
+          clearProps: "opacity,transform,scale,y",
+        });
+      }
+      map.scoreEntrance = "done";
+    }
   }
 
   function collectTrendsValues() {

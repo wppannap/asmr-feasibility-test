@@ -4,6 +4,7 @@
  * Named countries only (title_only); no Rule toggle.
  */
 import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126x";
+import { onSceneEnter } from "../charts/entrance.js?v=20261127b";
 import { themeColors } from "../theme.js?v=20261126x";
 import { reviewLabel } from "./review.js?v=20261126x";
 
@@ -400,6 +401,7 @@ function draw() {
   const cy0 = ih * 0.48;
   const solidR = Math.min(iw, ih) * 0.66;
 
+  const field = g.append("g").attr("class", "field-stars").attr("pointer-events", "none");
   const fieldRand = mulberry32(0xc0ffee ^ hashSeed(RULE));
   let drawn = 0;
   let tries = 0;
@@ -410,7 +412,8 @@ function draw() {
     const dist = Math.hypot(fx - cx0, fy - cy0) / solidR;
     const fade = dist < 0.95 ? 1 : dist > 1.45 ? 0 : 1 - (dist - 0.95) / 0.5;
     if (fade < 0.05) continue;
-    g.append("circle")
+    field
+      .append("circle")
       .attr("class", "field-star")
       .attr("cx", fx)
       .attr("cy", fy)
@@ -438,6 +441,7 @@ function draw() {
       .append("g")
       .attr("class", `star-cluster c-${code}`)
       .attr("tabindex", 0)
+      .attr("data-share", pct != null ? String(pct) : "0")
       .attr("data-r", R.toFixed(1))
       .attr("data-x", anchor.x.toFixed(1))
       .attr("data-y", anchor.y.toFixed(1))
@@ -510,16 +514,137 @@ function draw() {
     });
   }
 
+  function holdShimmer() {
+    mount._hovering = true;
+    if (mount._shimmer) mount._shimmer.pause();
+    if (window.gsap) window.gsap.set(mount.querySelectorAll(".bright-star"), { clearProps: "opacity" });
+  }
+  function releaseShimmer() {
+    mount._hovering = false;
+    if (mount.dataset.entrance === "done" && mount._shimmer && !document.hidden) mount._shimmer.resume();
+  }
+
   groups.forEach((cg) => {
     cg.on("pointerenter", function () {
+      holdShimmer();
       setFocus(this);
     })
-      .on("pointerleave", () => setFocus(null))
+      .on("pointerleave", () => {
+        setFocus(null);
+        releaseShimmer();
+      })
       .on("focus", function () {
+        holdShimmer();
         setFocus(this);
       })
-      .on("blur", () => setFocus(null));
+      .on("blur", () => {
+        setFocus(null);
+        releaseShimmer();
+      });
   });
+
+  armClusterEntrance(mount, field.node(), pad);
+}
+
+function stopShimmer(mount) {
+  if (mount._onShimmerVis) {
+    document.removeEventListener("visibilitychange", mount._onShimmerVis);
+    mount._onShimmerVis = null;
+  }
+  if (mount._shimmer) {
+    mount._shimmer.kill();
+    mount._shimmer = null;
+  }
+}
+
+function startShimmer(mount) {
+  stopShimmer(mount);
+  const gsap = window.gsap;
+  if (!gsap) return;
+  const stars = [...mount.querySelectorAll(".bright-star")]
+    .sort((a, b) => +b.getAttribute("r") - +a.getAttribute("r"))
+    .slice(0, 8);
+  if (!stars.length) return;
+  const tween = gsap.to(stars, {
+    opacity: 0.42,
+    duration: 1.7,
+    yoyo: true,
+    repeat: -1,
+    ease: "sine.inOut",
+    stagger: { each: 0.22, repeat: -1 },
+  });
+  mount._shimmer = tween;
+  if (document.hidden || mount._hovering) tween.pause();
+  mount._onShimmerVis = () => {
+    if (!mount._shimmer) return;
+    if (document.hidden || mount._hovering) mount._shimmer.pause();
+    else mount._shimmer.resume();
+  };
+  document.addEventListener("visibilitychange", mount._onShimmerVis);
+}
+
+function armClusterEntrance(mount, field, pad) {
+  stopShimmer(mount);
+  if (mount.dataset.entrance === "done") {
+    startShimmer(mount);
+    return;
+  }
+  const nodes = [...mount.querySelectorAll(".star-cluster")].sort(
+    (a, b) => (+b.getAttribute("data-share") || 0) - (+a.getAttribute("data-share") || 0)
+  );
+  const gsap = window.gsap;
+  if (gsap) {
+    gsap.set(field, { opacity: 0 });
+    nodes.forEach((node) => {
+      const stars = node.querySelector(".cluster-stars");
+      const label = node.querySelector(".cluster-label");
+      const x = pad + (+node.getAttribute("data-x") || 0);
+      const y = pad + (+node.getAttribute("data-y") || 0);
+      if (stars) gsap.set(stars, { opacity: 0, scale: 0.88, svgOrigin: `${x} ${y}` });
+      if (label) gsap.set(label, { opacity: 0 });
+    });
+  }
+  const played = onSceneEnter(mount, (tween) => {
+    mount.dataset.entrance = "done";
+    tween.to(field, { opacity: 1, duration: 0.4, ease: "power1.out", clearProps: "opacity" });
+    nodes.forEach((node, i) => {
+      const stars = node.querySelector(".cluster-stars");
+      const label = node.querySelector(".cluster-label");
+      const x = pad + (+node.getAttribute("data-x") || 0);
+      const y = pad + (+node.getAttribute("data-y") || 0);
+      if (stars) {
+        tween.to(stars, {
+          opacity: 1,
+          scale: 1,
+          svgOrigin: `${x} ${y}`,
+          duration: 0.48,
+          delay: i * 0.18,
+          ease: "power2.out",
+          clearProps: "opacity,transform,scale",
+        });
+      }
+      if (label) {
+        tween.to(label, {
+          opacity: 0.94,
+          duration: 0.32,
+          delay: i * 0.18 + 0.08,
+          ease: "power1.out",
+          clearProps: "opacity",
+        });
+      }
+    });
+    tween.delayedCall(nodes.length * 0.18 + 0.55, () => startShimmer(mount));
+  });
+  if (!played && gsap) {
+    gsap.set(field, { clearProps: "opacity" });
+    nodes.forEach((node) => {
+      const stars = node.querySelector(".cluster-stars");
+      const label = node.querySelector(".cluster-label");
+      if (stars) gsap.set(stars, { clearProps: "opacity,transform,scale" });
+      if (label) gsap.set(label, { clearProps: "opacity" });
+    });
+    mount.dataset.entrance = "done";
+  }
 }
 
 export function update() {

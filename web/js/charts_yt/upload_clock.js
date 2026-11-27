@@ -1,5 +1,6 @@
 /* Midnight-centered 24h upload waves — soft pastel dusk-to-midnight sky. */
 import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126x";
+import { onSceneEnter } from "../charts/entrance.js?v=20261127b";
 import { themeColors } from "../theme.js?v=20261126x";
 import { reviewLabel } from "./review.js?v=20261126x";
 
@@ -245,9 +246,10 @@ function draw() {
   const iconR = 9;
   const sunColor = "#f0b429";
   const moonColor = "#6ea8fe";
-  drawSunIcon(g, x(0) + 2, iconY, iconR, sunColor);
-  drawSunIcon(g, x(24) - 2, iconY, iconR, sunColor);
-  drawMoonIcon(g, midX, iconY, iconR, moonColor);
+  const iconG = g.append("g").attr("class", "sky-icons");
+  drawSunIcon(iconG, x(0) + 2, iconY, iconR, sunColor);
+  drawSunIcon(iconG, x(24) - 2, iconY, iconR, sunColor);
+  drawMoonIcon(iconG, midX, iconY, iconR, moonColor);
 
   // Midnight rule (soft hairline) + label below the moon
   g.append("line")
@@ -339,20 +341,21 @@ function draw() {
       .y((p) => y(p[1]));
 
     // sleep_title: soft accent wash + accent stroke on pastel sky
-    strip
+    const wave = strip.append("g").attr("class", "clock-wave");
+    wave
       .append("path")
       .attr("d", area(sleepPts))
       .attr("fill", nightAccent)
       .attr("opacity", 0.22);
 
-    strip
+    wave
       .append("path")
       .attr("d", line(sleepPts))
       .attr("fill", "none")
       .attr("stroke", c.accent)
       .attr("stroke-width", 1.85);
 
-    strip
+    wave
       .append("path")
       .attr("d", line(notPts))
       .attr("fill", "none")
@@ -382,16 +385,23 @@ function draw() {
       // Dark ink on soft twilight — never white-on-white
       const labelFill = "#f0ece3";
       const leaderStroke = "rgba(240,236,227,0.35)";
+      const peakG = strip
+        .append("g")
+        .attr("class", "clock-peak")
+        .attr("data-gx", (margin.left + px).toFixed(1))
+        .attr("data-gy", (margin.top + y0 + py).toFixed(1));
 
-      strip
+      peakG
         .append("circle")
+        .attr("class", "peak-halo")
         .attr("cx", px)
         .attr("cy", py)
         .attr("r", 8)
         .attr("fill", nightAccent)
         .attr("opacity", 0.22);
-      strip
+      peakG
         .append("circle")
+        .attr("class", "peak-dot")
         .attr("cx", px)
         .attr("cy", py)
         .attr("r", 3.5)
@@ -404,14 +414,14 @@ function draw() {
       const maxLx = iw + margin.right - 10 - approxW;
       const lx = Math.min(maxLx, Math.max(4, px + (mobile ? 32 : 50)));
       const ly = Math.max(10, py - 16);
-      strip
+      peakG
         .append("path")
         .attr("class", "anno-leader")
         .attr("d", `M${px + 4},${py - 2} Q${px + 18},${ly} ${lx - 2},${ly}`)
         .attr("fill", "none")
         .attr("stroke", leaderStroke)
         .attr("stroke-width", 0.9);
-      strip
+      peakG
         .append("text")
         .attr("class", "anno-label")
         .attr("x", lx)
@@ -480,6 +490,68 @@ function draw() {
       cursor.attr("opacity", 0);
       readouts.forEach((t) => t.attr("opacity", 0).text(""));
     });
+
+  armClockEntrance(mount, g.select(".sky-backdrop").node(), iconG.node());
+}
+
+function waveFrame(node, sy) {
+  const box = node.getBBox();
+  const ox = box.x + box.width / 2;
+  const oy = box.y + box.height;
+  return `translate(${ox.toFixed(2)} ${oy.toFixed(2)}) scale(1 ${sy}) translate(${(-ox).toFixed(2)} ${(-oy).toFixed(2)})`;
+}
+
+function restoreClock(gsap, sky, icons, waves, peaks) {
+  gsap.set([sky, icons, ...peaks], { clearProps: "opacity,transform,scale" });
+  waves.forEach((node) => node.removeAttribute("transform"));
+}
+
+function armClockEntrance(mount, sky, icons) {
+  if (mount.dataset.entrance === "done") return;
+  const waves = [...mount.querySelectorAll(".clock-wave")];
+  const peaks = [...mount.querySelectorAll(".clock-peak")];
+  const gsap = window.gsap;
+  if (gsap) {
+    gsap.set([sky, icons], { opacity: 0 });
+    waves.forEach((node) => node.setAttribute("transform", waveFrame(node, 0)));
+    peaks.forEach((node) => {
+      gsap.set(node, {
+        opacity: 0,
+        scale: 0.6,
+        svgOrigin: `${node.getAttribute("data-gx")} ${node.getAttribute("data-gy")}`,
+      });
+    });
+  }
+  const played = onSceneEnter(mount, (tween) => {
+    mount.dataset.entrance = "done";
+    tween.to([sky, icons], { opacity: 1, duration: 0.35, ease: "power1.out", clearProps: "opacity" });
+    waves.forEach((node, i) => {
+      tween.to(node, {
+        attr: { transform: waveFrame(node, 1) },
+        duration: 0.55,
+        delay: 0.35 + i * 0.14,
+        ease: "power2.out",
+        onComplete() {
+          node.removeAttribute("transform");
+        },
+      });
+    });
+    peaks.forEach((node, i) => {
+      tween.to(node, {
+        opacity: 1,
+        scale: 1,
+        duration: 0.38,
+        delay: 0.35 + i * 0.14 + 0.55,
+        ease: "power2.out",
+        svgOrigin: `${node.getAttribute("data-gx")} ${node.getAttribute("data-gy")}`,
+        clearProps: "opacity,transform,scale",
+      });
+    });
+  });
+  if (!played && gsap) {
+    restoreClock(gsap, sky, icons, waves, peaks);
+    mount.dataset.entrance = "done";
+  }
 }
 
 export function update() {

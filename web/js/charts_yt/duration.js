@@ -1,5 +1,6 @@
 /* Vertical acoustic spindles — discrete rounded-cap soundwave bars. */
 import { attachTableToggle, clear, fmt, setCaveat } from "../charts/util.js?v=20261126x";
+import { onSceneEnter } from "../charts/entrance.js?v=20261127b";
 import { themeColors } from "../theme.js?v=20261126x";
 import { reviewLabel } from "./review.js?v=20261126x";
 
@@ -194,6 +195,9 @@ function draw() {
     const yy = y(sec);
     const label = sec === 3600 ? "1 h" : sec === 28800 ? "8 h · full night" : `${sec}s`;
     g.append("line")
+      .attr("class", "duration-milestone")
+      .attr("data-y", yy.toFixed(1))
+      .attr("data-op", "0.35")
       .attr("x1", 0)
       .attr("x2", iw)
       .attr("y1", yy)
@@ -203,7 +207,9 @@ function draw() {
       .attr("stroke-dasharray", sec === 28800 ? "5 3" : null)
       .attr("opacity", 0.35);
     g.append("text")
-      .attr("class", "anno-label")
+      .attr("class", "anno-label duration-milestone")
+      .attr("data-y", yy.toFixed(1))
+      .attr("data-op", "1")
       .attr("x", iw - 4)
       .attr("y", yy - 5)
       .attr("text-anchor", "end")
@@ -219,7 +225,9 @@ function draw() {
   if (songSec >= allBins[0] && songSec <= allBins[allBins.length - 1]) {
     const sy = y(songSec);
     g.append("line")
-      .attr("class", "song-landmark")
+      .attr("class", "song-landmark duration-milestone")
+      .attr("data-y", sy.toFixed(1))
+      .attr("data-op", "0.28")
       .attr("x1", 0)
       .attr("x2", iw)
       .attr("y1", sy)
@@ -228,7 +236,9 @@ function draw() {
       .attr("stroke-width", 0.7)
       .attr("opacity", 0.28);
     g.append("text")
-      .attr("class", "anno-label song-landmark-label")
+      .attr("class", "anno-label song-landmark-label duration-milestone")
+      .attr("data-y", sy.toFixed(1))
+      .attr("data-op", "0.85")
       .attr("x", iw - 4)
       .attr("y", sy - 4)
       .attr("text-anchor", "end")
@@ -285,7 +295,9 @@ function draw() {
 
     if (hist.sleep?.median) {
       g.append("circle")
-        .attr("class", "median-bead")
+        .attr("class", "median-bead duration-milestone")
+        .attr("data-y", y(hist.sleep.median).toFixed(1))
+        .attr("data-op", "1")
         .attr("cx", cx - 4)
         .attr("cy", y(hist.sleep.median))
         .attr("r", 3.4)
@@ -297,7 +309,9 @@ function draw() {
     }
     if (hist.not?.median) {
       g.append("circle")
-        .attr("class", "median-bead")
+        .attr("class", "median-bead duration-milestone")
+        .attr("data-y", y(hist.not.median).toFixed(1))
+        .attr("data-op", "1")
         .attr("cx", cx + 4)
         .attr("cy", y(hist.not.median))
         .attr("r", 3.4)
@@ -308,6 +322,8 @@ function draw() {
         .text(`not median ${fmt(hist.not.median, 0)}s`);
     }
   });
+
+  armDurationEntrance(mount, ih);
 }
 
 /** Understated 1px dual-capsule / binaural mic mark. */
@@ -375,6 +391,64 @@ function drawWaveBars(g, arm, y, cx, maxHalf, color, side, ih) {
       .attr("stroke-width", sw)
       .attr("stroke-linecap", "round")
       .attr("opacity", 0.92);
+  }
+}
+
+function armDurationEntrance(mount, ih) {
+  if (mount.dataset.entrance === "done") return;
+  const bars = [...mount.querySelectorAll(".wave-bars line")];
+  const marks = [...mount.querySelectorAll(".duration-milestone")];
+  const gsap = window.gsap;
+  const span = Math.max(1, ih);
+  if (gsap) {
+    bars.forEach((line) => {
+      line.dataset.x2 = line.getAttribute("x2");
+      line.setAttribute("x2", line.getAttribute("x1"));
+      gsap.set(line, { opacity: 0 });
+    });
+    marks.forEach((el) => gsap.set(el, { opacity: 0 }));
+  }
+  const played = onSceneEnter(mount, (tween) => {
+    mount.dataset.entrance = "done";
+    bars.forEach((line) => {
+      const py = +line.getAttribute("y1") || 0;
+      tween.to(line, {
+        opacity: 0.92,
+        attr: { x2: +line.dataset.x2 },
+        duration: 0.42,
+        delay: (py / span) * 0.85,
+        ease: "power2.out",
+        clearProps: "opacity",
+        onComplete() {
+          line.setAttribute("opacity", "0.92");
+        },
+      });
+    });
+    marks.forEach((el) => {
+      const py = +el.getAttribute("data-y") || 0;
+      const op = +el.getAttribute("data-op") || 1;
+      tween.to(el, {
+        opacity: op,
+        duration: 0.32,
+        delay: (py / span) * 0.85,
+        ease: "power1.out",
+        clearProps: "opacity",
+        onComplete() {
+          el.setAttribute("opacity", String(op));
+        },
+      });
+    });
+  });
+  if (!played && gsap) {
+    bars.forEach((line) => {
+      if (line.dataset.x2) line.setAttribute("x2", line.dataset.x2);
+      gsap.set(line, { clearProps: "opacity" });
+    });
+    marks.forEach((el) => {
+      gsap.set(el, { clearProps: "opacity" });
+      el.setAttribute("opacity", el.getAttribute("data-op") || "1");
+    });
+    mount.dataset.entrance = "done";
   }
 }
 
