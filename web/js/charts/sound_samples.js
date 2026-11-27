@@ -5,22 +5,22 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 
 const CAPSULES = [
   {
-    title: "Material Trigger",
-    kind: "Picking & Scratching",
+    title: "Material trigger",
+    kind: "Picking or Scratching",
     src: "audio/sample_material.mp3",
     tone: "amber",
     bars: [0.32, 0.48, 0.74, 0.42, 0.9, 0.58, 0.36, 0.8, 1, 0.46, 0.7, 0.38, 0.86, 0.54, 0.3, 0.66, 0.44, 0.28],
   },
   {
-    title: "Repeated Whisper",
-    kind: "Verbal White Noise · Counting",
+    title: "Repeated whisper",
+    kind: "repeated sounds or quiet counting",
     src: "audio/sample_whisper.mp3",
     tone: "bridge",
     bars: [0.28, 0.4, 0.55, 0.7, 0.5, 0.62, 0.84, 0.48, 0.66, 0.92, 0.58, 0.44, 0.76, 0.5, 0.36, 0.6, 0.42, 0.3],
   },
   {
-    title: "Layered Sound",
-    kind: "Hand Movements + Mouth Sounds",
+    title: "Layered sound",
+    kind: "hand movements combined with mouth sounds",
     src: "audio/sample_layered.mp3",
     tone: "teal",
     bars: [0.34, 0.58, 0.42, 0.78, 0.5, 0.96, 0.64, 0.4, 0.72, 0.46, 0.88, 0.56, 0.36, 0.7, 0.48, 0.82, 0.4, 0.3],

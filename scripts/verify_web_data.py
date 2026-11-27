@@ -490,6 +490,10 @@ def check_no_noise_phrases_in_web() -> list[tuple[str, bool, str]]:
                 path.name == "asmr_toolkit_cloud.js"
                 and "VERBAL WHITE NOISE" in line
                 and not re.search(r"brown\s*noise|pink\s*noise|ambient\s*noise|binaural", line, re.I)
+            ) or (
+                path.name == "index.html"
+                and re.search(r"verbal white noise|just white noise", line, re.I)
+                and not re.search(r"brown\s*noise|pink\s*noise|ambient\s*noise|binaural", line, re.I)
             )
             if FORBIDDEN_NOISE_PHRASE_RE.search(line) and not editorial:
                 noise_hits.append(f"{path.relative_to(ROOT)}:{i}")
