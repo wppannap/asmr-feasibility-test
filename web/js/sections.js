@@ -14,6 +14,8 @@ export const ENABLED_SECTIONS = [
   "scrolly-bed",
   "scrolly-kit",
   "scrolly-3",
+  "scrolly-west",
+  "scrolly-gender",
 ];
 
 /** Data files required by enabled sections only. */
@@ -28,13 +30,15 @@ export const ENABLED_DATA = {
 
 /** Chart module paths loaded only when the matching section id is enabled. */
 export const SECTION_CHART_MODULES = {
-  "scrolly-3": "./charts_yt/creators.js?v=20261127f",
-  "scrolly-5": "./charts_yt/duration.js?v=20261127f",
-  "scrolly-9": "./charts_yt/upload_clock.js?v=20261127f",
-  "scrolly-onset": "./charts/sleep_onset_wave.js?v=20261127f",
-  "scrolly-phones": "./charts/sound_samples.js?v=20261127f",
-  "scrolly-bed": "./charts/bedroom_heatmap.js?v=20261127f",
-  "scrolly-kit": "./charts/asmr_toolkit_cloud.js?v=20261127f",
+  "scrolly-3": "./charts_yt/creators.js?v=20261127g",
+  "scrolly-5": "./charts_yt/duration.js?v=20261127g",
+  "scrolly-9": "./charts_yt/upload_clock.js?v=20261127g",
+  "scrolly-onset": "./charts/sleep_onset_wave.js?v=20261127g",
+  "scrolly-phones": "./charts/sound_samples.js?v=20261127g",
+  "scrolly-bed": "./charts/bedroom_heatmap.js?v=20261127g",
+  "scrolly-kit": "./charts/asmr_toolkit_cloud.js?v=20261127g",
+  "scrolly-west": "./charts/west_vs_east.js?v=20261127g",
+  "scrolly-gender": "./charts/gender_audience.js?v=20261127g",
 };
 
 /** Map caption notes (not hardcoded in HTML). */
