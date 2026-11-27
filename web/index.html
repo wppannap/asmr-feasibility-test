@@ -1,22 +1,20 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <!-- cachebust:20261126y -->
+  <!-- cachebust:20261127a -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='3' fill='%23f4a259'/%3E%3C/svg%3E" />
   <title>ASMR · sleep — late-night listening</title>
-  <link rel="stylesheet" href="css/theme.css?v=20261126y" />
-  <link rel="stylesheet" href="css/styles.css?v=20261126y" />
+  <link rel="stylesheet" href="css/theme.css?v=20261127a" />
+  <link rel="stylesheet" href="css/styles.css?v=20261127a" />
 </head>
 <body>
   <a class="skip-link" href="#scrolly-1">Skip to content</a>
-  <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
-
   <!-- 00 · 3 AM Insomnia -->
   <section class="intro-night" id="intro-night" aria-label="3 AM insomnia">
     <div class="intro-pin">
-      <img class="intro-sleeper" src="img/insomnia_bed.png?v=20261126y" alt="" />
+      <img class="intro-sleeper" src="img/insomnia_bed.png?v=20261127a" alt="" />
       <div class="intro-danmaku" id="intro-danmaku" aria-live="polite"></div>
       <p class="intro-cue" id="intro-cue">Scroll to enter the night ↓</p>
     </div>
@@ -42,6 +40,7 @@
     <a href="#scrolly-1">Search</a>
     <a href="#scrolly-9">Night</a>
     <a href="#scrolly-5">Duration</a>
+    <a href="#scrolly-onset">Drift</a>
     <a href="#scrolly-3">Creators</a>
   </nav>
 
@@ -90,6 +89,16 @@
     <p class="story-beat" data-reveal>TODO: my text</p>
   </section>
 
+  <section class="story-scene scrolly" id="scrolly-onset" data-chart="sleep_onset">
+    <h2 class="story-title" data-reveal>Sleep-Onset Soundscape</h2>
+    <div class="onset-scroll" id="onset-scroll">
+      <div class="onset-pin">
+        <div id="onset-wave"></div>
+      </div>
+    </div>
+    <p class="story-beat" data-reveal>TODO: my text</p>
+  </section>
+
   <section class="story-scene scrolly" id="scrolly-3" data-chart="creators_yt">
     <h2 class="story-title" data-reveal>Who Makes It</h2>
     <p class="story-key" data-reveal>Cluster area = top 5% creators' video share · Hover to inspect</p>
@@ -104,37 +113,16 @@
     <p>TODO: my text</p>
   </footer>
 
-  <script src="js/vendor/d3.min.js?v=20261126y"></script>
-  <script src="js/vendor/topojson-client.min.js?v=20261126y"></script>
-  <script src="js/vendor/scrollama.js?v=20261126y"></script>
-  <script src="js/vendor/gsap.min.js?v=20261126y"></script>
-  <script src="js/vendor/ScrollTrigger.min.js?v=20261126y"></script>
-  <script src="js/iso.js?v=20261126y"></script>
-  <script src="js/waveform.js?v=20261126y"></script>
-  <script src="js/motion.js?v=20261126y"></script>
-  <script src="js/audio_player.js?v=20261126y"></script>
-  <script type="module" src="js/main.js?v=20261126y"></script>
-  <script src="js/intro_scene.js?v=20261126y"></script>
-  <script>
-    (function () {
-      const el = document.getElementById("scroll-progress");
-      if (!el) return;
-      let maxScroll = 1;
-      let resizeT = 0;
-      function cacheMax() {
-        maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-      }
-      function upd() {
-        el.style.width = (100 * window.scrollY / maxScroll) + "%";
-      }
-      window.addEventListener("scroll", upd, { passive: true });
-      window.addEventListener("resize", function () {
-        clearTimeout(resizeT);
-        resizeT = setTimeout(function () { cacheMax(); upd(); }, 120);
-      }, { passive: true });
-      cacheMax();
-      upd();
-    })();
-  </script>
+  <script src="js/vendor/d3.min.js?v=20261127a"></script>
+  <script src="js/vendor/topojson-client.min.js?v=20261127a"></script>
+  <script src="js/vendor/scrollama.js?v=20261127a"></script>
+  <script src="js/vendor/gsap.min.js?v=20261127a"></script>
+  <script src="js/vendor/ScrollTrigger.min.js?v=20261127a"></script>
+  <script src="js/iso.js?v=20261127a"></script>
+  <script src="js/waveform.js?v=20261127a"></script>
+  <script src="js/motion.js?v=20261127a"></script>
+  <script src="js/audio_player.js?v=20261127a"></script>
+  <script type="module" src="js/main.js?v=20261127a"></script>
+  <script src="js/intro_scene.js?v=20261127a"></script>
 </body>
 </html>

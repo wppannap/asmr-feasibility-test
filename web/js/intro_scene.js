@@ -82,84 +82,205 @@
     };
   }
 
-  function pushFrom(box, block) {
-    if (!hits(box, block, 0)) return;
-    const penL = box.x + box.w - block.x;
-    const penR = block.x + block.w - box.x;
-    const penU = box.y + box.h - block.y;
-    const penD = block.y + block.h - box.y;
-    const m = Math.min(penL, penR, penU, penD);
-    if (m === penL) box.x = block.x - box.w - GAP;
-    else if (m === penR) box.x = block.x + block.w + GAP;
-    else if (m === penU) box.y = block.y - box.h - GAP;
-    else box.y = block.y + block.h + GAP;
+  function mulberry32(seed) {
+    let s = seed >>> 0;
+    return function () {
+      s = (s + 0x6d2b79f5) >>> 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
   }
 
-  function place() {
+  function place(attempt) {
     const w = pin.clientWidth;
     const h = pin.clientHeight;
     if (!w || !h) return;
+    const attemptN = attempt || 0;
     const narrow = w < 720;
     const rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     const minPx = 0.95 * rootPx;
     const maxPx = Math.max(minPx, Math.min(1.65 * rootPx, w * 0.0175));
-    const cueH = 42;
+    const shrink = Math.max(0.68, 1 - attemptN * 0.05);
     const ex = exclusion();
-    const gap = narrow ? 4 : GAP;
-    const bands = [
-      { x: 8, y: 6, w: w - 16, h: Math.max(40, ex.y - 10) },
-      { x: 8, y: ex.y + ex.h + 10, w: w - 16, h: Math.max(40, h - (ex.y + ex.h) - cueH) },
-    ];
-    const colCount = narrow ? 2 : 4;
-    const cols = [];
-    bands.forEach((band) => {
-      const colW = (band.w - gap * (colCount - 1)) / colCount;
-      for (let c = 0; c < colCount; c++) {
-        cols.push({
-          x: band.x + c * (colW + gap),
-          y: band.y,
-          w: colW,
-          maxY: band.y + band.h,
-          cursor: band.y,
-        });
-      }
-    });
+    const gap = narrow ? 6 : GAP;
+    const x0 = w * 0.04;
+    const y0 = h * 0.06;
+    const x1 = w * 0.94;
+    const y1 = Math.min(h * 0.92, h - 48);
+    const flankRoom = Math.max(0, Math.min(ex.x - x0, x1 - (ex.x + ex.w)) - 4);
+    const flankCap = Math.max(40, flankRoom);
+    const bodyCap = narrow ? Math.min(128, (x1 - x0) * 0.42) : Math.min(230, w * 0.2);
     nodes.forEach((el, i) => {
-      const size = narrow ? minPx : minPx + halton(i, 5) * (maxPx - minPx);
+      const flank = el.textContent.length <= (narrow ? 32 : 42);
+      const size = (narrow ? minPx : minPx + halton(i, 5) * (maxPx - minPx)) * shrink;
+      el.dataset.flank = flank ? "1" : "0";
       el.style.fontFamily = "var(--font-ui)";
       el.style.fontSize = size.toFixed(2) + "px";
-      el.style.lineHeight = narrow ? "1.12" : "1.2";
-      el.style.maxWidth = Math.max(40, cols[0].w - 2).toFixed(1) + "px";
+      el.style.lineHeight = "1.18";
+      el.style.maxWidth = (flank ? flankCap : bodyCap).toFixed(1) + "px";
       el.style.left = "0px";
       el.style.top = "0px";
     });
+
     const items = nodes.map((el, i) => {
       const r = el.getBoundingClientRect();
-      return { i, w: r.width, h: r.height, x: 8, y: 6 };
+      return { i, w: r.width, h: r.height, x: x0, y: y0, flank: el.dataset.flank === "1" };
     });
-    const order = items.slice().sort((a, b) => b.h - a.h || a.i - b.i);
-    order.forEach((it, n) => {
-      const start = n % cols.length;
-      let col = null;
-      for (let k = 0; k < cols.length; k++) {
-        const candidate = cols[(start + k) % cols.length];
-        if (candidate.cursor + it.h <= candidate.maxY + 0.5) {
-          col = candidate;
-          break;
+    const placed = [];
+    const rng = mulberry32(0xa5c31 + attemptN * 97);
+    let packGap = gap;
+
+    function linedUp(box) {
+      let xHits = 0;
+      let yHits = 0;
+      for (let n = 0; n < placed.length; n++) {
+        const p = placed[n];
+        if (Math.abs(box.x - p.x) < 16 && Math.abs(box.y - p.y) > 8) xHits += 1;
+        if (Math.abs(box.y - p.y) < 10 && Math.abs(box.x - p.x) > 16) yHits += 1;
+      }
+      return xHits >= 2 || yHits >= 2;
+    }
+
+    function free(box, strict) {
+      if (box.x < x0 - 0.5 || box.y < y0 - 0.5) return false;
+      if (box.x + box.w > x1 + 0.5 || box.y + box.h > y1 + 0.5) return false;
+      if (hits(box, ex, 8)) return false;
+      for (let n = 0; n < placed.length; n++) if (hits(box, placed[n], packGap)) return false;
+      if (strict && linedUp(box)) return false;
+      return true;
+    }
+
+    function dart(it, strict) {
+      for (let k = 0; k < 360; k++) {
+        let x;
+        let y;
+        const useFlank = it.flank && k < 180 && flankRoom + 1 >= it.w && ex.h > it.h + 4;
+        if (useFlank) {
+          const left = rng() < 0.5;
+          const span = Math.max(0, flankRoom - it.w);
+          x = left ? x0 + rng() * span : ex.x + ex.w + 4 + rng() * span;
+          y = ex.y + 4 + rng() * Math.max(0, ex.h - it.h - 8);
+        } else {
+          x = x0 + rng() * Math.max(0, x1 - x0 - it.w);
+          y = y0 + rng() * Math.max(0, y1 - y0 - it.h);
+        }
+        const trial = { x: x, y: y, w: it.w, h: it.h };
+        if (free(trial, strict)) return trial;
+      }
+      return null;
+    }
+
+    function scan(it, strict) {
+      const step = strict ? 11 : 4;
+      const maxW = x1 - it.w;
+      const maxH = y1 - it.h;
+      if (maxW < x0 || maxH < y0) return null;
+      const xs = [];
+      const ys = [];
+      for (let x = x0; x <= maxW + 0.1; x += step) xs.push(x);
+      for (let y = y0; y <= maxH + 0.1; y += step) ys.push(y);
+      if (!xs.length || !ys.length) return null;
+      const xShift = it.i % xs.length;
+      const yShift = (it.i * 3) % ys.length;
+      for (let row = 0; row < ys.length; row++) {
+        for (let col = 0; col < xs.length; col++) {
+          const trial = {
+            x: xs[(col + xShift) % xs.length],
+            y: ys[(row + yShift) % ys.length],
+            w: it.w,
+            h: it.h,
+          };
+          if (free(trial, strict)) return trial;
         }
       }
-      if (!col) col = cols.slice().sort((a, b) => (a.maxY - a.cursor) - (b.maxY - b.cursor)).pop();
-      const slack = Math.max(0, col.w - it.w);
-      it.x = col.x + halton(it.i + 1, 2) * slack;
-      it.y = col.cursor;
-      col.cursor = it.y + it.h + gap;
-    });
+      return null;
+    }
+
+    if (narrow) {
+      const leftG = { x: x0, y: ex.y + 6, w: Math.max(0, ex.x - 8 - x0), h: Math.max(0, ex.h - 12) };
+      const rightG = { x: ex.x + ex.w + 8, y: ex.y + 6, w: Math.max(0, x1 - (ex.x + ex.w + 8)), h: Math.max(0, ex.h - 12) };
+      const top = { x: x0, y: y0, w: x1 - x0, h: Math.max(0, ex.y - 4 - y0) };
+      const bottom = { x: x0, y: ex.y + ex.h + 4, w: x1 - x0, h: Math.max(0, y1 - (ex.y + ex.h + 4)) };
+      nodes.forEach((el) => {
+        el.style.lineHeight = "1.15";
+      });
+      function gutterSlots(gutter, outer) {
+        const gap = 16;
+        const a = outer ? gutter.x + gutter.w - Math.min(34, gutter.w) : gutter.x;
+        const b = outer ? a - gap : a + gap;
+        const widthA = outer ? gutter.x + gutter.w - a : b - a;
+        const widthB = outer ? a - b : gutter.x + gutter.w - b;
+        const third = gutter.h / 3;
+        return [
+          { x: a, y: gutter.y, w: Math.max(24, widthA), h: third - 6 },
+          { x: a, y: gutter.y + third, w: Math.max(24, widthA), h: third - 6 },
+          { x: b, y: gutter.y + third * 2, w: Math.max(24, widthB), h: third - 6 },
+        ];
+      }
+      const flankSlots = gutterSlots(leftG, false).concat(gutterSlots(rightG, true));
+      const leftLimit = leftG.x + leftG.w + 16;
+      const rightLimit = rightG.x - 16;
+      function bandSlots(region) {
+        const rows = 2;
+        const cols = 5;
+        const rowH = region.h / rows;
+        const origin = leftLimit;
+        const pitch = (rightLimit - origin - 16) / cols;
+        const boxW = Math.max(36, pitch - 6);
+        const slots = [];
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            slots.push({
+              x: origin + c * pitch + (r % 2) * 16,
+              y: region.y + r * rowH + (c % 3) * 10,
+              w: boxW,
+              h: rowH - 28,
+            });
+          }
+        }
+        return slots;
+      }
+      const bodySlots = bandSlots(top).concat(bandSlots(bottom));
+      const flankItems = items.slice().sort((a, b) => nodes[a.i].textContent.length - nodes[b.i].textContent.length).slice(0, flankSlots.length);
+      const flankSet = {};
+      flankItems.forEach((it) => { flankSet[it.i] = true; });
+      const bodyItems = items.filter((it) => !flankSet[it.i]);
+      function fit(it, slot, px) {
+        const el = nodes[it.i];
+        el.style.fontSize = px + "px";
+        el.style.maxWidth = Math.max(40, slot.w) + "px";
+        const r = el.getBoundingClientRect();
+        it.w = r.width;
+        it.h = r.height;
+        return it.h <= slot.h + 0.5 && it.w <= slot.w + 1;
+      }
+      flankItems.forEach((it, n) => {
+        const slot = flankSlots[n];
+        fit(it, slot, 12) || fit(it, slot, 11) || fit(it, slot, 10);
+        it.x = slot.x;
+        it.y = slot.y;
+        placed.push(it);
+      });
+      bodyItems.forEach((it, n) => {
+        const slot = bodySlots[n % bodySlots.length];
+        fit(it, slot, 12) || fit(it, slot, 11) || fit(it, slot, 10);
+        it.x = slot.x;
+        it.y = slot.y;
+        placed.push(it);
+      });
+    } else {
+      items.slice().sort((a, b) => b.h - a.h).forEach((it) => {
+        const chosen = dart(it, true) || scan(it, true) || dart(it, false) || scan(it, false);
+        if (!chosen) return;
+        it.x = chosen.x;
+        it.y = chosen.y;
+        placed.push(it);
+      });
+    }
     nodes.forEach((el, i) => {
-      const box = items[i];
-      box.x = Math.max(4, Math.min(w - box.w - 4, box.x));
-      box.y = Math.max(4, Math.min(h - box.h - cueH, box.y));
-      el.style.left = box.x.toFixed(1) + "px";
-      el.style.top = box.y.toFixed(1) + "px";
+      el.style.left = items[i].x.toFixed(1) + "px";
+      el.style.top = items[i].y.toFixed(1) + "px";
     });
   }
 

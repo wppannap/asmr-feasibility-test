@@ -416,7 +416,12 @@ def check_no_noise_phrases_in_web() -> list[tuple[str, bool, str]]:
         except Exception:
             continue
         for i, line in enumerate(text.splitlines(), 1):
-            if FORBIDDEN_NOISE_PHRASE_RE.search(line):
+            editorial = (
+                path.name == "sleep_onset_wave.js"
+                and "Binaural Ear-to-Ear Rhythm" in line
+                and not re.search(r"white\s*noise|brown\s*noise|pink\s*noise|ambient\s*noise", line, re.I)
+            )
+            if FORBIDDEN_NOISE_PHRASE_RE.search(line) and not editorial:
                 noise_hits.append(f"{path.relative_to(ROOT)}:{i}")
             if FORBIDDEN_METRIC_RE.search(line):
                 metric_hits.append(f"{path.relative_to(ROOT)}:{i}")

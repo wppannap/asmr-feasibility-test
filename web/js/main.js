@@ -1,13 +1,13 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261126y";
-import { themeColors } from "./theme.js?v=20261126y";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261127a";
+import { themeColors } from "./theme.js?v=20261127a";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261126y";
+} from "./sections.js?v=20261127a";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -1785,6 +1785,10 @@ function initExtraCharts() {
       wiki: wikiData,
       caveatEl: document.getElementById("caveat-6"),
     });
+  });
+  safeRender("scrolly-onset", "sleep_onset", (mod) => {
+    const host = document.getElementById("onset-wave");
+    if (host) chartApi.sleepOnset = mod.render(host);
   });
   safeRender("scrolly-9", "upload_clock", (mod) => {
     if (!ytUpload) return;
