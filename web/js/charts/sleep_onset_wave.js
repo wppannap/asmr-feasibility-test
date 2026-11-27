@@ -1,29 +1,14 @@
-/* Scroll-scrubbed descending frequency wave. Props anchored on the path. No buttons. */
-const STAGES = [
-  {
-    caption: "01 · Earpick & Picking",
-    img: "img/props/stage1_props.jpg?v=20261127c",
-    alt: "Bamboo earpick beside a glowing picking pad",
-    at: 0.16,
-    above: true,
-    tone: "#f4a259",
-  },
-  {
-    caption: "02 · Brush & Sponge",
-    img: "img/props/stage2_props.jpg?v=20261127c",
-    alt: "Fluffy makeup brush beside a soft foam sponge",
-    at: 0.5,
-    above: false,
-    tone: "#c9b59a",
-  },
-  {
-    caption: "03 · Snow Bag & Mic",
-    img: "img/props/stage3_props.jpg?v=20261127c",
-    alt: "A bag of snow beads beside a microphone with a fluffy windscreen",
-    at: 0.84,
-    above: true,
-    tone: "#56c2d6",
-  },
+/* The Fade-Out — mirrored editor waveform. Scroll and pointer only. No buttons. */
+const PROPS = [
+  { name: "Earpick", at: 0.16, img: "img/props/stage1_props.jpg?v=20261127c", alt: "Bamboo earpick beside a glowing picking pad", x: "7%", y: "10%" },
+  { name: "Brush", at: 0.5, img: "img/props/stage2_props.jpg?v=20261127c", alt: "Fluffy makeup brush beside a soft foam sponge", x: "38%", y: "68%" },
+  { name: "Whisper", at: 0.82, img: "img/props/stage3_props.jpg?v=20261127c", alt: "A bag of snow beads beside a microphone with a fluffy windscreen", x: "72%", y: "16%" },
+];
+
+const SEGMENTS = [
+  ["Earpick", "1.00", "0.85"],
+  ["Brush", "0.55", "0.25"],
+  ["Whisper", "0.18", "0.04"],
 ];
 
 function clamp(v) {
@@ -36,235 +21,422 @@ function svgEl(name, attrs) {
   return node;
 }
 
-function buildPath(width, midY) {
-  const pts = [];
-  let phase = 0;
-  const steps = 280;
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    const freq = 22 * Math.exp(-3.1 * t) + 0.55;
-    phase += freq * 0.085;
-    const jag = Math.sin(phase * 6.2) * 18 * Math.pow(Math.max(0, 1 - t / 0.34), 1.4);
-    const roll = Math.sin(phase) * (46 * (1 - t) + 7);
-    const calm = Math.sin(t * Math.PI) * 8 * Math.max(0, (t - 0.62) / 0.38);
-    const y = midY + roll + jag * (t < 0.66 ? 1 : 0.25) + calm;
-    pts.push([20 + t * (width - 40), y]);
+function hash(i) {
+  let x = Math.imul(i ^ 0x9e3779b9, 0x85ebca6b);
+  x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35);
+  return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
+}
+
+function baseEnergy(x) {
+  if (x < 0.33) return 1 - (1 - 0.85) * (x / 0.33);
+  if (x < 0.66) return 0.55 - (0.55 - 0.25) * ((x - 0.33) / 0.33);
+  return 0.18 - (0.18 - 0.04) * ((x - 0.66) / 0.34);
+}
+
+function mixHex(a, b, t) {
+  const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16));
+  const pb = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16));
+  return "#" + pa.map((v, i) => Math.round(v + (pb[i] - v) * t).toString(16).padStart(2, "0")).join("");
+}
+
+function tone(x) {
+  if (x < 0.45) return mixHex("#f4a259", "#e87a64", x / 0.45);
+  return mixHex("#e87a64", "#56c2d6", (x - 0.45) / 0.55);
+}
+
+function mixRgb(a, b, t) {
+  const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16));
+  const pb = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16));
+  return "rgb(" + pa.map((v, i) => Math.round(v + (pb[i] - v) * t)).join(",") + ")";
+}
+
+function buildBars(n) {
+  const bars = [];
+  for (let i = 0; i < n; i += 1) {
+    const u = i / (n - 1);
+    const x = Math.pow(u, 1.48);
+    const h = hash(i + 3);
+    let e = baseEnergy(x);
+    let spike = false;
+    if (x < 0.33 && h < 0.17) {
+      e = Math.min(1, e * (3 + hash(i + 91) * 3));
+      spike = true;
+    } else if (x < 0.66 && h < 0.05) {
+      e = Math.min(0.7, e * (1.5 + hash(i + 17) * 0.7));
+    } else if (x >= 0.965) {
+      e = 0.04;
+    } else if (x >= 0.66) {
+      e *= 0.84 + 0.16 * Math.sin(x * 21);
+    } else {
+      e *= 0.78 + hash(i + 8) * 0.28;
+    }
+    bars.push({ x, e: Math.max(0.02, e), spike, burst: false });
   }
-  return pts.map((p, i) => (i === 0 ? "M" : "L") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+  return bars;
+}
+
+function energyAt(x) {
+  return baseEnergy(clamp(x));
 }
 
 export function render(container) {
   if (!container) return;
-  const stage = container.closest(".onset-scroll");
-  const pin = container.closest(".onset-pin");
+  if (container._fadeStop) container._fadeStop();
   container.replaceChildren();
+  container.classList.add("fx-stage");
+
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const narrow = window.matchMedia("(max-width: 820px)").matches;
+  const bars = buildBars(narrow ? 180 : 360);
+  const pin = container.closest(".onset-pin");
+  const track = container.closest(".onset-scroll");
 
+  const vignette = document.createElement("div");
+  vignette.className = "fx-vignette";
+  const canvas = document.createElement("canvas");
+  canvas.className = "fx-sparks";
+  canvas.setAttribute("aria-hidden", "true");
   const svg = svgEl("svg", {
-    class: "onset-svg",
-    viewBox: "0 0 1120 280",
+    class: "fx-wave",
+    viewBox: "0 0 1200 700",
+    preserveAspectRatio: "xMidYMid meet",
     role: "img",
-    "aria-label": "Descending frequency wave from sharp triggers to a calm breath",
+    "aria-label": "Mirrored waveform fading from earpick transients to a whisper",
   });
-  const defs = svgEl("defs");
-  defs.innerHTML =
-    '<linearGradient id="onset-stroke" x1="0" y1="0" x2="1" y2="0">' +
-    '<stop offset="0%" stop-color="#f4a259"/>' +
-    '<stop offset="33%" stop-color="#f4a259"/>' +
-    '<stop offset="66%" stop-color="#7f93c4"/>' +
-    '<stop offset="100%" stop-color="#56c2d6"/>' +
-    "</linearGradient>" +
-    '<filter id="onset-glow" x="-8%" y="-80%" width="116%" height="260%">' +
-    '<feGaussianBlur stdDeviation="3.2" result="b"/>' +
-    "<feMerge><feMergeNode in=\"b\"/><feMergeNode in=\"SourceGraphic\"/></feMerge>" +
-    "</filter>";
-  svg.appendChild(defs);
-  const path = svgEl("path", {
-    fill: "none",
-    stroke: "url(#onset-stroke)",
-    "stroke-width": "2.4",
+  const leaders = svgEl("svg", { class: "fx-leaders", "aria-hidden": "true" });
+
+  const VB_W = 1200;
+  const MID = 348;
+  const LEFT = 92;
+  const RIGHT = 1152;
+
+  const vu = svgEl("g", { class: "fx-vu" });
+  const vuSegs = [];
+  for (let i = 0; i < 10; i += 1) {
+    const seg = svgEl("rect", {
+      x: 28,
+      y: MID - 120 + (9 - i) * 16,
+      width: 10,
+      height: 11,
+      rx: 2,
+      fill: "#f0ece3",
+      "fill-opacity": "0.06",
+    });
+    vu.appendChild(seg);
+    vuSegs.push(seg);
+  }
+  svg.appendChild(vu);
+
+  function geom(bar) {
+    const px = LEFT + bar.x * (RIGHT - LEFT);
+    const h = Math.max(1.4, bar.e * 292);
+    const w = 3.6 * (1 - bar.x) + 0.65;
+    return { px, y: MID - h / 2, h, w };
+  }
+
+  const nodes = bars.map((bar) => {
+    const g = geom(bar);
+    const rect = svgEl("rect", {
+      x: (g.px - g.w / 2).toFixed(2),
+      y: g.y.toFixed(2),
+      width: g.w.toFixed(2),
+      height: g.h.toFixed(2),
+      rx: (g.w / 2).toFixed(2),
+      fill: "#f0ece3",
+      "fill-opacity": "0.12",
+    });
+    svg.appendChild(rect);
+    return rect;
+  });
+
+  const breath = svgEl("line", {
+    x1: LEFT + 0.965 * (RIGHT - LEFT),
+    x2: RIGHT,
+    y1: MID,
+    y2: MID,
+    stroke: "#56c2d6",
+    "stroke-width": "1.2",
     "stroke-linecap": "round",
-    "stroke-linejoin": "round",
-    filter: "url(#onset-glow)",
-    d: buildPath(1120, 140),
+    "stroke-opacity": "0.12",
   });
-  svg.appendChild(path);
-  const head = svgEl("circle", { r: "5.5", fill: "#f0ece3", filter: "url(#onset-glow)" });
-  svg.appendChild(head);
+  svg.appendChild(breath);
 
-  const rings = STAGES.map((info) => {
-    const ring = svgEl("g", { class: "onset-ring" });
-    ring.append(
-      svgEl("circle", { r: "11", fill: "none", stroke: info.tone, "stroke-width": "1.2", opacity: "0.35" }),
-      svgEl("circle", { r: "5.5", fill: "none", stroke: info.tone, "stroke-width": "1.6" }),
-      svgEl("circle", { r: "2.2", fill: info.tone })
-    );
-    ring.style.color = info.tone;
-    svg.appendChild(ring);
-    return ring;
+  const playhead = svgEl("line", {
+    x1: LEFT, x2: LEFT, y1: 120, y2: 580,
+    stroke: "#f4a259", "stroke-width": "1.4", "stroke-linecap": "round",
   });
-  container.appendChild(svg);
+  svg.appendChild(playhead);
 
-  const leaders = svgEl("svg", { class: "onset-leaders", "aria-hidden": "true" });
-  const stems = STAGES.map((info) => {
-    const stem = svgEl("path", {
-      class: "onset-stem",
-      fill: "none",
-      stroke: info.tone,
-      "stroke-width": "1",
-      "stroke-linecap": "round",
-    });
-    leaders.appendChild(stem);
-    return stem;
-  });
-  container.appendChild(leaders);
+  const knob = svgEl("g", { transform: "translate(1118 56)" });
+  knob.appendChild(svgEl("circle", { r: 20, fill: "none", stroke: "#98a4be", "stroke-width": "1.25" }));
+  knob.appendChild(svgEl("circle", { r: 3, fill: "#f0ece3" }));
+  const needle = svgEl("line", { x1: 0, y1: 0, x2: 0, y2: -13, stroke: "#f0ece3", "stroke-width": "2", "stroke-linecap": "round" });
+  knob.appendChild(needle);
+  svg.appendChild(knob);
 
-  const blocks = STAGES.map((info) => {
-    const block = document.createElement("div");
-    block.className = "onset-stage" + (info.above ? " is-above" : " is-below");
-    const bloom = document.createElement("div");
-    bloom.className = "onset-bloom";
-    const fig = document.createElement("figure");
-    fig.className = "onset-prop";
+  const propEls = PROPS.map((prop) => {
+    const el = document.createElement("figure");
+    el.className = "fx-prop";
+    el.style.left = prop.x;
+    el.style.top = prop.y;
     const img = document.createElement("img");
-    img.src = info.img;
-    img.alt = info.alt;
-    img.decoding = "async";
-    fig.appendChild(img);
-    const caption = document.createElement("p");
-    caption.className = "onset-caption";
-    caption.textContent = info.caption;
-    bloom.append(fig, caption);
-    block.appendChild(bloom);
-    container.appendChild(block);
-    img.addEventListener("load", () => place());
-    return { block, bloom };
+    img.src = prop.img;
+    img.alt = prop.alt;
+    const cap = document.createElement("figcaption");
+    cap.textContent = prop.name;
+    el.append(img, cap);
+    return { ...prop, el };
   });
 
-  const length = path.getTotalLength();
-  path.style.strokeDasharray = String(length);
-  function pointForT(t) {
-    const targetX = 20 + t * (1120 - 40);
-    let bestLen = 0;
-    let best = path.getPointAtLength(0);
-    let bestDist = 1e9;
-    for (let i = 0; i <= 420; i++) {
-      const len = (length * i) / 420;
-      const pt = path.getPointAtLength(len);
-      const dist = Math.abs(pt.x - targetX);
-      if (dist < bestDist) {
-        bestDist = dist;
-        best = pt;
-        bestLen = len;
-      }
-    }
-    return { pt: best, frac: bestLen / length };
-  }
-  const anchors = STAGES.map((info) => {
-    const hit = pointForT(info.at);
-    info.reveal = hit.frac;
-    return hit.pt;
+  const table = document.createElement("table");
+  table.className = "sr-only";
+  const caption = document.createElement("caption");
+  caption.textContent = "Fade-out energy by segment";
+  const thead = document.createElement("thead");
+  const hr = document.createElement("tr");
+  ["Segment", "Energy start", "Energy end"].forEach((label) => {
+    const th = document.createElement("th");
+    th.textContent = label;
+    hr.appendChild(th);
   });
-  rings.forEach((ring, i) => {
-    ring.setAttribute("transform", "translate(" + anchors[i].x.toFixed(1) + " " + anchors[i].y.toFixed(1) + ")");
-  });
-
-  let placedW = 0;
-
-  function screenPoint(pt) {
-    const ctm = svg.getScreenCTM();
-    if (!ctm) return null;
-    const p = svg.createSVGPoint();
-    p.x = pt.x;
-    p.y = pt.y;
-    return p.matrixTransform(ctm);
-  }
-
-  function place() {
-    const box = container.getBoundingClientRect();
-    if (box.width < 2 || box.height < 2) return;
-    placedW = box.width;
-    leaders.setAttribute("viewBox", "0 0 " + box.width.toFixed(1) + " " + box.height.toFixed(1));
-    STAGES.forEach((info, i) => {
-      const sp = screenPoint(anchors[i]);
-      const node = blocks[i].block;
-      if (!sp) return;
-      const ringX = sp.x - box.left;
-      const ringY = sp.y - box.top;
-      node.style.top = (info.above ? ringY - 28 : ringY + 28) + "px";
-      node.style.left = ringX + "px";
-      const half = node.offsetWidth / 2;
-      const clamped = Math.max(half + 10, Math.min(box.width - half - 10, ringX));
-      node.style.left = clamped + "px";
-      const wave = svg.getBoundingClientRect();
-      let nb = node.getBoundingClientRect();
-      if (info.above && nb.bottom > wave.top - 6) {
-        node.style.top = (parseFloat(node.style.top) - (nb.bottom - wave.top) - 8) + "px";
-      }
-      if (!info.above && nb.top < wave.bottom + 6) {
-        node.style.top = (parseFloat(node.style.top) + (wave.bottom - nb.top) + 8) + "px";
-      }
-      nb = node.getBoundingClientRect();
-      if (nb.right > box.right - 8) node.style.left = (parseFloat(node.style.left) - (nb.right - box.right) - 8) + "px";
-      if (nb.left < box.left + 8) node.style.left = (parseFloat(node.style.left) + (box.left + 8 - nb.left)) + "px";
-      nb = node.getBoundingClientRect();
-      const x2 = nb.left + nb.width / 2 - box.left;
-      const y2 = info.above ? nb.bottom - box.top : nb.top - box.top;
-      const bend = (i === 1 ? -28 : 22) * (x2 > ringX ? 1 : -1);
-      stems[i].setAttribute(
-        "d",
-        "M " + ringX.toFixed(1) + " " + ringY.toFixed(1) +
-        " Q " + ((ringX + x2) / 2 + bend).toFixed(1) + " " + ((ringY + y2) / 2).toFixed(1) +
-        " " + x2.toFixed(1) + " " + y2.toFixed(1)
-      );
+  thead.appendChild(hr);
+  const tbody = document.createElement("tbody");
+  SEGMENTS.forEach((row) => {
+    const tr = document.createElement("tr");
+    row.forEach((cell) => {
+      const td = document.createElement("td");
+      td.textContent = cell;
+      tr.appendChild(td);
     });
-  }
+    tbody.appendChild(tr);
+  });
+  table.append(caption, thead, tbody);
 
-  function apply(progress) {
-    const p = reduced ? 1 : progress;
-    path.style.strokeDashoffset = String(length * (1 - p));
-    const tip = path.getPointAtLength(Math.max(0.01, Math.min(length - 0.01, length * p)));
-    head.setAttribute("cx", tip.x.toFixed(1));
-    head.setAttribute("cy", tip.y.toFixed(1));
-    head.style.opacity = p < 0.01 ? "0" : "1";
-    if (Math.abs(container.getBoundingClientRect().width - placedW) > 1) place();
-    STAGES.forEach((info, i) => {
-      const span = Math.min(0.08, Math.max(0.015, 1 - info.reveal));
-      const local = reduced ? 1 : clamp((p - info.reveal) / span);
-      const ringT = clamp(local / 0.34);
-      const stemT = clamp((local - 0.16) / 0.5);
-      const propT = clamp((local - 0.42) / 0.58);
-      rings[i].style.opacity = String(ringT);
-      const stemLen = stems[i].getTotalLength() || 1;
-      stems[i].style.strokeDasharray = String(stemLen);
-      stems[i].style.strokeDashoffset = String(stemLen * (1 - stemT));
-      stems[i].style.opacity = stemT > 0.02 ? "1" : "0";
-      blocks[i].bloom.style.opacity = String(propT);
-      blocks[i].bloom.style.transform = reduced ? "none" : "scale(" + (0.88 + 0.12 * propT).toFixed(3) + ")";
-    });
-  }
+  container.append(vignette, canvas, svg, leaders, ...propEls.map((p) => p.el), table);
 
-  function tick() {
-    if (!stage) {
-      place();
-      apply(1);
+  const ctx = canvas.getContext("2d");
+  const sparks = [];
+  let litUntil = -1;
+  let audioHooked = false;
+  let restoreTo = 0.8;
+  let restoreRaf = 0;
+
+  function paintBar(i, lit) {
+    const bar = bars[i];
+    const node = nodes[i];
+    if (!lit) {
+      node.setAttribute("fill", "#f0ece3");
+      node.setAttribute("fill-opacity", "0.12");
+      node.removeAttribute("stroke");
+      node.style.filter = "";
       return;
     }
-    const rect = stage.getBoundingClientRect();
-    const total = stage.offsetHeight - window.innerHeight;
-    const passed = clamp(-rect.top / Math.max(1, total));
-    apply(passed);
+    const color = tone(bar.x);
+    node.setAttribute("fill", color);
+    node.setAttribute("fill-opacity", "0.94");
+    node.setAttribute("stroke", color);
+    node.setAttribute("stroke-width", (bar.x < 0.33 ? 1.15 : bar.x < 0.66 ? 0.7 : 0.35).toFixed(2));
+    const glow = bar.x < 0.7 ? (1 - bar.x) * 7 : 0;
+    node.style.filter = glow > 0.4 ? "drop-shadow(0 0 " + glow.toFixed(1) + "px " + color + ")" : "";
   }
 
-  if (container._onsetTick) {
-    window.removeEventListener("scroll", container._onsetTick);
-    window.removeEventListener("resize", container._onsetTick);
+  function lightTo(p) {
+    let idx = -1;
+    for (let i = 0; i < bars.length; i += 1) if (bars[i].x <= p) idx = i;
+    const from = Math.min(litUntil, idx);
+    const to = Math.max(litUntil, idx);
+    for (let i = Math.max(0, from); i <= to; i += 1) paintBar(i, i <= idx);
+    litUntil = idx;
+    if (!reduced) {
+      for (let i = 0; i <= idx; i += 1) {
+        const bar = bars[i];
+        if (!bar.spike || bar.burst) continue;
+        bar.burst = true;
+        const g = geom(bar);
+        for (let k = 0; k < 8 && sparks.length < 250; k += 1) {
+          sparks.push({
+            x: g.px / VB_W, y: 0.5 + (hash(i * 13 + k) - 0.5) * bar.e * 0.45,
+            vx: (hash(k + 4) - 0.5) * 0.35,
+            vy: (hash(k + 9) - 0.5) * 0.55,
+            life: 1, kind: 1,
+          });
+        }
+      }
+    }
   }
-  container._onsetTick = tick;
-  window.addEventListener("scroll", tick, { passive: true });
-  window.addEventListener("resize", tick, { passive: true });
-  place();
-  tick();
-  if (pin) pin.style.position = "sticky";
-  return { update: tick };
+
+  function syncAudio(inView, e) {
+    const audio = document.getElementById("asmr-audio");
+    const btn = document.getElementById("asmr-play");
+    if (!audio || !btn) return;
+    const playing = btn.classList.contains("is-playing") && !audio.paused;
+    if (inView && playing) {
+      if (!audioHooked) {
+        audioHooked = true;
+        restoreTo = audio.volume > 0.05 ? audio.volume : 0.8;
+      }
+      audio.volume = 0.2 + 0.8 * clamp(e);
+      return;
+    }
+    if (!audioHooked) return;
+    audioHooked = false;
+    const start = audio.volume;
+    const target = restoreTo;
+    const t0 = performance.now();
+    cancelAnimationFrame(restoreRaf);
+    function step(now) {
+      if (audioHooked) return;
+      const k = Math.min(1, (now - t0) / 300);
+      if (btn.classList.contains("is-playing") && !audio.paused) {
+        audio.volume = start + (target - start) * k;
+      }
+      if (k < 1) restoreRaf = requestAnimationFrame(step);
+    }
+    restoreRaf = requestAnimationFrame(step);
+  }
+
+  function placeLeaders(p) {
+    const box = container.getBoundingClientRect();
+    if (box.width < 2) return;
+    leaders.setAttribute("viewBox", "0 0 " + box.width.toFixed(1) + " " + box.height.toFixed(1));
+    const wave = svg.getBoundingClientRect();
+    leaders.replaceChildren();
+    propEls.forEach((prop) => {
+      const local = clamp((p - prop.at) / 0.06);
+      prop.el.style.opacity = local.toFixed(3);
+      prop.el.style.transform = "translateY(" + ((1 - local) * 14).toFixed(1) + "px)";
+      const eHere = energyAt(Math.min(p, 0.999));
+      prop.el.style.filter = "saturate(" + (0.15 + 0.85 * eHere).toFixed(3) + ")";
+      if (local <= 0.02) return;
+      const pr = prop.el.getBoundingClientRect();
+      const x1 = wave.left - box.left + (wave.width * (LEFT + prop.at * (RIGHT - LEFT))) / VB_W;
+      const y1 = wave.top - box.top + (wave.height * MID) / 700;
+      const x2 = pr.left + pr.width * 0.5 - box.left;
+      const y2 = pr.top + (prop.y.startsWith("6") ? 0 : pr.height) - box.top;
+      const bend = (prop.at < 0.4 ? -36 : 28);
+      const path = svgEl("path", {
+        d: "M " + x1.toFixed(1) + " " + y1.toFixed(1) + " Q " + ((x1 + x2) / 2 + bend).toFixed(1) + " " + ((y1 + y2) / 2).toFixed(1) + " " + x2.toFixed(1) + " " + y2.toFixed(1),
+        fill: "none",
+        stroke: tone(prop.at),
+        "stroke-width": "1",
+        "stroke-opacity": (0.45 * local).toFixed(3),
+      });
+      leaders.appendChild(path);
+    });
+  }
+
+  function resizeCanvas() {
+    const box = container.getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.max(1, Math.round(box.width * dpr));
+    canvas.height = Math.max(1, Math.round(box.height * dpr));
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function drawSparks(dt, p, e) {
+    const box = container.getBoundingClientRect();
+    ctx.clearRect(0, 0, box.width, box.height);
+    if (reduced || p > 0.96) {
+      sparks.length = 0;
+      return;
+    }
+    const seg = p < 0.33 ? 1 : p < 0.66 ? 2 : 3;
+    let spawn = 0;
+    if (seg === 1) spawn = Math.round(e * 3);
+    else if (seg === 2) spawn = e > 0.3 && hash(Math.floor(performance.now() / 80)) < 0.4 ? 1 : 0;
+    else spawn = e > 0.06 && hash(Math.floor(performance.now() / 180)) < 0.25 ? 1 : 0;
+    for (let s = 0; s < spawn && sparks.length < 250; s += 1) {
+      sparks.push({
+        x: p, y: 0.5,
+        vx: seg === 1 ? (Math.random() - 0.5) * 0.25 : (Math.random() - 0.5) * 0.04,
+        vy: seg === 3 ? -0.02 : (Math.random() - 0.5) * 0.08,
+        life: 1,
+        kind: seg,
+      });
+    }
+    for (let i = sparks.length - 1; i >= 0; i -= 1) {
+      const s = sparks[i];
+      s.life -= dt * (s.kind === 1 ? 0.85 : s.kind === 2 ? 0.35 : 0.18);
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      if (s.life <= 0) {
+        sparks.splice(i, 1);
+        continue;
+      }
+      ctx.globalAlpha = Math.max(0, s.life) * (s.kind === 1 ? 0.85 : 0.45);
+      ctx.fillStyle = s.kind === 3 ? "#56c2d6" : s.kind === 2 ? "#e7d7c4" : "#f4a259";
+      const px = s.x * box.width;
+      const py = s.y * box.height;
+      ctx.beginPath();
+      ctx.arc(px, py, s.kind === 1 ? 1.7 : 1.15, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  let last = performance.now();
+  let running = true;
+
+  function apply(p, now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    container.style.setProperty("--p", p.toFixed(4));
+    if (pin) pin.style.background = mixRgb("#0b101d", "#05060a", p);
+    const head = LEFT + p * (RIGHT - LEFT);
+    playhead.setAttribute("x1", head.toFixed(1));
+    playhead.setAttribute("x2", head.toFixed(1));
+    playhead.setAttribute("stroke", tone(p));
+    const e = p >= 0.965 ? 0.04 * (reduced ? 1 : 0.65 + 0.35 * Math.sin(now / 1000 * Math.PI * 2 * 0.25)) : energyAt(p);
+    vuSegs.forEach((seg, i) => {
+      const on = i < Math.round(clamp(e) * 10);
+      seg.setAttribute("fill-opacity", on ? "0.28" : "0.05");
+    });
+    const breathe = reduced ? 0 : Math.sin(now / 1000 * Math.PI * 2 * 0.25) * 5;
+    breath.setAttribute("y1", (MID + breathe).toFixed(2));
+    breath.setAttribute("y2", (MID + breathe).toFixed(2));
+    breath.setAttribute("stroke-opacity", p >= 0.9 ? "0.85" : "0.12");
+    breath.setAttribute("stroke-width", p >= 0.9 ? "1.1" : "1.2");
+    const angle = -140 + p * 280;
+    needle.setAttribute("transform", "rotate(" + angle.toFixed(1) + ")");
+    lightTo(p);
+    placeLeaders(p);
+    drawSparks(dt || 0.016, p, e);
+    const rect = track ? track.getBoundingClientRect() : container.getBoundingClientRect();
+    const vh = window.innerHeight || 1;
+    const inView = rect.top < vh * 0.92 && rect.bottom > vh * 0.08;
+    syncAudio(inView, e);
+  }
+
+  function progress() {
+    if (!track) return 0;
+    const rect = track.getBoundingClientRect();
+    const total = track.offsetHeight - window.innerHeight;
+    if (total <= 1) return 0;
+    return clamp(-rect.top / total);
+  }
+
+  function frame(now) {
+    if (!running) return;
+    apply(reduced ? 1 : progress(), now);
+    if (!reduced) requestAnimationFrame(frame);
+  }
+
+  resizeCanvas();
+  if (reduced) {
+    bars.forEach((bar) => { bar.burst = true; });
+    apply(1, performance.now());
+  } else {
+    requestAnimationFrame(frame);
+  }
+
+  function onResize() {
+    resizeCanvas();
+    if (reduced) apply(1, performance.now());
+  }
+  window.addEventListener("resize", onResize, { passive: true });
+  container._fadeStop = () => {
+    running = false;
+    window.removeEventListener("resize", onResize);
+    cancelAnimationFrame(restoreRaf);
+  };
 }
