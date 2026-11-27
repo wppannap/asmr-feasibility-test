@@ -420,6 +420,10 @@ def check_no_noise_phrases_in_web() -> list[tuple[str, bool, str]]:
                 path.name == "sleep_onset_wave.js"
                 and "Binaural Ear-to-Ear Rhythm" in line
                 and not re.search(r"white\s*noise|brown\s*noise|pink\s*noise|ambient\s*noise", line, re.I)
+            ) or (
+                path.name == "sound_samples.js"
+                and "Verbal White Noise" in line
+                and not re.search(r"brown\s*noise|pink\s*noise|ambient\s*noise|binaural", line, re.I)
             )
             if FORBIDDEN_NOISE_PHRASE_RE.search(line) and not editorial:
                 noise_hits.append(f"{path.relative_to(ROOT)}:{i}")

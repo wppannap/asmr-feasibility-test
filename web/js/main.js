@@ -1,14 +1,14 @@
 /* global d3, topojson, scrollama, ISO_NUM_TO_A3, ISO_A3_TO_NAME */
-import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261127c";
-import { onSceneEnter } from "./charts/entrance.js?v=20261127c";
-import { themeColors } from "./theme.js?v=20261127c";
+import { attachTableToggle, prefersReducedMotion } from "./charts/util.js?v=20261127d";
+import { onSceneEnter } from "./charts/entrance.js?v=20261127d";
+import { themeColors } from "./theme.js?v=20261127d";
 import {
   ENABLED_DATA,
   ENABLED_SECTIONS,
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261127c";
+} from "./sections.js?v=20261127d";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -1354,6 +1354,8 @@ async function loadAll() {
         ripple.setAttribute("stroke", "#f4a259");
         ripple.setAttribute("stroke-width", "0.8");
         ripple.setAttribute("pointer-events", "none");
+        ripple.setAttribute("r", String(Math.max(4, d.r || 4)));
+        ripple.setAttribute("opacity", "0.28");
         node.insertBefore(ripple, node.firstChild);
         const delay = ((d.x - minX) / span) * 0.9 + 0.28;
         tween.fromTo(
@@ -1907,6 +1909,10 @@ function initExtraCharts() {
   safeRender("scrolly-onset", "sleep_onset", (mod) => {
     const host = document.getElementById("onset-wave");
     if (host) chartApi.sleepOnset = mod.render(host);
+  });
+  safeRender("scrolly-phones", "sound_samples", (mod) => {
+    const host = document.getElementById("chart-sound-samples");
+    if (host) chartApi.soundSamples = mod.render(host);
   });
   safeRender("scrolly-9", "upload_clock", (mod) => {
     if (!ytUpload) return;

@@ -10,6 +10,7 @@ export const ENABLED_SECTIONS = [
   "scrolly-9",
   "scrolly-5",
   "scrolly-onset",
+  "scrolly-phones",
   "scrolly-3",
 ];
 
@@ -25,10 +26,11 @@ export const ENABLED_DATA = {
 
 /** Chart module paths loaded only when the matching section id is enabled. */
 export const SECTION_CHART_MODULES = {
-  "scrolly-3": "./charts_yt/creators.js?v=20261127c",
-  "scrolly-5": "./charts_yt/duration.js?v=20261127c",
-  "scrolly-9": "./charts_yt/upload_clock.js?v=20261127c",
-  "scrolly-onset": "./charts/sleep_onset_wave.js?v=20261127c",
+  "scrolly-3": "./charts_yt/creators.js?v=20261127d",
+  "scrolly-5": "./charts_yt/duration.js?v=20261127d",
+  "scrolly-9": "./charts_yt/upload_clock.js?v=20261127d",
+  "scrolly-onset": "./charts/sleep_onset_wave.js?v=20261127d",
+  "scrolly-phones": "./charts/sound_samples.js?v=20261127d",
 };
 
 /** Map caption notes (not hardcoded in HTML). */

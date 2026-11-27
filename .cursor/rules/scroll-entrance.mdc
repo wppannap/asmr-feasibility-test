@@ -1,0 +1,16 @@
+---
+description: Every new visual on the ASMR site needs a scroll entrance that fades out on exit
+alwaysApply: true
+---
+
+# Scroll entrance for every new visual
+
+Every new visual component or chart added to this site must include a bespoke, choreographed scroll-triggered entrance:
+
+- Staggered reveal as the scene enters, then a smooth fade-in.
+- Smooth fade-out when the scene leaves, in both scroll directions.
+- Do not use `pin: true` or any other pin that traps scroll height.
+- Upward and downward scrolling must stay smooth, including a return to the top of the page.
+- When `prefers-reduced-motion: reduce` is set, show the finished visual immediately with no motion.
+
+Existing charts, published data files, and the dark midnight theme stay as they are unless the task asks to change them.
