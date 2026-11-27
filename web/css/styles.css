@@ -2127,74 +2127,17 @@ input[type="range"] {
 .bed-tip[hidden] { display: none !important; }
 
 .kit-root { width: 100%; min-width: 0; }
-.kit-cloud {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1000 / 560;
-  container-type: inline-size;
-}
-.kit-cloud::before {
-  content: "";
-  position: absolute;
-  inset: 10% 4%;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 46% 42% at 50% 48%, rgba(244, 162, 89, 0.16), transparent 70%),
-    radial-gradient(ellipse 36% 32% at 46% 64%, rgba(86, 194, 214, 0.12), transparent 72%);
-}
-.kit-term {
-  position: absolute;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  transform: translate(-50%, -50%);
-  line-height: 1;
-  white-space: nowrap;
+.kit-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.kit-label {
+  font-family: var(--font-ui);
+  letter-spacing: -0.03em;
   cursor: default;
 }
-.kit-term-inner {
-  display: inline-block;
-  font-size: calc(0.8rem + var(--s) * 0.65rem);
-  font-size: calc(1.15cqw + var(--s) * 3.1cqw);
-  transform-origin: center center;
-}
-.kit-tool {
-  display: inline-block;
-  width: 0.95em;
-  height: 0.95em;
-  margin-right: 0.18em;
-  vertical-align: -0.12em;
-  overflow: visible;
-  filter: drop-shadow(0 0 3px currentColor);
-}
-.kit-tool path {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.4px;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-}
-.kit-term.is-serif .kit-term-inner { font-family: Georgia, "Times New Roman", serif; }
-.kit-term.is-sans .kit-term-inner {
-  font-family: var(--font-ui);
-  letter-spacing: 0.01em;
-}
-.kit-pct {
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: 0.46em;
-  font-weight: 500;
-  font-style: normal;
-  letter-spacing: 0;
-  color: var(--muted);
-  margin-left: 0.28em;
-  vertical-align: super;
-}
-.kit-cloud.is-hot .kit-term-inner { opacity: 0.22; }
-.kit-cloud.is-hot .kit-term.is-on .kit-term-inner {
-  opacity: 1;
-  text-shadow: 0 0 16px currentColor;
+.kit-word { opacity: var(--o, 1); }
+.kit-svg.is-hot .kit-word { opacity: 0.22; }
+.kit-svg.is-hot .kit-word.is-on { opacity: 1; }
+.kit-svg.is-hot .kit-word.is-on .kit-label {
+  filter: drop-shadow(0 0 7px currentColor);
 }
 .kit-tip {
   position: fixed;
@@ -2213,9 +2156,6 @@ input[type="range"] {
 .kit-tip p { margin: 0; }
 .kit-tip-name { color: var(--accent); font-weight: 650; }
 .kit-tip[hidden] { display: none !important; }
-@media (max-width: 720px) {
-  .kit-cloud { aspect-ratio: 1000 / 1040; }
-}
 
 .we-root, .ge-root { width: 100%; min-width: 0; }
 .we-grid, .ge-grid {

@@ -482,6 +482,14 @@ def check_no_noise_phrases_in_web() -> list[tuple[str, bool, str]]:
                 path.name == "asmr_toolkit_cloud.js"
                 and "Silicone binaural ear" in line
                 and not re.search(r"white\s*noise|brown\s*noise|pink\s*noise|ambient\s*noise", line, re.I)
+            ) or (
+                path.name == "asmr_toolkit_cloud.js"
+                and re.search(r"\bBINAURAL\b", line)
+                and not re.search(r"white\s*noise|brown\s*noise|pink\s*noise|ambient\s*noise", line, re.I)
+            ) or (
+                path.name == "asmr_toolkit_cloud.js"
+                and "VERBAL WHITE NOISE" in line
+                and not re.search(r"brown\s*noise|pink\s*noise|ambient\s*noise|binaural", line, re.I)
             )
             if FORBIDDEN_NOISE_PHRASE_RE.search(line) and not editorial:
                 noise_hits.append(f"{path.relative_to(ROOT)}:{i}")
