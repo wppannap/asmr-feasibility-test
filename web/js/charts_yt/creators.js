@@ -278,8 +278,8 @@ function buildClusterStars(cx, cy, R, rand) {
       x: cx + Math.cos(a) * rr,
       y: cy + Math.sin(a) * rr,
       bright,
-      r: bright ? 1.15 + rand() * 1.35 : 0.35 + rand() * 0.7,
-      op: bright ? 0.72 + rand() * 0.26 : 0.32 + rand() * 0.4,
+      r: bright ? 1.45 + rand() * 1.55 : 0.5 + rand() * 0.85,
+      op: bright ? 0.9 + rand() * 0.1 : 0.58 + rand() * 0.32,
     });
   }
 
@@ -293,8 +293,8 @@ function buildClusterStars(cx, cy, R, rand) {
       x: cx + Math.cos(a) * rr,
       y: cy + Math.sin(a) * rr,
       bright,
-      r: bright ? 0.9 + rand() * 0.9 : 0.3 + rand() * 0.55,
-      op: (bright ? 0.45 + rand() * 0.25 : 0.1 + rand() * 0.28) * (0.35 + fade * 0.65),
+      r: bright ? 1.15 + rand() * 1.05 : 0.42 + rand() * 0.7,
+      op: (bright ? 0.72 + rand() * 0.26 : 0.32 + rand() * 0.34) * (0.55 + fade * 0.45),
     });
   }
   return stars;
@@ -378,7 +378,7 @@ function draw() {
     .attr("y", "-80%")
     .attr("width", "260%")
     .attr("height", "260%");
-  glow.append("feGaussianBlur").attr("stdDeviation", 1.2).attr("result", "b");
+  glow.append("feGaussianBlur").attr("stdDeviation", 2.4).attr("result", "b");
   const merge = glow.append("feMerge");
   merge.append("feMergeNode").attr("in", "b");
   merge.append("feMergeNode").attr("in", "SourceGraphic");
@@ -417,9 +417,9 @@ function draw() {
       .attr("class", "field-star")
       .attr("cx", fx)
       .attr("cy", fy)
-      .attr("r", 0.35 + fieldRand() * 0.65)
-      .attr("fill", "#e8ecf5")
-      .attr("opacity", (0.12 + fieldRand() * 0.28) * fade);
+      .attr("r", 0.5 + fieldRand() * 0.85)
+      .attr("fill", "#f4f1ea")
+      .attr("opacity", (0.32 + fieldRand() * 0.4) * fade);
     drawn++;
   }
 
@@ -456,6 +456,16 @@ function draw() {
       .attr("fill", color)
       .attr("opacity", 0)
       .attr("pointer-events", "all");
+
+    cg.append("circle")
+      .attr("class", "cluster-halo")
+      .attr("cx", anchor.x)
+      .attr("cy", anchor.y)
+      .attr("r", (R * 0.78).toFixed(1))
+      .attr("fill", color)
+      .attr("opacity", 0.28)
+      .attr("filter", "url(#star-glow)")
+      .attr("pointer-events", "none");
 
     const starLayer = cg.append("g").attr("class", "cluster-stars").attr("pointer-events", "none");
     stars.forEach((s) => {
@@ -494,15 +504,38 @@ function draw() {
       .attr("x", item.lx)
       .attr("y", item.ly)
       .attr("text-anchor", "middle")
-      .attr("font-size", mobile ? 10 : 12)
+      .attr("font-size", mobile ? 12 : 14)
       .attr("font-family", 'Georgia, "Times New Roman", serif')
-      .attr("letter-spacing", "0.04em")
-      .attr("fill", "#eef1f7")
-      .attr("opacity", 0.94)
+      .attr("letter-spacing", "0.03em")
+      .attr("fill", "#f7f4ee")
+      .attr("opacity", 1)
       .attr("pointer-events", "none")
       .text(item.label);
     item.cg.append("title").text(item.tip);
   });
+
+  const crop = 36;
+  let vx0 = w;
+  let vy0 = h;
+  let vx1 = 0;
+  let vy1 = 0;
+  anchors.forEach((anchor) => {
+    vx0 = Math.min(vx0, pad + anchor.x - anchor.R * 1.28);
+    vy0 = Math.min(vy0, pad + anchor.y - anchor.R * 1.28);
+    vx1 = Math.max(vx1, pad + anchor.x + anchor.R * 1.28);
+    vy1 = Math.max(vy1, pad + anchor.y + anchor.R * 1.45);
+  });
+  placed.forEach((item) => {
+    vx0 = Math.min(vx0, pad + item.lx - 48);
+    vx1 = Math.max(vx1, pad + item.lx + 48);
+    vy0 = Math.min(vy0, pad + item.ly - 18);
+    vy1 = Math.max(vy1, pad + item.ly + 10);
+  });
+  vx0 = Math.max(0, vx0 - crop);
+  vy0 = Math.max(0, vy0 - crop);
+  vx1 = Math.min(w, vx1 + crop);
+  vy1 = Math.min(h, vy1 + crop);
+  svg.attr("viewBox", `${vx0.toFixed(1)} ${vy0.toFixed(1)} ${(vx1 - vx0).toFixed(1)} ${(vy1 - vy0).toFixed(1)}`);
 
   function setFocus(active) {
     groups.forEach((cg) => {
@@ -566,7 +599,7 @@ function startShimmer(mount) {
     .slice(0, 8);
   if (!stars.length) return;
   const tween = gsap.to(stars, {
-    opacity: 0.42,
+    opacity: 0.78,
     duration: 1.7,
     yoyo: true,
     repeat: -1,

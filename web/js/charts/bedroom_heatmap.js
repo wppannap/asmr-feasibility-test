@@ -26,7 +26,7 @@ function hash(i) {
 }
 
 /* warmth > 0 matches the spectrum chart, which paints warmth < 0 as cool (17/20).
-   dim is video_lum < 75. locked is lum_span < 10. Both cuts are in the JSON caveats. */
+   dim is video_lum < 75. */
 function decorate(rows) {
   const warmMin = Math.min(...rows.map((r) => r.warmth));
   const warmMax = Math.max(...rows.map((r) => r.warmth));
@@ -38,29 +38,11 @@ function decorate(rows) {
     code: row.code,
     warmth: row.warmth,
     video_lum: row.video_lum,
-    lum_span: row.lum_span,
     warm: row.warmth > 0,
     dim: row.video_lum < 75,
-    locked: row.lum_span < 10,
     tone: (row.warmth - warmMin) / span,
     bright: (row.video_lum - lumMin) / lumSpan,
   }));
-}
-
-function cameraMark() {
-  const g = el("g", { class: "nw-glyph" });
-  g.appendChild(el("rect", {
-    x: -7, y: -3.5, width: 14, height: 8, rx: 1.4,
-    fill: "none", stroke: "#f0ece3", "stroke-width": "1.15",
-  }));
-  g.appendChild(el("circle", {
-    cx: 1.5, cy: 0.5, r: 2.1,
-    fill: "none", stroke: "#f0ece3", "stroke-width": "1.05",
-  }));
-  g.appendChild(el("rect", {
-    x: -2.2, y: -5.4, width: 4.4, height: 2, rx: 0.4, fill: "#f0ece3",
-  }));
-  return g;
 }
 
 export async function render(container) {
@@ -74,15 +56,13 @@ export async function render(container) {
   const n = rows.length;
   const nWarm = rows.filter((r) => r.warm).length;
   const nDim = rows.filter((r) => r.dim).length;
-  const nLocked = rows.filter((r) => r.locked).length;
-  const nKeep = rows.filter((r) => r.warm && r.dim && r.locked).length;
 
   const svg = el("svg", {
     class: "nw-svg",
     viewBox: "0 0 1100 700",
     preserveAspectRatio: "xMidYMid meet",
     role: "img",
-    "aria-label": "Night windows filtered by warmth, dimness and a locked camera",
+    "aria-label": "Night windows filtered by warmth and dimness",
   });
   const sky = el("g", { class: "nw-sky" });
   for (let i = 0; i < 16; i += 1) {
@@ -131,18 +111,9 @@ export async function render(container) {
     });
     const outer = el("rect", {
       x: 4, y: 2, width: 48, height: 40, rx: 2,
-      fill: "none", stroke: "#f0ece3", "stroke-width": row.locked ? "1.6" : "1",
+      fill: "none", stroke: "#f0ece3", "stroke-width": "1",
     });
     frame.append(glow, glass, outer);
-    if (row.locked) {
-      frame.appendChild(el("rect", {
-        x: 1, y: -1, width: 54, height: 46, rx: 2,
-        fill: "none", stroke: "#f0ece3", "stroke-width": "0.8", "stroke-opacity": "0.7",
-      }));
-      const pod = cameraMark();
-      pod.setAttribute("transform", "translate(28 54) scale(1.05)");
-      frame.appendChild(pod);
-    }
     const ring = el("rect", {
       class: "nw-ring",
       x: -2, y: -4, width: 60, height: 52, rx: 3,
@@ -163,12 +134,11 @@ export async function render(container) {
   const copy = el("g", { class: "nw-copy" });
   const filters = [
     { label: "Warm lighting", count: nWarm, from: 0.2, y: 188 },
-    { label: "Dim light (<75)", count: nDim, from: 0.45, y: 248 },
-    { label: "Locked camera", count: nLocked, from: 0.7, y: 308 },
+    { label: "Dim light <75", count: nDim, from: 0.45, y: 248 },
   ].map((item) => {
     const pct = Math.round((item.count / n) * 100);
     const row = el("text", { x: 48, y: item.y, fill: "#98a4be", "font-size": "16" });
-    row.textContent = item.label + " — " + item.count + " / " + n + " (" + pct + "%)";
+    row.textContent = item.label + " · " + item.count + " / " + n + " · " + pct + "%";
     const mark = el("rect", {
       x: 28, y: item.y - 12, width: 8, height: 8, rx: 1, fill: "#f4a259", opacity: "0.25",
     });
@@ -203,7 +173,7 @@ export async function render(container) {
   cap.textContent = "Night windows, twenty videos";
   const head = document.createElement("thead");
   const hr = document.createElement("tr");
-  ["Video", "Warm", "Dim", "Locked"].forEach((label) => {
+  ["Video", "Warm", "Dim"].forEach((label) => {
     const th = document.createElement("th");
     th.textContent = label;
     hr.appendChild(th);
@@ -212,7 +182,7 @@ export async function render(container) {
   const body = document.createElement("tbody");
   rows.forEach((row) => {
     const tr = document.createElement("tr");
-    [row.code, row.warm ? "yes" : "no", row.dim ? "yes" : "no", row.locked ? "yes" : "no"].forEach((cell) => {
+    [row.code, row.warm ? "yes" : "no", row.dim ? "yes" : "no"].forEach((cell) => {
       const td = document.createElement("td");
       td.textContent = cell;
       tr.appendChild(td);
@@ -227,8 +197,7 @@ export async function render(container) {
     const lum = Math.round(row.video_lum);
     const warmBit = row.warm ? "Warm (+" + warmth + ")" : "Cool (" + warmth + ")";
     const dimBit = row.dim ? "Dim (" + lum + "/255)" : "Bright (" + lum + "/255)";
-    const lockBit = row.locked ? "Locked camera" : "Handheld";
-    return "Video " + row.code + " · " + warmBit + " · " + dimBit + " · " + lockBit;
+    return "Video " + row.code + " · " + warmBit + " · " + dimBit;
   }
   function showTip(win, event) {
     const row = win.row;
@@ -263,7 +232,6 @@ export async function render(container) {
     let cut = 1;
     if (p >= 0.2 && !row.warm) cut = Math.min(cut, 1 - clamp((p - 0.2) / 0.16));
     if (p >= 0.45 && !row.dim) cut = Math.min(cut, 1 - clamp((p - 0.45) / 0.16));
-    if (p >= 0.7 && !row.locked) cut = Math.min(cut, 1 - clamp((p - 0.7) / 0.16));
     return cut;
   }
 
@@ -271,7 +239,6 @@ export async function render(container) {
     return rows.filter((row) => {
       if (p >= 0.2 && !row.warm) return false;
       if (p >= 0.45 && !row.dim) return false;
-      if (p >= 0.7 && !row.locked) return false;
       return true;
     }).length;
   }
@@ -282,7 +249,7 @@ export async function render(container) {
     wins.forEach((win) => {
       const row = win.row;
       const pass = passAmount(row, p);
-      const breathe = pass > 0.98 && p >= 0.9 && row.warm && row.dim && row.locked && !reduced
+      const breathe = pass > 0.98 && p >= 0.9 && row.warm && row.dim && !reduced
         ? 0.84 + 0.16 * Math.sin((now / 5000) * Math.PI * 2)
         : 1;
       const lit = mix("#9ecbff", "#f0a24a", row.tone);
@@ -293,8 +260,6 @@ export async function render(container) {
       win.outer.setAttribute("stroke", pass > 0.45 ? "#f0ece3" : "#98a4be");
       win.outer.setAttribute("stroke-opacity", (0.34 + 0.56 * pass).toFixed(3));
       win.frame.style.opacity = "1";
-      const hand = !row.locked && p >= 0.7 && p < 0.9 && pass > 0.35 && !reduced;
-      win.frame.classList.toggle("is-hand", hand);
     });
     filters.forEach((item) => {
       const on = p >= item.from;
@@ -336,5 +301,5 @@ export async function render(container) {
   if (reduced) apply(1, performance.now());
   else requestAnimationFrame(frame);
   container._nwStop = () => { running = false; };
-  return { n, nWarm, nDim, nLocked, nKeep };
+  return { n, nWarm, nDim };
 }

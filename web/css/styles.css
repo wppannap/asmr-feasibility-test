@@ -2063,7 +2063,7 @@ input[type="range"] {
 
 .story-title {
   font-family: var(--font-display);
-  font-size: clamp(2rem, 5vw, 3.4rem);
+  font-size: clamp(1.35rem, 2.2vw, 1.95rem);
   font-weight: 560;
   letter-spacing: -0.03em;
   margin: 0;
@@ -2147,8 +2147,9 @@ input[type="range"] {
 .story-scene .story-beat:nth-of-type(odd) { margin-left: 0; }
 
 .story-prose {
-  max-width: 660px;
-  margin: 0 auto 0.4rem;
+  max-width: none;
+  width: 100%;
+  margin: 0 0 0.4rem;
   padding: 0;
   color: #e6e1d6;
   font-family: var(--font-ui);
@@ -2816,7 +2817,7 @@ body > .story-prose,
 }
 .pin-head .story-title,
 .chart-frame .story-title {
-  font-size: clamp(1.5rem, 2.4vw, 2.05rem);
+  font-size: clamp(1.35rem, 2.2vw, 1.95rem);
 }
 .onset-pin #onset-wave,
 .bed-pin .chart-root,
@@ -2866,39 +2867,29 @@ body > .story-prose,
   margin-inline: 0;
 }
 
-@media (min-width: 960px) {
-  .act-header {
-    display: grid;
-    grid-template-columns: 200px minmax(0, 1fr);
-    column-gap: 48px;
-    align-items: start;
-  }
-  .act-eyebrow {
-    grid-column: 1;
-    grid-row: 1 / span 3;
-    margin: 0.4rem 0 0;
-  }
-  .act-title,
-  .act-deck { grid-column: 2; }
-  .act > .story-prose:not(.act-header),
-  body > .story-prose {
-    display: grid;
-    grid-template-columns: 200px minmax(0, 1fr);
-    column-gap: 48px;
-  }
-  .act > .story-prose:not(.act-header) > *,
-  body > .story-prose > * {
-    grid-column: 2;
-    max-width: 78ch;
-  }
+.act { padding-inline: 0; }
+.act > .act-header,
+.act > .story-prose {
+  width: 100%;
+  max-width: none;
+  padding-inline: var(--page-gutter);
+  box-sizing: border-box;
 }
+.pull-quote { width: 100%; max-width: none; }
 
-@media (max-width: 959px) {
-  .act-header,
-  .act > .story-prose,
-  body > .story-prose { display: block; }
-  .act > .story-prose > *,
-  body > .story-prose > * {
-    max-width: none;
-  }
+#scrolly-gender .ge-grid { align-items: center; }
+#scrolly-gender .ge-matrix {
+  width: min(100%, 280px);
+  margin-inline: auto;
+  gap: 1px;
+}
+#scrolly-gender .ge-fig {
+  width: 62%;
+  max-width: 16px;
+  height: auto;
+  margin-inline: auto;
+}
+#scrolly-gender .ge-gauge {
+  width: min(100%, 340px);
+  margin-inline: auto;
 }
