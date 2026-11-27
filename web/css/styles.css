@@ -2301,6 +2301,90 @@ input[type="range"] {
   .editorial-split--reverse { grid-template-columns: 1fr; }
 }
 
+.sleep-tips-block {
+  position: relative;
+  max-width: 920px;
+  width: min(920px, 94vw);
+  margin: 2.2rem auto 2.4rem;
+  padding: 1.45rem 1.4rem 1.25rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(244, 162, 89, 0.28);
+  border-radius: 18px;
+}
+.sleep-tips-block::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #f4a259;
+  border-radius: 18px 18px 0 0;
+}
+.sleep-tips-lead {
+  margin: 0 0 1.25rem;
+  color: #e6e1d6;
+  font-size: clamp(1.04rem, 1.15vw, 1.16rem);
+  line-height: 1.7;
+}
+.sleep-tips-grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.35rem 1.8rem;
+  margin: 0;
+  padding: 0;
+}
+.sleep-tip { min-width: 0; }
+.sleep-tip-num {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: #b8b2a6;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.7rem, 2.4vw, 2.15rem);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+.sleep-tip p {
+  margin: 0;
+  color: #e6e1d6;
+  font-size: 1.02rem;
+  line-height: 1.65;
+}
+
+@keyframes sleep-tip-pass {
+  0% { opacity: 0; transform: translateY(18px); }
+  24%, 76% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(-14px); }
+}
+
+@supports (animation-timeline: view()) {
+  .sleep-tips-lead,
+  .sleep-tip {
+    animation: sleep-tip-pass linear both;
+    animation-timeline: view();
+    animation-range: entry 0% exit 100%;
+  }
+  .sleep-tip:nth-child(1) { animation-range: entry 5% exit 100%; }
+  .sleep-tip:nth-child(2) { animation-range: entry 12% exit 100%; }
+  .sleep-tip:nth-child(3) { animation-range: entry 19% exit 100%; }
+  .sleep-tip:nth-child(4) { animation-range: entry 26% exit 100%; }
+}
+
+@media (max-width: 720px) {
+  .sleep-tips-grid { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sleep-tips-lead,
+  .sleep-tip {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .notes-details,
 .fig-caption,
 .chart-section-title,
