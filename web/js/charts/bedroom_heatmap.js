@@ -47,14 +47,18 @@ function decorate(rows) {
   }));
 }
 
-function tripod() {
+function cameraMark() {
   const g = el("g", { class: "nw-glyph" });
-  g.appendChild(el("path", {
-    d: "M0 -6 L0 2 M0 2 L-7 10 M0 2 L7 10",
-    fill: "none",
-    stroke: "#f0ece3",
-    "stroke-width": "1.4",
-    "stroke-linecap": "round",
+  g.appendChild(el("rect", {
+    x: -7, y: -3.5, width: 14, height: 8, rx: 1.4,
+    fill: "none", stroke: "#f0ece3", "stroke-width": "1.15",
+  }));
+  g.appendChild(el("circle", {
+    cx: 1.5, cy: 0.5, r: 2.1,
+    fill: "none", stroke: "#f0ece3", "stroke-width": "1.05",
+  }));
+  g.appendChild(el("rect", {
+    x: -2.2, y: -5.4, width: 4.4, height: 2, rx: 0.4, fill: "#f0ece3",
   }));
   return g;
 }
@@ -135,8 +139,8 @@ export async function render(container) {
         x: 1, y: -1, width: 54, height: 46, rx: 2,
         fill: "none", stroke: "#f0ece3", "stroke-width": "0.8", "stroke-opacity": "0.7",
       }));
-      const pod = tripod();
-      pod.setAttribute("transform", "translate(28 52) scale(0.7)");
+      const pod = cameraMark();
+      pod.setAttribute("transform", "translate(28 54) scale(1.05)");
       frame.appendChild(pod);
     }
     const ring = el("rect", {

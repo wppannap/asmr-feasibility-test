@@ -1983,8 +1983,8 @@ input[type="range"] {
   border: 0;
   box-shadow: none;
   mix-blend-mode: lighten;
-  mask-image: radial-gradient(ellipse 68% 68% at 50% 50%, #000 55%, transparent 100%);
-  -webkit-mask-image: radial-gradient(ellipse 68% 68% at 50% 50%, #000 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse 62% 64% at 50% 48%, #000 32%, transparent 74%);
+  -webkit-mask-image: radial-gradient(ellipse 62% 64% at 50% 48%, #000 32%, transparent 74%);
 }
 .fx-prop figcaption {
   margin: 0.15rem 0 0;
