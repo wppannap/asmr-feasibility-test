@@ -11,6 +11,7 @@ export const ENABLED_SECTIONS = [
   "scrolly-5",
   "scrolly-onset",
   "scrolly-phones",
+  "scrolly-bed",
   "scrolly-3",
 ];
 
@@ -26,11 +27,12 @@ export const ENABLED_DATA = {
 
 /** Chart module paths loaded only when the matching section id is enabled. */
 export const SECTION_CHART_MODULES = {
-  "scrolly-3": "./charts_yt/creators.js?v=20261127d",
-  "scrolly-5": "./charts_yt/duration.js?v=20261127d",
-  "scrolly-9": "./charts_yt/upload_clock.js?v=20261127d",
-  "scrolly-onset": "./charts/sleep_onset_wave.js?v=20261127d",
-  "scrolly-phones": "./charts/sound_samples.js?v=20261127d",
+  "scrolly-3": "./charts_yt/creators.js?v=20261127e",
+  "scrolly-5": "./charts_yt/duration.js?v=20261127e",
+  "scrolly-9": "./charts_yt/upload_clock.js?v=20261127e",
+  "scrolly-onset": "./charts/sleep_onset_wave.js?v=20261127e",
+  "scrolly-phones": "./charts/sound_samples.js?v=20261127e",
+  "scrolly-bed": "./charts/bedroom_heatmap.js?v=20261127e",
 };
 
 /** Map caption notes (not hardcoded in HTML). */

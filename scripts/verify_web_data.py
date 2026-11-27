@@ -34,6 +34,7 @@ EXPECTED_FILES = [
     "correlations_v3c.json",
     "scatter_points_v3c.json",
     "wiki_lang.json",
+    "bedroom_filter_20.json",
 ]
 
 # Optional YouTube payloads — required only when the matching section is enabled.
@@ -382,6 +383,59 @@ def check_privacy(obj, name: str) -> list[str]:
     return errs
 
 
+def check_bedroom_filter() -> list[tuple[str, bool, str]]:
+    """Anonymized 20-video brightness × warmth sample. No ids, no channel names."""
+    path = WEB / "bedroom_filter_20.json"
+    if not path.exists():
+        return [("bedroom filter 20 anonymized rows", False, "missing")]
+    obj, _ = load_json("bedroom_filter_20.json")
+    expect = {
+        "V01": (87.9, 34.7, 113.6, 5.1),
+        "V02": (64.5, 52.5, 62.6, 4.7),
+        "V03": (84.2, 23.8, 91.9, 50.3),
+        "V04": (57.8, 63.3, 68.3, 2.2),
+        "V05": (73.3, 48.0, 63.5, 9.4),
+        "V06": (55.5, -41.8, 105.0, 25.2),
+        "V07": (64.5, 20.8, 70.8, 4.9),
+        "V08": (66.2, 34.7, 82.3, 11.1),
+        "V09": (39.1, 16.7, 46.1, 2.3),
+        "V10": (49.7, -29.3, 60.3, 5.4),
+        "V11": (79.0, -68.1, 79.0, 3.6),
+        "V12": (72.1, 23.3, 69.0, 23.9),
+        "V13": (107.9, 38.8, 153.0, 11.1),
+        "V14": (110.6, 67.1, 114.4, 8.5),
+        "V15": (127.3, 24.0, 177.4, 5.8),
+        "V16": (132.9, 24.5, 158.3, 9.6),
+        "V17": (85.4, 30.4, 117.8, 11.4),
+        "V18": (100.7, 20.0, 103.7, 1.1),
+        "V19": (201.5, 12.0, 169.9, 1.6),
+        "V20": (37.4, 10.0, 51.7, 9.4),
+    }
+    rows = obj.get("rows") or []
+    by = {r.get("code"): r for r in rows}
+    bad = []
+    for code, vals in expect.items():
+        row = by.get(code) or {}
+        got = (row.get("video_lum"), row.get("warmth"), row.get("cover_lum"), row.get("lum_span"))
+        if got != vals:
+            bad.append(code)
+    warm = sum(1 for r in rows if isinstance(r, dict) and r.get("warmth", 0) > 0)
+    dim = sum(1 for r in rows if isinstance(r, dict) and r.get("video_lum", 99) < 75)
+    locked = sum(1 for r in rows if isinstance(r, dict) and r.get("lum_span", 99) < 10)
+    blob = json.dumps(obj)
+    leaked = bool(re.search(r"youtube\.com|youtu\.be|watch\?v=|\bUC[\w-]{20,}\b", blob, re.I))
+    ok = (
+        len(rows) == 20
+        and not bad
+        and warm == 17
+        and dim == 10
+        and locked == 14
+        and not leaked
+    )
+    detail = f"n={len(rows)} bad={bad or 'none'} warm={warm} dim={dim} locked={locked}"
+    return [("bedroom filter 20 anonymized rows", ok, detail)]
+
+
 def check_hero_audio_control() -> list[tuple[str, bool, str]]:
     """The hero play control is allowed. Chart sections stay button-free."""
     html = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
@@ -622,6 +676,7 @@ def main() -> int:
     # Manual-check provenance: page-shown theme checks must not be UNSET
     results.extend(check_reviewed_by_unset())
     results.extend(check_hero_audio_control())
+    results.extend(check_bedroom_filter())
     # human rows require ingest receipt; script outputs must be labelled script
     results.extend(check_review_log_human_ingest())
 

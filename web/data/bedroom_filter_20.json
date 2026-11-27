@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "generated_at": "2026-11-27T01:50:00Z",
+    "source_files": [
+      "team pixel sample, 20 videos x 4 frames, anonymized codes V01-V20"
+    ],
+    "caveats": [
+      "Codes only. In-video brightness is mean luminance. Warmth is mean R minus B. Cover brightness is the thumbnail. Span is the in-video luminance range across the sampled frames.",
+      "Dim means in-video luminance under 75. Locked camera means a luminance span under 10. Twenty videos, eighty frames."
+    ],
+    "n_videos": 20,
+    "n_frames": 80
+  },
+  "rows": [
+    {"code": "V01", "video_lum": 87.9, "warmth": 34.7, "cover_lum": 113.6, "lum_span": 5.1},
+    {"code": "V02", "video_lum": 64.5, "warmth": 52.5, "cover_lum": 62.6, "lum_span": 4.7},
+    {"code": "V03", "video_lum": 84.2, "warmth": 23.8, "cover_lum": 91.9, "lum_span": 50.3},
+    {"code": "V04", "video_lum": 57.8, "warmth": 63.3, "cover_lum": 68.3, "lum_span": 2.2},
+    {"code": "V05", "video_lum": 73.3, "warmth": 48.0, "cover_lum": 63.5, "lum_span": 9.4},
+    {"code": "V06", "video_lum": 55.5, "warmth": -41.8, "cover_lum": 105.0, "lum_span": 25.2},
+    {"code": "V07", "video_lum": 64.5, "warmth": 20.8, "cover_lum": 70.8, "lum_span": 4.9},
+    {"code": "V08", "video_lum": 66.2, "warmth": 34.7, "cover_lum": 82.3, "lum_span": 11.1},
+    {"code": "V09", "video_lum": 39.1, "warmth": 16.7, "cover_lum": 46.1, "lum_span": 2.3},
+    {"code": "V10", "video_lum": 49.7, "warmth": -29.3, "cover_lum": 60.3, "lum_span": 5.4},
+    {"code": "V11", "video_lum": 79.0, "warmth": -68.1, "cover_lum": 79.0, "lum_span": 3.6},
+    {"code": "V12", "video_lum": 72.1, "warmth": 23.3, "cover_lum": 69.0, "lum_span": 23.9},
+    {"code": "V13", "video_lum": 107.9, "warmth": 38.8, "cover_lum": 153.0, "lum_span": 11.1},
+    {"code": "V14", "video_lum": 110.6, "warmth": 67.1, "cover_lum": 114.4, "lum_span": 8.5},
+    {"code": "V15", "video_lum": 127.3, "warmth": 24.0, "cover_lum": 177.4, "lum_span": 5.8},
+    {"code": "V16", "video_lum": 132.9, "warmth": 24.5, "cover_lum": 158.3, "lum_span": 9.6},
+    {"code": "V17", "video_lum": 85.4, "warmth": 30.4, "cover_lum": 117.8, "lum_span": 11.4},
+    {"code": "V18", "video_lum": 100.7, "warmth": 20.0, "cover_lum": 103.7, "lum_span": 1.1},
+    {"code": "V19", "video_lum": 201.5, "warmth": 12.0, "cover_lum": 169.9, "lum_span": 1.6},
+    {"code": "V20", "video_lum": 37.4, "warmth": 10.0, "cover_lum": 51.7, "lum_span": 9.4}
+  ]
+}
