@@ -48,6 +48,25 @@ body::before {
   background: var(--bg);
 }
 
+.intro-title {
+  position: absolute;
+  z-index: 5;
+  top: clamp(22px, 5.5vh, 64px);
+  left: 50%;
+  width: min(16.5em, calc(100% - 48px));
+  margin: 0;
+  transform: translateX(-50%);
+  text-align: center;
+  color: #f0ece3;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.45rem, 2.8vw, 2.45rem);
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  text-shadow: 0 2px 16px rgba(11, 16, 29, 0.9), 0 0 28px rgba(11, 16, 29, 0.65);
+  pointer-events: none;
+}
+
 .intro-sleeper {
   position: absolute;
   left: 50%;
@@ -1957,6 +1976,93 @@ input[type="range"] {
   height: auto;
   margin: 0;
 }
+#onset-wave.fx-stage { overflow: hidden; }
+.fx-yaxis {
+  grid-column: 1;
+  grid-row: 1;
+  position: relative;
+  min-height: 0;
+  pointer-events: none;
+}
+.fx-ylab {
+  position: absolute;
+  left: 50%;
+  color: #f0ece3;
+  font-family: var(--font-ui);
+  font-size: clamp(0.62rem, 0.78vw, 0.72rem);
+  font-weight: 560;
+  letter-spacing: 0.03em;
+  line-height: 1.15;
+  writing-mode: vertical-rl;
+  transform: translateX(-50%) rotate(180deg);
+  white-space: nowrap;
+}
+.fx-ylab-high { top: 4%; }
+.fx-ylab-low { top: 73%; }
+.fx-yaxis-line {
+  position: absolute;
+  left: 50%;
+  top: 28.5%;
+  width: 14px;
+  height: 42%;
+  transform: translateX(-50%);
+}
+.fx-plot {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+.fx-xaxis {
+  grid-column: 2;
+  grid-row: 2;
+  padding: 0 0 2px;
+  pointer-events: none;
+}
+.fx-xline {
+  position: relative;
+  height: 14px;
+}
+.fx-xaxis-line {
+  display: block;
+  width: 100%;
+  height: 14px;
+}
+.fx-xarrow {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 10px;
+  height: 14px;
+}
+.fx-xstages {
+  display: grid;
+  grid-template-columns: 30fr 40fr 30fr;
+  margin-top: 1px;
+}
+.fx-xstages p {
+  margin: 0;
+  padding: 0 0.3rem;
+  text-align: center;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: clamp(0.6rem, 0.75vw, 0.72rem);
+  line-height: 1.28;
+}
+.fx-xstages strong {
+  color: #f0ece3;
+  font-weight: 650;
+}
+.fx-xtitle {
+  margin: 0.22rem 0 0;
+  text-align: center;
+  color: #f0ece3;
+  font-family: var(--font-ui);
+  font-size: clamp(0.66rem, 0.82vw, 0.78rem);
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+}
 .fx-vignette {
   position: absolute;
   inset: 0;
@@ -2022,6 +2128,15 @@ input[type="range"] {
   .fx-prop { width: min(104px, 30vw); }
   .fx-prop img { max-height: 12vh; }
   .fx-prop figcaption { font-size: 0.66rem; }
+  .fx-ylab { font-size: 0.58rem; }
+  .fx-xstages p, .fx-xtitle { font-size: 0.58rem; }
+}
+@media (max-height: 760px) {
+  .fx-ylab { font-size: 0.58rem; }
+  .fx-ylab-high { top: 2%; }
+  .fx-ylab-low { top: 74%; }
+  .fx-xstages p, .fx-xtitle { font-size: 0.6rem; }
+  .fx-xtitle { margin-top: 0.12rem; }
 }
 
 /* —— Full-screen story scenes —— */

@@ -91,10 +91,10 @@ export function render(container) {
   canvas.setAttribute("aria-hidden", "true");
   const svg = svgEl("svg", {
     class: "fx-wave",
-    viewBox: "0 0 1200 700",
-    preserveAspectRatio: "xMidYMid meet",
+    viewBox: "0 0 1200 640",
+    preserveAspectRatio: "xMidYMin meet",
     role: "img",
-    "aria-label": "Mirrored waveform fading from earpick transients to a whisper",
+    "aria-label": "Sensory stimulation over the video timeline, high on the left and fading toward sleep on the right",
   });
   const leaders = svgEl("svg", { class: "fx-leaders", "aria-hidden": "true" });
 
@@ -107,7 +107,7 @@ export function render(container) {
   const vuSegs = [];
   for (let i = 0; i < 10; i += 1) {
     const seg = svgEl("rect", {
-      x: 28,
+      x: 64,
       y: MID - 120 + (9 - i) * 16,
       width: 10,
       height: 11,
@@ -155,7 +155,7 @@ export function render(container) {
   svg.appendChild(breath);
 
   const playhead = svgEl("line", {
-    x1: LEFT, x2: LEFT, y1: 120, y2: 580,
+    x1: LEFT, x2: LEFT, y1: 190, y2: 510,
     stroke: "#f4a259", "stroke-width": "1.4", "stroke-linecap": "round",
   });
   svg.appendChild(playhead);
@@ -184,7 +184,7 @@ export function render(container) {
   const table = document.createElement("table");
   table.className = "sr-only";
   const caption = document.createElement("caption");
-  caption.textContent = "Fade-out energy by segment";
+  caption.textContent = "Sensory stimulation by timeline segment, from high intensity to low";
   const thead = document.createElement("thead");
   const hr = document.createElement("tr");
   ["Segment", "Energy start", "Energy end"].forEach((label) => {
@@ -204,6 +204,70 @@ export function render(container) {
     tbody.appendChild(tr);
   });
   table.append(caption, thead, tbody);
+
+  const axis = svgEl("g", { class: "fx-axes", "aria-hidden": "true" });
+  axis.appendChild(svgEl("line", {
+    x1: "48", y1: "196", x2: "48", y2: "508",
+    stroke: "#98a4be", "stroke-width": "1.15", "stroke-linecap": "round",
+  }));
+  axis.appendChild(svgEl("path", {
+    d: "M48 176 L56 198 L40 198 Z",
+    fill: "#98a4be",
+  }));
+  function axisText(text, attrs) {
+    const node = svgEl("text", Object.assign({
+      fill: "#f0ece3",
+      "font-family": "system-ui, -apple-system, sans-serif",
+    }, attrs));
+    node.textContent = text;
+    return node;
+  }
+  axis.appendChild(axisText("High Sensory Intensity", {
+    x: "16", y: "250", "text-anchor": "middle", "font-size": "15",
+    transform: "rotate(-90 16 250)",
+  }));
+  axis.appendChild(axisText("Low Intensity", {
+    x: "16", y: "445", "text-anchor": "middle", "font-size": "15",
+    transform: "rotate(-90 16 445)",
+  }));
+  const span = RIGHT - LEFT;
+  const baseY = 528;
+  axis.appendChild(svgEl("line", {
+    x1: String(LEFT), y1: String(baseY), x2: String(RIGHT - 16), y2: String(baseY),
+    stroke: "#98a4be", "stroke-width": "1.15", "stroke-linecap": "round",
+  }));
+  axis.appendChild(svgEl("path", {
+    d: "M" + (RIGHT - 20) + " " + (baseY - 5) + " L" + RIGHT + " " + baseY + " L" + (RIGHT - 20) + " " + (baseY + 5),
+    fill: "none",
+    stroke: "#98a4be",
+    "stroke-width": "1.15",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round",
+  }));
+  [0, 0.3, 0.7, 1].forEach((t) => {
+    const x = LEFT + span * t;
+    axis.appendChild(svgEl("line", {
+      x1: x.toFixed(1), x2: x.toFixed(1), y1: baseY - 5, y2: baseY + 5,
+      stroke: "#98a4be", "stroke-width": "1.15",
+    }));
+  });
+  [
+    [0.15, "0%\u201330%", "High Stimulation \u00b7 Grab Attention"],
+    [0.5, "30%\u201370%", "Moderate \u00b7 Rhythmic & Soothing"],
+    [0.85, "70%\u2013100%", "Low Stimulation \u00b7 Drift to Sleep"],
+  ].forEach(([t, range, name]) => {
+    const x = (LEFT + span * t).toFixed(1);
+    axis.appendChild(axisText(range, {
+      x: x, y: baseY + 24, "text-anchor": "middle", "font-size": "14", "font-weight": "650",
+    }));
+    axis.appendChild(axisText(name, {
+      x: x, y: baseY + 42, "text-anchor": "middle", "font-size": "13", fill: "#98a4be",
+    }));
+  });
+  axis.appendChild(axisText("Video Timeline & Sensory Stimulation Level", {
+    x: (LEFT + span / 2).toFixed(1), y: baseY + 68, "text-anchor": "middle", "font-size": "15",
+  }));
+  svg.appendChild(axis);
 
   container.append(vignette, canvas, svg, leaders, ...propEls.map((p) => p.el), table);
 
@@ -302,7 +366,7 @@ export function render(container) {
       if (local <= 0.02) return;
       const pr = prop.el.getBoundingClientRect();
       const x1 = wave.left - box.left + (wave.width * (LEFT + prop.at * (RIGHT - LEFT))) / VB_W;
-      const y1 = wave.top - box.top + (wave.height * MID) / 700;
+      const y1 = wave.top - box.top + (wave.height * MID) / 640;
       const x2 = pr.left + pr.width * 0.5 - box.left;
       const y2 = pr.top + (prop.y.startsWith("6") ? 0 : pr.height) - box.top;
       const bend = (prop.at < 0.4 ? -36 : 28);

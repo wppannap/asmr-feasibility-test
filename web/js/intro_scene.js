@@ -3,6 +3,7 @@
   const root = document.getElementById("intro-night");
   const pin = root && root.querySelector(".intro-pin");
   const fig = root && root.querySelector(".intro-sleeper");
+  const title = pin && pin.querySelector(".intro-title");
   const host = document.getElementById("intro-danmaku");
   const cue = document.getElementById("intro-cue");
   if (!root || !pin || !host || !fig) return;
@@ -105,7 +106,8 @@
     const ex = exclusion();
     const gap = narrow ? 6 : GAP;
     const x0 = w * 0.04;
-    const y0 = h * 0.06;
+    const titleFloor = title ? title.offsetTop + title.offsetHeight + 16 : h * 0.06;
+    const y0 = Math.min(h * 0.34, Math.max(h * 0.06, titleFloor));
     const x1 = w * 0.94;
     const y1 = Math.min(h * 0.92, h - 48);
     const flankRoom = Math.max(0, Math.min(ex.x - x0, x1 - (ex.x + ex.w)) - 4);
@@ -291,6 +293,7 @@
     const t = total > 0 ? passed / total : 0;
     const fadeOut = t > 0.86 ? Math.max(0, 1 - (t - 0.86) / 0.12) : 1;
     fig.style.opacity = String(Math.min(1, t / 0.1) * fadeOut);
+    if (title) title.style.opacity = String(fadeOut);
     if (cue) cue.style.opacity = String(t < 0.06 ? 0.85 : Math.max(0, 0.85 - (t - 0.06) / 0.06));
     nodes.forEach((el, i) => {
       const start = 0.04 + (i / (nodes.length - 1)) * 0.68;
