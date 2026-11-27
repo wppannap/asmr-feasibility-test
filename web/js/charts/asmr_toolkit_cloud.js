@@ -124,6 +124,20 @@ export async function render(container) {
   svg.addEventListener("pointerdown", (event) => { pointer = toSvg(event); });
   svg.addEventListener("pointerleave", () => { pointer = null; tip.hidden = true; });
 
+  const kept = [];
+  nodes.forEach((node) => {
+    const raw = node.text.getBBox();
+    const box = { x: raw.x - 8, y: raw.y - 4, width: raw.width + 16, height: raw.height + 8 };
+    const hit = kept.some((b) => {
+      const ix = Math.min(box.x + box.width, b.x + b.width) - Math.max(box.x, b.x);
+      const iy = Math.min(box.y + box.height, b.y + b.height) - Math.max(box.y, b.y);
+      return ix > 0 && iy > 0;
+    });
+    if (hit) node.text.remove();
+    else kept.push(box);
+    node.dead = hit;
+  });
+
   const track = container.closest(".kit-scroll");
   let running = true;
 
@@ -139,6 +153,7 @@ export async function render(container) {
     container.style.setProperty("--p", p.toFixed(4));
     let nearest = null;
     nodes.forEach((node) => {
+      if (node.dead) return;
       const shown = reduced ? 1 : revealOf(node.word, p);
       let opacity = shown;
       let scale = 1;
@@ -160,7 +175,7 @@ export async function render(container) {
     });
     if (pointer) {
       nodes.forEach((node) => {
-        if (node._shown < 0.35) return;
+        if (node.dead || node._shown < 0.35) return;
         const hit = nearest && nearest.dist < 90 && nearest.node.word.group === node.word.group;
         const self = nearest && nearest.node === node && nearest.dist < 90;
         if (self) node.text.style.opacity = "1";
@@ -168,6 +183,7 @@ export async function render(container) {
       });
     }
     nodes.forEach((node) => {
+      if (node.dead) return;
       let dx = 0;
       let dy = 0;
       if (!reduced && p > 0.85 && node._shown > 0.8) {
@@ -203,6 +219,14 @@ export async function render(container) {
 
   function frame(now) {
     if (!running) return;
+    if (track) {
+      const rect = track.getBoundingClientRect();
+      const vh = window.innerHeight || 1;
+      if (rect.bottom < -40 || rect.top > vh + 40) {
+        requestAnimationFrame(frame);
+        return;
+      }
+    }
     apply(reduced ? 1 : progress(), now);
     if (!reduced) requestAnimationFrame(frame);
   }

@@ -296,6 +296,14 @@ export async function render(container) {
 
   function frame(now) {
     if (!running) return;
+    if (track) {
+      const rect = track.getBoundingClientRect();
+      const vh = window.innerHeight || 1;
+      if (rect.bottom < -40 || rect.top > vh + 40) {
+        requestAnimationFrame(frame);
+        return;
+      }
+    }
     const p = reduced ? 1 : progress();
     if (reduced) {
       apply(1, now);

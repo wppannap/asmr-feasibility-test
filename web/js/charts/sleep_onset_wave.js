@@ -87,7 +87,7 @@ export function render(container) {
 
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const narrow = window.matchMedia("(max-width: 820px)").matches;
-  const bars = buildBars(narrow ? 180 : 360);
+  const bars = buildBars(narrow ? 120 : 220);
   const pin = container.closest(".onset-pin");
   const track = container.closest(".onset-scroll");
 
@@ -236,8 +236,7 @@ export function render(container) {
     node.setAttribute("fill-opacity", "0.94");
     node.setAttribute("stroke", color);
     node.setAttribute("stroke-width", (bar.x < 0.33 ? 1.15 : bar.x < 0.66 ? 0.7 : 0.35).toFixed(2));
-    const glow = bar.x < 0.7 ? (1 - bar.x) * 7 : 0;
-    node.style.filter = glow > 0.4 ? "drop-shadow(0 0 " + glow.toFixed(1) + "px " + color + ")" : "";
+    node.style.filter = "";
   }
 
   function lightTo(p) {
@@ -253,7 +252,7 @@ export function render(container) {
         if (!bar.spike || bar.burst) continue;
         bar.burst = true;
         const g = geom(bar);
-        for (let k = 0; k < 8 && sparks.length < 250; k += 1) {
+        for (let k = 0; k < 4 && sparks.length < 120; k += 1) {
           sparks.push({
             x: g.px / VB_W, y: 0.5 + (hash(i * 13 + k) - 0.5) * bar.e * 0.45,
             vx: (hash(k + 4) - 0.5) * 0.35,
@@ -342,10 +341,10 @@ export function render(container) {
     }
     const seg = p < 0.33 ? 1 : p < 0.66 ? 2 : 3;
     let spawn = 0;
-    if (seg === 1) spawn = Math.round(e * 3);
+    if (seg === 1) spawn = Math.round(e * 1.5);
     else if (seg === 2) spawn = e > 0.3 && hash(Math.floor(performance.now() / 80)) < 0.4 ? 1 : 0;
     else spawn = e > 0.06 && hash(Math.floor(performance.now() / 180)) < 0.25 ? 1 : 0;
-    for (let s = 0; s < spawn && sparks.length < 250; s += 1) {
+    for (let s = 0; s < spawn && sparks.length < 120; s += 1) {
       sparks.push({
         x: p, y: 0.5,
         vx: seg === 1 ? (Math.random() - 0.5) * 0.25 : (Math.random() - 0.5) * 0.04,
@@ -417,6 +416,14 @@ export function render(container) {
 
   function frame(now) {
     if (!running) return;
+    if (track) {
+      const rect = track.getBoundingClientRect();
+      const vh = window.innerHeight || 1;
+      if (rect.bottom < -40 || rect.top > vh + 40) {
+        requestAnimationFrame(frame);
+        return;
+      }
+    }
     apply(reduced ? 1 : progress(), now);
     if (!reduced) requestAnimationFrame(frame);
   }

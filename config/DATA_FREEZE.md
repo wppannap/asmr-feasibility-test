@@ -1,11 +1,13 @@
 # DATA_FREEZE
 
-SHA-256 of files under `web/data/` at publish time (2026-11-27T01:53:17Z).
+SHA-256 of files under `web/data/` at publish time (2026-11-27T03:38:47Z).
 
 - `data/bedroom_filter_20.json`: `411d4aa3afee1759abb720956e1abb06e31025681321c0ae1aa2360f1f01e8f2`
 - `data/correlations_v3c.json`: `76662e3a38e622540a012014772544834502ddc2cc5d7d8a44c38375435720d5`
 - `data/countries-50m.json`: `04342cdc1e3016bcd7db1630de95684d67b79fe3c8c460321e87aef469502394`
 - `data/scatter_points_v3c.json`: `6a360aef8cf74acbbb169f08f2fd52fa5f34cb0daa15feca7bed02b5d5802793`
+- `data/toolkit_layout.json`: `60f31a51126883709e94b551d08ea2c5675a40581031cb2fd8bbb9d576117392`
+- `data/toolkit_terms.json`: `82f554cecc655577b66438b06291f86f744847f8778b485064f9ab37ae6a97fd`
 - `data/trends_country_v3c.json`: `075e0121927b1479a49b019333aeb5514abf1d1e2a85fde532eeac3a7efb55e6`
 - `data/trends_monthly_v3c.json`: `84ecf51012cc3f320dc5e871fdcb58571935fbc6d53e8c547fadc691577e3601`
 - `data/wiki_lang.json`: `cf5daaab63dae82c12b462b0c756545aceb5dd2493aa132eb2964b0243f9f248`
