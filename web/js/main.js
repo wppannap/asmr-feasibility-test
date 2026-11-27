@@ -8,7 +8,7 @@ import {
   MAP_CAPTION_NOTES,
   SECTION_CHART_MODULES,
   applySectionVisibility,
-} from "./sections.js?v=20261128i";
+} from "./sections.js?v=20261128j";
 
 /** Populated by loadChartModules() — sequential imports for enabled sections only. */
 const ChartModules = {};
@@ -446,8 +446,8 @@ async function loadAll() {
 
     const projection = d3.geoNaturalEarth1().fitExtent(
       [
-        [48, 18],
-        [width - 48, height - 20],
+        [-24, 0],
+        [width + 24, height + 46],
       ],
       state.lands
     );
@@ -990,7 +990,7 @@ async function loadAll() {
 
     nodes.forEach((d) => {
       d.noteType = noteTypeFor(d);
-      d.scale = Math.max(0.55, d.r / 9);
+      d.scale = Math.max(0.45, d.r / 9) * 0.81;
     });
 
     map.dorlingCache = nodes;

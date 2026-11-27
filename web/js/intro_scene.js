@@ -106,8 +106,7 @@
     const ex = exclusion();
     const gap = narrow ? 6 : GAP;
     const x0 = w * 0.04;
-    const titleFloor = title ? title.offsetTop + title.offsetHeight + 16 : h * 0.06;
-    const y0 = Math.min(h * 0.34, Math.max(h * 0.06, titleFloor));
+    const y0 = h * 0.06;
     const x1 = w * 0.94;
     const y1 = Math.min(h * 0.92, h - 48);
     const flankRoom = Math.max(0, Math.min(ex.x - x0, x1 - (ex.x + ex.w)) - 4);
@@ -292,11 +291,14 @@
     const passed = Math.min(Math.max(-rect.top, 0), total);
     const t = total > 0 ? passed / total : 0;
     const fadeOut = t > 0.86 ? Math.max(0, 1 - (t - 0.86) / 0.12) : 1;
-    fig.style.opacity = String(Math.min(1, t / 0.1) * fadeOut);
-    if (title) title.style.opacity = String(fadeOut);
-    if (cue) cue.style.opacity = String(t < 0.06 ? 0.85 : Math.max(0, 0.85 - (t - 0.06) / 0.06));
+    const titleFade = Math.min(1, Math.max(0, t / 0.18));
+    const titleOp = 1 - titleFade * titleFade * (3 - 2 * titleFade);
+    const sceneIn = t <= 0.26 ? 0 : Math.min(1, (t - 0.26) / 0.08);
+    fig.style.opacity = String(sceneIn * fadeOut);
+    if (title) title.style.opacity = String(titleOp);
+    if (cue) cue.style.opacity = String(titleOp * 0.85);
     nodes.forEach((el, i) => {
-      const start = 0.04 + (i / (nodes.length - 1)) * 0.68;
+      const start = 0.26 + (i / (nodes.length - 1)) * 0.48;
       const local = Math.min(1, Math.max(0, (t - start) / 0.045));
       const tier = Number(el.dataset.tier) || 0.9;
       el.style.opacity = String(local * fadeOut * tier);

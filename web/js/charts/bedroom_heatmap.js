@@ -43,8 +43,7 @@ function tipLine(row) {
   const warmth = Math.round(row.warmth);
   const lum = Math.round(row.video_lum);
   const warmBit = row.warm ? "Warm (+" + warmth + ")" : "Cool (" + warmth + ")";
-  const dimBit = row.dim ? "Dim (" + lum + "/255)" : "Bright (" + lum + "/255)";
-  return "Video " + row.code + " · " + warmBit + " · " + dimBit;
+  return "Video " + row.code + " · " + warmBit + " · Brightness " + lum + "/255";
 }
 
 export async function render(container) {
@@ -154,7 +153,7 @@ export async function render(container) {
     fill: "#f0ece3",
     "font-size": "15",
   });
-  legend.textContent = "Amber = Warm · Cyan = Cool · Glow = Brightness";
+  legend.textContent = "Amber = Warm · Cyan = Cool · Brighter = Higher luminance";
   svg.appendChild(legend);
 
   const tip = document.createElement("div");
@@ -217,7 +216,7 @@ export async function render(container) {
 
   function apply(p) {
     const night = easeInOutCubic(reduced ? 0.5 : p);
-    const level = 1 - 0.64 * night;
+    const level = 1 - 0.65 * night;
     wins.forEach((win) => {
       const row = win.row;
       const color = tone(row.warmth, row.warm ? night : night * 0.2);

@@ -51,11 +51,11 @@ body::before {
 .intro-title {
   position: absolute;
   z-index: 5;
-  top: clamp(22px, 5.5vh, 64px);
+  top: 50%;
   left: 50%;
   width: min(16.5em, calc(100% - 48px));
   margin: 0;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   text-align: center;
   color: #f0ece3;
   font-family: var(--font-display);
@@ -2193,6 +2193,9 @@ input[type="range"] {
   margin: 0.15rem 0 0;
 }
 
+.story-kpis .kpi-value {
+  font-size: clamp(1.15rem, 1.6vw, 1.45rem);
+}
 .story-kpis .kpi-label {
   text-transform: none;
   letter-spacing: 0;
