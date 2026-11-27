@@ -3,14 +3,29 @@ const STAGES = [
   {
     id: "01 · Attention Anchor",
     tags: "Picking · Scratching · Ear Cleaning · Rapid Trigger Switching · Roleplay",
+    img: "img/props/stage1_props.jpg?v=20261127c",
+    alt: "Bamboo earpick beside a glowing picking pad",
+    caption: "Bamboo Earpick · Picking Pad",
+    cue: "e.g. 02:44 Picking pad",
+    at: 0.12,
   },
   {
     id: "02 · Immersion",
     tags: "Soft Brushing · Foam & Fabric Textures · Binaural Ear-to-Ear Rhythm",
+    img: "img/props/stage2_props.jpg?v=20261127c",
+    alt: "Fluffy makeup brush beside a soft foam sponge",
+    caption: "Fluffy Brush · Soft Foam Sponge",
+    cue: "Face & mic brushing",
+    at: 0.42,
   },
   {
     id: "03 · Drift Off",
     tags: "Snow Bag / Soft Noise Mix · Trigger Words & Counting · Slow Whispered Goodnight",
+    img: "img/props/stage3_props.jpg?v=20261127c",
+    alt: "A bag of snow beads beside a microphone with a fluffy windscreen",
+    caption: "Snow Bag · Fluffy Windscreen Mic",
+    cue: "e.g. 2:39:57 Snow bag · 41:33 Whisper goodbye",
+    at: 0.72,
   },
 ];
 
@@ -85,10 +100,26 @@ export function render(container) {
     const name = document.createElement("p");
     name.className = "onset-name";
     name.textContent = stageInfo.id;
+    const fig = document.createElement("figure");
+    fig.className = "onset-prop";
+    const img = document.createElement("img");
+    img.src = stageInfo.img;
+    img.alt = stageInfo.alt;
+    img.decoding = "async";
+    fig.appendChild(img);
+    const caption = document.createElement("p");
+    caption.className = "onset-caption";
+    caption.textContent = stageInfo.caption;
+    const cue = document.createElement("p");
+    cue.className = "onset-cue";
+    cue.textContent = stageInfo.cue;
     const tags = document.createElement("p");
     tags.className = "onset-tags";
     tags.textContent = stageInfo.tags;
     block.appendChild(name);
+    block.appendChild(fig);
+    block.appendChild(caption);
+    block.appendChild(cue);
     block.appendChild(tags);
     labels.appendChild(block);
   });
@@ -105,12 +136,10 @@ export function render(container) {
     head.setAttribute("cy", tip.y.toFixed(1));
     head.style.opacity = p < 0.01 ? "0" : "1";
     labels.querySelectorAll(".onset-stage").forEach((el, i) => {
-      const start = 0.08 + i * 0.28;
+      const start = STAGES[i].at;
       const fade = reduced ? 1 : clamp((p - start) / 0.16);
-      const opacity = String(reduced ? 1 : fade);
-      el.querySelectorAll(".onset-name, .onset-tags").forEach((node) => {
-        node.style.opacity = opacity;
-      });
+      el.style.opacity = String(fade);
+      el.style.transform = reduced ? "none" : "translateY(" + ((1 - fade) * 18).toFixed(1) + "px)";
     });
   }
 
